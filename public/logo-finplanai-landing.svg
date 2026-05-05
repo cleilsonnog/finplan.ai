@@ -1,0 +1,28 @@
+<svg width="260" height="90" viewBox="0 0 260 90" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- Ícone -->
+  <g transform="translate(10,10)">
+    <path d="M10 40 L40 15 L70 40 V75 H10 Z" stroke="#16A34A" stroke-width="3" fill="none"></path>
+
+    <rect x="22" y="48" width="6" height="15" fill="#1E3A8A"></rect>
+    <rect x="34" y="40" width="6" height="23" fill="#1E3A8A"></rect>
+    <rect x="46" y="32" width="6" height="31" fill="#1E3A8A"></rect>
+
+    <path d="M22 55 L36 45 L50 38 L58 30" stroke="#16A34A" stroke-width="2.5" fill="none"></path>
+    <path d="M55 32 L58 30 L63 35" stroke="#16A34A" stroke-width="2.5" fill="none"></path>
+  </g>
+
+  <!-- Texto corrigido -->
+  <text x="95" y="48" font-family="Inter, sans-serif" font-size="26" font-weight="600">
+
+    <tspan fill="#1E3A8A">finplan</tspan>
+    <tspan dx="6" fill="#16A34A">ai</tspan>
+
+  </text>
+
+  <!-- Tagline -->
+  <text x="95" y="70" font-family="Inter, sans-serif" font-size="11" fill="#334155" letter-spacing="1.2">
+    PLANEJE HOJE • GARANTA AMANHÃ
+  </text>
+
+</svg>

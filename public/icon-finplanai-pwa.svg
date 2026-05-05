@@ -1,0 +1,17 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- Fundo -->
+  <rect width="64" height="64" rx="16" fill="#0F172A"></rect>
+
+  <!-- Casa -->
+  <path d="M14 32 L32 16 L50 32 V50 H14 Z" stroke="#22C55E" stroke-width="2.5" fill="none"></path>
+
+  <!-- Barras -->
+  <rect x="22" y="36" width="4" height="10" fill="#60A5FA"></rect>
+  <rect x="30" y="30" width="4" height="16" fill="#60A5FA"></rect>
+  <rect x="38" y="26" width="4" height="20" fill="#60A5FA"></rect>
+
+  <!-- Linha (detalhe que conecta com sua logo original) -->
+  <path d="M22 40 L32 34 L40 28" stroke="#22C55E" stroke-width="2" fill="none"></path>
+
+</svg>
