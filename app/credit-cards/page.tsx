@@ -7,6 +7,7 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { ScrollArea } from "../_components/ui/scroll-area";
 import CreditCardsSummary from "../(home)/_components/credit-cards-summary";
+import DashboardCreditCards from "../(home)/_components/dashboard-credit-cards";
 import { getCreditCardSummary } from "../_data/get-credit-card-summary";
 import CreditCardTransactions from "./_components/credit-card-transactions";
 
@@ -52,6 +53,7 @@ const CreditCardsPage = async () => {
           <AddCreditCardButton />
         </div>
         <CreditCardsSummary creditCardSummary={creditCardSummary} />
+        <DashboardCreditCards cards={creditCardSummary.cards} />
         <ScrollArea>
           <DataTable
             columns={creditCardColumns}

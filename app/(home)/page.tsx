@@ -9,7 +9,6 @@ import { getDashboard } from "../_data/get-dashboard";
 import ExpensesPerCategory from "./_components/expenses-per-category";
 import LastTransactions from "./_components/last-transactions";
 import { db } from "../_lib/prisma";
-import DashboardCreditCards from "./_components/dashboard-credit-cards";
 
 interface HomeProps {
   searchParams: Promise<{
@@ -38,28 +37,27 @@ const Home = async ({ searchParams }: HomeProps) => {
   return (
     <>
       <Navbar />
-      <div className="flex min-h-full flex-col space-y-6 overflow-auto p-4 md:p-6">
+      <div className="flex h-full flex-col space-y-6 overflow-auto p-4 md:p-6">
         <div className="flex justify-between">
           <h1 className="text-2xl font-bold">Dashboard</h1>
           <TimeSelect />
         </div>
-        <SummaryCards
-          month={month}
-          {...dashboard}
-          creditCards={creditCards}
-        />
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr,1fr]">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            <TransactionsPieChart {...dashboard} />
-            <ExpensesPerCategory
-              expensesPerCategory={dashboard.totalExpensePerCategory}
+        <div className="grid grid-cols-1 gap-6 lg:h-full lg:grid-cols-[2fr,1fr] lg:overflow-hidden">
+          <div className="flex flex-col gap-6 lg:overflow-hidden">
+            <SummaryCards
+              month={month}
+              {...dashboard}
+              creditCards={creditCards}
             />
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-3 md:grid-rows-1 lg:h-full lg:overflow-hidden">
+              <TransactionsPieChart {...dashboard} />
+              <ExpensesPerCategory
+                expensesPerCategory={dashboard.totalExpensePerCategory}
+              />
+            </div>
           </div>
           <LastTransactions lastTransactions={dashboard.lastTransactions} />
         </div>
-        <DashboardCreditCards
-          cards={dashboard.creditCardSummary.cards}
-        />
       </div>
     </>
   );
