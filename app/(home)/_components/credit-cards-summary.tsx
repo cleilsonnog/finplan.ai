@@ -30,7 +30,7 @@ const CreditCardsSummary = ({ creditCardSummary }: CreditCardsSummaryProps) => {
         <CardTitle className="text-base">Cartões de Crédito</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="grid grid-cols-3 gap-4 text-sm">
+        <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-3">
           <div>
             <p className="text-muted-foreground">Total Faturas</p>
             <p className="text-lg font-bold">{formatCurrency(totalInvoice)}</p>

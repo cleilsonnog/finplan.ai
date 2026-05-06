@@ -62,12 +62,12 @@ const CreditCardTransactions = ({
 
   return (
     <Card>
-      <CardHeader className="flex-row items-center justify-between gap-4">
+      <CardHeader className="flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <CardTitle className="text-base font-bold">
           Gastos com Cartão de Crédito
         </CardTitle>
         <Select value={selectedCardId} onValueChange={setSelectedCardId}>
-          <SelectTrigger className="w-[220px]">
+          <SelectTrigger className="w-full sm:w-[220px]">
             <SelectValue placeholder="Filtrar por cartão" />
           </SelectTrigger>
           <SelectContent>
@@ -87,6 +87,7 @@ const CreditCardTransactions = ({
           </p>
         ) : (
           <>
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -119,6 +120,7 @@ const CreditCardTransactions = ({
                 ))}
               </TableBody>
             </Table>
+            </div>
             <div className="mt-4 flex justify-end border-t pt-4">
               <p className="text-sm font-bold">
                 Total: {formatCurrency(total)}

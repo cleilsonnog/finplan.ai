@@ -5,7 +5,6 @@ import AddCreditCardButton from "../_components/add-credit-card-button";
 import Navbar from "../_components/navbar";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { ScrollArea } from "../_components/ui/scroll-area";
 import CreditCardsSummary from "../(home)/_components/credit-cards-summary";
 import DashboardCreditCards from "../(home)/_components/dashboard-credit-cards";
 import { getCreditCardSummary } from "../_data/get-credit-card-summary";
@@ -47,19 +46,23 @@ const CreditCardsPage = async () => {
   return (
     <>
       <Navbar />
-      <div className="space-y-6 overflow-auto p-4 md:p-6">
+      <div className="flex flex-col space-y-6 overflow-auto p-4 md:p-6">
         <div className="flex w-full items-center justify-between">
           <h1 className="text-2xl font-bold">Cartões de Crédito</h1>
           <AddCreditCardButton />
         </div>
+
         <CreditCardsSummary creditCardSummary={creditCardSummary} />
+
         <DashboardCreditCards cards={creditCardSummary.cards} />
-        <ScrollArea>
+
+        <div className="overflow-x-auto">
           <DataTable
             columns={creditCardColumns}
             data={serializedCreditCards}
           />
-        </ScrollArea>
+        </div>
+
         <CreditCardTransactions
           transactions={serializedTransactions}
           creditCards={creditCardOptions}
