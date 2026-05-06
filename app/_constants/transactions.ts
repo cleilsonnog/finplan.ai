@@ -26,6 +26,16 @@ export const TRANSACTION_PAYMENT_METHOD_LABELS = {
   PIX: "Pix",
 };
 
+export const TRANSACTION_PAYMENT_METHOD_ICONS = {
+  BANK_TRANSFER: "ArrowLeftRight",
+  BANK_SLIP: "FileText",
+  CASH: "Banknote",
+  CREDIT_CARD: "CreditCard",
+  DEBIT_CARD: "CreditCard",
+  OTHER: "CircleEllipsis",
+  PIX: "QrCode",
+} as const;
+
 export const TRANSACTION_TYPE_OPTIONS = [
   {
     value: TransactionType.EXPENSE,

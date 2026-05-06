@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "./ui/button";
 import {
   Dialog,
@@ -148,7 +150,7 @@ const UpsertTransactionDialog = ({
                     <MoneyInput
                       placeholder="Digite o valor..."
                       value={field.value}
-                      onValueChange={({ floatValue }) =>
+                      onValueChange={({ floatValue }: { floatValue: number }) =>
                         field.onChange(floatValue)
                       }
                       onBlur={field.onBlur}

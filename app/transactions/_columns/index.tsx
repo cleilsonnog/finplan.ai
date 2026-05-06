@@ -45,7 +45,7 @@ export const transactionColumns: ColumnDef<SerializedTransaction>[] = [
     cell: ({ row: { original: transaction } }) =>
       new Date(transaction.date).toLocaleDateString("pt-BR", {
         day: "2-digit",
-        month: "long",
+        month: "2-digit",
         year: "numeric",
       }),
   },
