@@ -2,6 +2,7 @@ import { db } from "@/app/_lib/prisma";
 import { TransactionType } from "@prisma/client";
 import { TotalExpensePerCategory, TransactionPercentagePerType } from "./types";
 import { auth } from "@clerk/nextjs/server";
+import { getCreditCardSummary } from "../get-credit-card-summary";
 
 export const getDashboard = async (month: string) => {
   const { userId } = await auth();
@@ -87,6 +88,7 @@ export const getDashboard = async (month: string) => {
     ...t,
     amount: Number(t.amount),
   }));
+  const creditCardSummary = await getCreditCardSummary(month);
   return {
     balance,
     depositsTotal,
@@ -95,5 +97,6 @@ export const getDashboard = async (month: string) => {
     typesPercentage,
     totalExpensePerCategory,
     lastTransactions,
+    creditCardSummary,
   };
 };

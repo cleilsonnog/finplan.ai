@@ -18,6 +18,7 @@ interface UpsertTransactionParams {
   category: TransactionCategory;
   paymentMethod: TransactionPaymentMethod;
   date: Date;
+  creditCardId?: string;
 }
 
 export const upsertTransaction = async (params: UpsertTransactionParams) => {
@@ -26,15 +27,22 @@ export const upsertTransaction = async (params: UpsertTransactionParams) => {
   if (!userId) {
     throw new Error("Unauthorized");
   }
+  const data = {
+    ...params,
+    userId,
+    creditCardId:
+      params.paymentMethod === "CREDIT_CARD" ? params.creditCardId : null,
+  };
   if (params.id) {
     await db.transaction.update({
       where: { id: params.id },
-      data: { ...params, userId },
+      data,
     });
   } else {
     await db.transaction.create({
-      data: { ...params, userId },
+      data,
     });
   }
   revalidatePath("/transactions");
+  revalidatePath("/");
 };

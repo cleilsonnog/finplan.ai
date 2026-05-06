@@ -38,42 +38,60 @@ import {
   TransactionType,
   TransactionCategory,
   TransactionPaymentMethod,
+  CreditCard,
 } from "@prisma/client";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { upsertTransaction } from "../_actions/upsert-transaction";
+
+export type SerializedCreditCard = Omit<CreditCard, "limit"> & {
+  limit: number;
+};
 
 interface UpsertTransactionDialogProps {
   isOpen: boolean;
   defaultValues?: FormSchema;
   transactionId?: string;
   setIsOpen: (isOpen: boolean) => void;
+  creditCards?: SerializedCreditCard[];
 }
 
-const formSchema = z.object({
-  name: z.string().trim().min(1, {
-    message: "O nome é obrigatório.",
-  }),
-  amount: z
-    .number({
-      required_error: "O valor é obrigatório.",
-    })
-    .positive({
-      message: "O valor deve ser positivo.",
+const formSchema = z
+  .object({
+    name: z.string().trim().min(1, {
+      message: "O nome é obrigatório.",
     }),
-  type: z.nativeEnum(TransactionType, {
-    required_error: "O tipo é obrigatório.",
-  }),
-  category: z.nativeEnum(TransactionCategory, {
-    required_error: "A categoria é obrigatória.",
-  }),
-  paymentMethod: z.nativeEnum(TransactionPaymentMethod, {
-    required_error: "O método de pagamento é obrigatório.",
-  }),
-  date: z.date({
-    required_error: "A data é obrigatória.",
-  }),
-});
+    amount: z
+      .number({
+        required_error: "O valor é obrigatório.",
+      })
+      .positive({
+        message: "O valor deve ser positivo.",
+      }),
+    type: z.nativeEnum(TransactionType, {
+      required_error: "O tipo é obrigatório.",
+    }),
+    category: z.nativeEnum(TransactionCategory, {
+      required_error: "A categoria é obrigatória.",
+    }),
+    paymentMethod: z.nativeEnum(TransactionPaymentMethod, {
+      required_error: "O método de pagamento é obrigatório.",
+    }),
+    date: z.date({
+      required_error: "A data é obrigatória.",
+    }),
+    creditCardId: z.string().optional(),
+  })
+  .refine(
+    (data) =>
+      data.paymentMethod !== TransactionPaymentMethod.CREDIT_CARD ||
+      !!data.creditCardId,
+    {
+      message: "O cartão de crédito é obrigatório.",
+      path: ["creditCardId"],
+    },
+  );
 
 type FormSchema = z.infer<typeof formSchema>;
 
@@ -82,6 +100,7 @@ const UpsertTransactionDialog = ({
   defaultValues,
   transactionId,
   setIsOpen,
+  creditCards = [],
 }: UpsertTransactionDialogProps) => {
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
@@ -92,8 +111,18 @@ const UpsertTransactionDialog = ({
       name: "",
       paymentMethod: TransactionPaymentMethod.CASH,
       type: TransactionType.EXPENSE,
+      creditCardId: undefined,
     },
   });
+
+  const paymentMethod = form.watch("paymentMethod");
+  const isCreditCard = paymentMethod === TransactionPaymentMethod.CREDIT_CARD;
+
+  useEffect(() => {
+    if (!isCreditCard) {
+      form.setValue("creditCardId", undefined);
+    }
+  }, [isCreditCard, form]);
 
   const onSubmit = async (data: FormSchema) => {
     try {
@@ -117,7 +146,7 @@ const UpsertTransactionDialog = ({
         }
       }}
     >
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>
             {isUpdate ? "Atualizar" : "Criar"} transação
@@ -126,7 +155,10 @@ const UpsertTransactionDialog = ({
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="flex flex-col gap-4 overflow-y-auto px-1"
+          >
             <FormField
               control={form.control}
               name="name"
@@ -242,6 +274,35 @@ const UpsertTransactionDialog = ({
                 </FormItem>
               )}
             />
+            {isCreditCard && (
+              <FormField
+                control={form.control}
+                name="creditCardId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Cartão de Crédito</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione um cartão..." />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {creditCards.map((card) => (
+                          <SelectItem key={card.id} value={card.id}>
+                            {card.name} (****{card.lastFourDigits})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             <FormField
               control={form.control}
               name="date"

@@ -6,20 +6,42 @@ import Navbar from "../_components/navbar";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { ScrollArea } from "../_components/ui/scroll-area";
+import CreditCardsSummary from "../(home)/_components/credit-cards-summary";
+import { getCreditCardSummary } from "../_data/get-credit-card-summary";
+import CreditCardTransactions from "./_components/credit-card-transactions";
 
 const CreditCardsPage = async () => {
   const { userId } = await auth();
   if (!userId) {
     redirect("/login");
   }
-  const creditCards = await db.creditCard.findMany({
-    where: {
-      userId,
-    },
-  });
+  const currentMonth = String(new Date().getMonth() + 1);
+  const [creditCards, creditCardSummary, ccTransactions] = await Promise.all([
+    db.creditCard.findMany({ where: { userId } }),
+    getCreditCardSummary(currentMonth),
+    db.transaction.findMany({
+      where: { userId, paymentMethod: "CREDIT_CARD", creditCardId: { not: null } },
+      include: { creditCard: { select: { name: true } } },
+      orderBy: { date: "desc" },
+    }),
+  ]);
   const serializedCreditCards = creditCards.map((c) => ({
     ...c,
     limit: Number(c.limit),
+  }));
+  const serializedTransactions = ccTransactions.map((t) => ({
+    id: t.id,
+    name: t.name,
+    amount: Number(t.amount),
+    category: t.category,
+    date: t.date.toISOString(),
+    creditCardId: t.creditCardId,
+    creditCardName: t.creditCard?.name ?? "",
+  }));
+  const creditCardOptions = creditCards.map((c) => ({
+    id: c.id,
+    name: c.name,
+    lastFourDigits: c.lastFourDigits,
   }));
   return (
     <>
@@ -29,12 +51,17 @@ const CreditCardsPage = async () => {
           <h1 className="text-2xl font-bold">Cartões de Crédito</h1>
           <AddCreditCardButton />
         </div>
+        <CreditCardsSummary creditCardSummary={creditCardSummary} />
         <ScrollArea>
           <DataTable
             columns={creditCardColumns}
             data={serializedCreditCards}
           />
         </ScrollArea>
+        <CreditCardTransactions
+          transactions={serializedTransactions}
+          creditCards={creditCardOptions}
+        />
       </div>
     </>
   );

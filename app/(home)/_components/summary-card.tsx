@@ -1,4 +1,5 @@
 import AddTransactionButton from "@/app/_components/upsert-transaction-dialog";
+import { SerializedCreditCard } from "@/app/_components/add-transaction-button";
 import { Card, CardContent, CardHeader } from "@/app/_components/ui/card";
 import { ReactNode } from "react";
 
@@ -7,6 +8,7 @@ interface SummaryCardProps {
   title: string;
   amount: number;
   size?: "small" | "large";
+  creditCards?: SerializedCreditCard[];
 }
 
 const SummaryCard = ({
@@ -14,6 +16,7 @@ const SummaryCard = ({
   title,
   amount,
   size = "small",
+  creditCards = [],
 }: SummaryCardProps) => {
   return (
     <Card>
@@ -35,7 +38,7 @@ const SummaryCard = ({
           }).format(amount)}
         </p>
 
-        {size === "large" && <AddTransactionButton />}
+        {size === "large" && <AddTransactionButton creditCards={creditCards} />}
       </CardContent>
     </Card>
   );

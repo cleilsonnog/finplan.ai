@@ -3,9 +3,17 @@
 import { ArrowDownUpIcon } from "lucide-react";
 import { Button } from "./ui/button";
 import { useState } from "react";
-import UpsertTransactionDialog from "./add-transaction-button";
+import UpsertTransactionDialog, {
+  SerializedCreditCard,
+} from "./add-transaction-button";
 
-const AddTransactionButton = () => {
+interface AddTransactionButtonProps {
+  creditCards?: SerializedCreditCard[];
+}
+
+const AddTransactionButton = ({
+  creditCards = [],
+}: AddTransactionButtonProps) => {
   const [dialogIsOpen, setDialogIsOpen] = useState(false);
 
   return (
@@ -20,6 +28,7 @@ const AddTransactionButton = () => {
       <UpsertTransactionDialog
         isOpen={dialogIsOpen}
         setIsOpen={setDialogIsOpen}
+        creditCards={creditCards}
       />
     </>
   );

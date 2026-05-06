@@ -5,6 +5,7 @@ import { ColumnDef } from "@tanstack/react-table";
 
 export type SerializedTransaction = Omit<Transaction, "amount"> & {
   amount: number;
+  creditCard?: { name: string; lastFourDigits: string } | null;
 };
 import TransactionTypeBadge from "../_components/type-badge";
 import { Button } from "../../_components/ui/button";
@@ -14,8 +15,11 @@ import {
   TRANSACTION_PAYMENT_METHOD_LABELS,
 } from "@/app/_constants/transactions";
 import EditTransactionButton from "../_components/edit-transaction-button";
+import { SerializedCreditCard } from "@/app/_components/add-transaction-button";
 
-export const transactionColumns: ColumnDef<SerializedTransaction>[] = [
+export const createTransactionColumns = (
+  creditCards: SerializedCreditCard[] = [],
+): ColumnDef<SerializedTransaction>[] => [
   {
     accessorKey: "name",
     header: "Nome",
@@ -36,8 +40,12 @@ export const transactionColumns: ColumnDef<SerializedTransaction>[] = [
   {
     accessorKey: "paymentMethod",
     header: "Método de Pagamento",
-    cell: ({ row: { original: transaction } }) =>
-      TRANSACTION_PAYMENT_METHOD_LABELS[transaction.paymentMethod],
+    cell: ({ row: { original: transaction } }) => {
+      if (transaction.paymentMethod === "CREDIT_CARD" && transaction.creditCard) {
+        return `${transaction.creditCard.name} (****${transaction.creditCard.lastFourDigits})`;
+      }
+      return TRANSACTION_PAYMENT_METHOD_LABELS[transaction.paymentMethod];
+    },
   },
   {
     accessorKey: "date",
@@ -64,7 +72,10 @@ export const transactionColumns: ColumnDef<SerializedTransaction>[] = [
     cell: ({ row: { original: transaction } }) => {
       return (
         <div className="space-x-1">
-          <EditTransactionButton transaction={transaction} />
+          <EditTransactionButton
+                transaction={transaction}
+                creditCards={creditCards}
+              />
           <Button variant="ghost" size="icon" className="text-muted-foreground">
             <TrashIcon />
           </Button>

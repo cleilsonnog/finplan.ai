@@ -5,13 +5,15 @@ import {
   WalletIcon,
 } from "lucide-react";
 import SummaryCard from "./summary-card";
+import { SerializedCreditCard } from "@/app/_components/add-transaction-button";
 
-interface SummaryCards {
+interface SummaryCardsProps {
   month: string;
   balance: number;
   depositsTotal: number;
   investmentsTotal: number;
   expensesTotal: number;
+  creditCards?: SerializedCreditCard[];
 }
 
 const SummaryCards = async ({
@@ -19,7 +21,8 @@ const SummaryCards = async ({
   depositsTotal,
   expensesTotal,
   investmentsTotal,
-}: SummaryCards) => {
+  creditCards = [],
+}: SummaryCardsProps) => {
   return (
     <div className="space-y-6">
       {/* PRIMEIRO CARD */}
@@ -29,6 +32,7 @@ const SummaryCards = async ({
         title="Saldo"
         amount={balance}
         size="large"
+        creditCards={creditCards}
       />
 
       {/* OUTROS CARDS */}
