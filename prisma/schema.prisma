@@ -23,6 +23,8 @@ model Transaction {
   createdAt     DateTime                 @default(now())
   updatedAt     DateTime                 @updatedAt
   userId        String
+  creditCardId  String?
+  creditCard    CreditCard?              @relation(fields: [creditCardId], references: [id], onDelete: SetNull)
 }
 
 enum TransactionType {
@@ -63,15 +65,16 @@ enum CardBrand {
 }
 
 model CreditCard {
-  id             String    @id @default(uuid())
+  id             String        @id @default(uuid())
   userId         String
   name           String
   lastFourDigits String
   brand          CardBrand
   bank           String
-  limit          Decimal   @db.Decimal(10, 2)
+  limit          Decimal       @db.Decimal(10, 2)
   closingDay     Int
   dueDay         Int
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  transactions   Transaction[]
 }
