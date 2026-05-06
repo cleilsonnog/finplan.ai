@@ -52,3 +52,26 @@ enum TransactionPaymentMethod {
   PIX
   OTHER
 }
+
+enum CardBrand {
+  VISA
+  MASTERCARD
+  ELO
+  AMEX
+  HIPERCARD
+  OTHER
+}
+
+model CreditCard {
+  id             String    @id @default(uuid())
+  userId         String
+  name           String
+  lastFourDigits String
+  brand          CardBrand
+  bank           String
+  limit          Decimal   @db.Decimal(10, 2)
+  closingDay     Int
+  dueDay         Int
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
