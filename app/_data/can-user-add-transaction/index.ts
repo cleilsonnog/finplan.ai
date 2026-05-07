@@ -12,7 +12,7 @@ export const canUserAddTransaction = async () => {
     return true;
   }
   const currentMonthTransactions = await getCurrentMonthTransactions();
-  if (currentMonthTransactions >= 10) {
+  if (currentMonthTransactions >= 15) {
     return false;
   }
   return true;

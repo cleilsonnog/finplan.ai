@@ -9,6 +9,7 @@ import { getDashboard } from "../_data/get-dashboard";
 import ExpensesPerCategory from "./_components/expenses-per-category";
 import LastTransactions from "./_components/last-transactions";
 import { db } from "../_lib/prisma";
+import { canUserAddTransaction } from "../_data/can-user-add-transaction";
 
 interface HomeProps {
   searchParams: Promise<{
@@ -26,9 +27,10 @@ const Home = async ({ searchParams }: HomeProps) => {
   if (monthIsInvalid) {
     redirect(`?month=${new Date().getMonth() + 1}`);
   }
-  const [dashboard, creditCardsRaw] = await Promise.all([
+  const [dashboard, creditCardsRaw, canAddTransaction] = await Promise.all([
     getDashboard(month),
     db.creditCard.findMany({ where: { userId } }),
+    canUserAddTransaction(),
   ]);
   const creditCards = creditCardsRaw.map((c) => ({
     ...c,
@@ -48,6 +50,7 @@ const Home = async ({ searchParams }: HomeProps) => {
               month={month}
               {...dashboard}
               creditCards={creditCards}
+              canUserAddTransaction={canAddTransaction}
             />
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3 md:grid-rows-1 lg:h-full lg:overflow-hidden">
               <TransactionsPieChart {...dashboard} />

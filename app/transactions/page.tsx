@@ -1,8 +1,9 @@
 import { db } from "../_lib/prisma";
-import AddTransactionButton from "../_components/upsert-transaction-dialog";
+import AddTransactionButton from "../_components/add-transaction-button";
 import Navbar from "../_components/navbar";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
+import { canUserAddTransaction } from "../_data/can-user-add-transaction";
 import { ScrollArea } from "../_components/ui/scroll-area";
 import TransactionsTable from "./_components/transactions-table";
 
@@ -11,7 +12,7 @@ const TransactionsPage = async () => {
   if (!userId) {
     redirect("/login");
   }
-  const [transactions, creditCards] = await Promise.all([
+  const [transactions, creditCards, canAddTransaction] = await Promise.all([
     db.transaction.findMany({
       where: { userId },
       include: { creditCard: { select: { name: true, lastFourDigits: true } } },
@@ -19,6 +20,7 @@ const TransactionsPage = async () => {
     db.creditCard.findMany({
       where: { userId },
     }),
+    canUserAddTransaction(),
   ]);
   const serializedTransactions = transactions.map((t) => ({
     ...t,
@@ -35,7 +37,10 @@ const TransactionsPage = async () => {
         {/* TÍTULO E BOTÃO */}
         <div className="flex w-full items-center justify-between">
           <h1 className="text-2xl font-bold">Transações</h1>
-          <AddTransactionButton creditCards={serializedCreditCards} />
+          <AddTransactionButton
+            canUserAddTransaction={canAddTransaction}
+            creditCards={serializedCreditCards}
+          />
         </div>
         <ScrollArea>
           <TransactionsTable

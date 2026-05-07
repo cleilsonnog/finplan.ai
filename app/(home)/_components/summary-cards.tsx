@@ -14,6 +14,7 @@ interface SummaryCardsProps {
   investmentsTotal: number;
   expensesTotal: number;
   creditCards?: SerializedCreditCard[];
+  canUserAddTransaction: boolean;
 }
 
 const SummaryCards = async ({
@@ -22,6 +23,7 @@ const SummaryCards = async ({
   expensesTotal,
   investmentsTotal,
   creditCards = [],
+  canUserAddTransaction,
 }: SummaryCardsProps) => {
   return (
     <div className="space-y-6">
@@ -33,6 +35,7 @@ const SummaryCards = async ({
         amount={balance}
         size="large"
         creditCards={creditCards}
+        canUserAddTransaction={canUserAddTransaction}
       />
 
       {/* OUTROS CARDS */}
