@@ -210,7 +210,7 @@ const UpsertCreditCardDialog = ({
                     <MoneyInput
                       placeholder="Digite o limite..."
                       value={field.value}
-                      onValueChange={({ floatValue }: { floatValue: number }) =>
+                      onValueChange={({ floatValue }: { floatValue?: number }) =>
                         field.onChange(floatValue)
                       }
                       onBlur={field.onBlur}

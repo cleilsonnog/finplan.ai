@@ -3,7 +3,10 @@
 import { Button } from "@/app/_components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/_components/ui/card";
 import { MoneyInput } from "@/app/_components/money-input";
-import { TRANSACTION_CATEGORY_LABELS } from "@/app/_constants/transactions";
+import {
+  TRANSACTION_CATEGORY_LABELS,
+  CustomCategoryOption,
+} from "@/app/_constants/transactions";
 import { TransactionCategory } from "@prisma/client";
 import { useState } from "react";
 import { upsertBudgets } from "../_actions/upsert-budgets";
@@ -19,11 +22,19 @@ const formatCurrency = (value: number) =>
     currency: "BRL",
   }).format(value);
 
+interface BudgetItem {
+  key: string;
+  label: string;
+  category: TransactionCategory;
+  customCategoryId?: string;
+}
+
 interface BudgetFormProps {
   month: number;
   year: number;
   existingBudgets: Record<string, number>;
   initialEditing?: boolean;
+  customCategories?: CustomCategoryOption[];
 }
 
 const BudgetForm = ({
@@ -31,7 +42,22 @@ const BudgetForm = ({
   year,
   existingBudgets,
   initialEditing = false,
+  customCategories = [],
 }: BudgetFormProps) => {
+  const budgetItems: BudgetItem[] = [
+    ...EXPENSE_CATEGORIES.map((category) => ({
+      key: category,
+      label: TRANSACTION_CATEGORY_LABELS[category],
+      category,
+    })),
+    ...customCategories.map((cc) => ({
+      key: `custom:${cc.id}`,
+      label: cc.name,
+      category: TransactionCategory.OTHER,
+      customCategoryId: cc.id,
+    })),
+  ];
+
   const [values, setValues] = useState<Record<string, number>>(existingBudgets);
   const [isEditing, setIsEditing] = useState(initialEditing);
   const [isLoading, setIsLoading] = useState(false);
@@ -42,9 +68,10 @@ const BudgetForm = ({
       await upsertBudgets({
         month,
         year,
-        budgets: EXPENSE_CATEGORIES.map((category) => ({
-          category,
-          amount: values[category] ?? 0,
+        budgets: budgetItems.map((item) => ({
+          category: item.category,
+          customCategoryId: item.customCategoryId,
+          amount: values[item.key] ?? 0,
         })),
       });
       setIsEditing(false);
@@ -89,18 +116,18 @@ const BudgetForm = ({
       <CardContent>
         {isEditing ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {EXPENSE_CATEGORIES.map((category) => (
-              <div key={category} className="space-y-1">
+            {budgetItems.map((item) => (
+              <div key={item.key} className="space-y-1">
                 <label className="text-sm text-muted-foreground">
-                  {TRANSACTION_CATEGORY_LABELS[category]}
+                  {item.label}
                 </label>
                 <MoneyInput
                   placeholder="R$ 0,00"
-                  value={values[category] ?? 0}
-                  onValueChange={({ floatValue }: { floatValue: number }) =>
+                  value={values[item.key] ?? 0}
+                  onValueChange={({ floatValue }: { floatValue?: number }) =>
                     setValues((prev) => ({
                       ...prev,
-                      [category]: floatValue ?? 0,
+                      [item.key]: floatValue ?? 0,
                     }))
                   }
                 />
@@ -109,15 +136,15 @@ const BudgetForm = ({
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {EXPENSE_CATEGORIES.map((category) => {
-              const value = values[category] ?? 0;
+            {budgetItems.map((item) => {
+              const value = values[item.key] ?? 0;
               return (
                 <div
-                  key={category}
+                  key={item.key}
                   className="flex items-center justify-between rounded-lg border p-3"
                 >
                   <span className="text-sm text-muted-foreground">
-                    {TRANSACTION_CATEGORY_LABELS[category]}
+                    {item.label}
                   </span>
                   <span className="text-sm font-medium">
                     {value > 0 ? formatCurrency(value) : "—"}

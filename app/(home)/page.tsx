@@ -33,11 +33,17 @@ const Home = async ({ searchParams }: HomeProps) => {
   const user = await client.users.getUser(userId);
   const hasPremiumPlan =
     user.publicMetadata.subscriptionPlan === "premium";
-  const [dashboard, creditCardsRaw, canAddTransaction] = await Promise.all([
-    getDashboard(month),
-    db.creditCard.findMany({ where: { userId } }),
-    canUserAddTransaction(),
-  ]);
+  const [dashboard, creditCardsRaw, canAddTransaction, customCategories] =
+    await Promise.all([
+      getDashboard(month),
+      db.creditCard.findMany({ where: { userId } }),
+      canUserAddTransaction(),
+      db.customCategory.findMany({
+        where: { userId },
+        orderBy: { name: "asc" },
+        select: { id: true, name: true },
+      }),
+    ]);
   const creditCards = creditCardsRaw.map((c) => ({
     ...c,
     limit: Number(c.limit),
@@ -60,6 +66,7 @@ const Home = async ({ searchParams }: HomeProps) => {
               {...dashboard}
               creditCards={creditCards}
               canUserAddTransaction={canAddTransaction}
+              customCategories={customCategories}
             />
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3 md:grid-rows-1 lg:h-full lg:overflow-hidden">
               <TransactionsPieChart {...dashboard} />

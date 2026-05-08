@@ -39,6 +39,9 @@ const Navbar = () => {
             <Link href="/credit-cards" className={linkClass("/credit-cards")}>
               Cartões
             </Link>
+            <Link href="/categories" className={linkClass("/categories")}>
+              Categorias
+            </Link>
             <Link href="/subscription" className={linkClass("/subscription")}>
               Assinatura
             </Link>
@@ -84,6 +87,13 @@ const Navbar = () => {
             onClick={() => setMenuOpen(false)}
           >
             Cartões
+          </Link>
+          <Link
+            href="/categories"
+            className={linkClass("/categories")}
+            onClick={() => setMenuOpen(false)}
+          >
+            Categorias
           </Link>
           <Link
             href="/subscription"

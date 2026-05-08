@@ -1,6 +1,7 @@
 import AddTransactionButton from "@/app/_components/add-transaction-button";
 import { SerializedCreditCard } from "@/app/_components/add-transaction-button";
 import { Card, CardContent, CardHeader } from "@/app/_components/ui/card";
+import { CustomCategoryOption } from "@/app/_constants/transactions";
 import { ReactNode } from "react";
 
 interface SummaryCardProps {
@@ -10,6 +11,7 @@ interface SummaryCardProps {
   size?: "small" | "large";
   creditCards?: SerializedCreditCard[];
   canUserAddTransaction?: boolean;
+  customCategories?: CustomCategoryOption[];
 }
 
 const SummaryCard = ({
@@ -19,6 +21,7 @@ const SummaryCard = ({
   size = "small",
   creditCards = [],
   canUserAddTransaction = true,
+  customCategories = [],
 }: SummaryCardProps) => {
   return (
     <Card>
@@ -44,6 +47,7 @@ const SummaryCard = ({
           <AddTransactionButton
             canUserAddTransaction={canUserAddTransaction}
             creditCards={creditCards}
+            customCategories={customCategories}
           />
         )}
       </CardContent>

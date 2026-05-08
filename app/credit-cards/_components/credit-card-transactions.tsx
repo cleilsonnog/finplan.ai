@@ -16,7 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/app/_components/ui/table";
-import { TRANSACTION_CATEGORY_LABELS } from "@/app/_constants/transactions";
+import { getCategoryLabel } from "@/app/_utils/category";
 import { TransactionCategory } from "@prisma/client";
 import { useState } from "react";
 
@@ -28,6 +28,7 @@ interface CreditCardTransactionItem {
   date: string;
   creditCardId: string | null;
   creditCardName: string;
+  customCategory?: { id: string; name: string } | null;
 }
 
 interface CreditCardOption {
@@ -104,7 +105,7 @@ const CreditCardTransactions = ({
                     <TableCell className="font-medium">{t.name}</TableCell>
                     <TableCell>{t.creditCardName}</TableCell>
                     <TableCell>
-                      {TRANSACTION_CATEGORY_LABELS[t.category]}
+                      {getCategoryLabel(t.category, t.customCategory)}
                     </TableCell>
                     <TableCell>
                       {new Date(t.date).toLocaleDateString("pt-BR", {

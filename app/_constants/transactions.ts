@@ -124,3 +124,23 @@ export const TRANSACTION_CATEGORY_OPTIONS = [
     label: TRANSACTION_CATEGORY_LABELS[TransactionCategory.UTILITY],
   },
 ];
+
+export interface CustomCategoryOption {
+  id: string;
+  name: string;
+}
+
+export function buildCategoryOptions(
+  customCategories: CustomCategoryOption[] = [],
+) {
+  const options: { value: string; label: string }[] = [
+    ...TRANSACTION_CATEGORY_OPTIONS,
+  ];
+  for (const cc of customCategories) {
+    options.push({
+      value: `custom:${cc.id}`,
+      label: cc.name,
+    });
+  }
+  return options;
+}

@@ -9,6 +9,7 @@ import { z } from "zod";
 const budgetItemSchema = z.object({
   category: z.nativeEnum(TransactionCategory),
   amount: z.number().nonnegative(),
+  customCategoryId: z.string().optional(),
 });
 
 const upsertBudgetsSchema = z.object({
@@ -27,35 +28,36 @@ export const upsertBudgets = async (input: UpsertBudgetsInput) => {
   }
 
   await Promise.all(
-    input.budgets.map((budget) =>
-      budget.amount > 0
-        ? db.budget.upsert({
-            where: {
-              userId_category_month_year: {
-                userId,
-                category: budget.category,
-                month: input.month,
-                year: input.year,
-              },
-            },
-            update: { amount: budget.amount },
-            create: {
-              userId,
-              category: budget.category,
-              month: input.month,
-              year: input.year,
-              amount: budget.amount,
-            },
-          })
-        : db.budget.deleteMany({
-            where: {
-              userId,
-              category: budget.category,
-              month: input.month,
-              year: input.year,
-            },
-          }),
-    ),
+    input.budgets.map(async (budget) => {
+      const customCategoryId = budget.customCategoryId || null;
+      const where = {
+        userId,
+        category: budget.category,
+        customCategoryId,
+        month: input.month,
+        year: input.year,
+      };
+      if (budget.amount > 0) {
+        const existing = await db.budget.findFirst({ where });
+        if (existing) {
+          return db.budget.update({
+            where: { id: existing.id },
+            data: { amount: budget.amount },
+          });
+        }
+        return db.budget.create({
+          data: {
+            userId,
+            category: budget.category,
+            customCategoryId,
+            month: input.month,
+            year: input.year,
+            amount: budget.amount,
+          },
+        });
+      }
+      return db.budget.deleteMany({ where });
+    }),
   );
 
   revalidatePath("/budget");

@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import SummaryCard from "./summary-card";
 import { SerializedCreditCard } from "@/app/_components/add-transaction-button";
+import { CustomCategoryOption } from "@/app/_constants/transactions";
 
 interface SummaryCardsProps {
   month: string;
@@ -15,6 +16,7 @@ interface SummaryCardsProps {
   expensesTotal: number;
   creditCards?: SerializedCreditCard[];
   canUserAddTransaction: boolean;
+  customCategories?: CustomCategoryOption[];
 }
 
 const SummaryCards = async ({
@@ -24,6 +26,7 @@ const SummaryCards = async ({
   investmentsTotal,
   creditCards = [],
   canUserAddTransaction,
+  customCategories = [],
 }: SummaryCardsProps) => {
   return (
     <div className="space-y-6">
@@ -36,6 +39,7 @@ const SummaryCards = async ({
         size="large"
         creditCards={creditCards}
         canUserAddTransaction={canUserAddTransaction}
+        customCategories={customCategories}
       />
 
       {/* OUTROS CARDS */}

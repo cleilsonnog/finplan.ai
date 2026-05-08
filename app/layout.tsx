@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Mulish } from "next/font/google";
-// @ts-ignore
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { dark } from "@clerk/themes";

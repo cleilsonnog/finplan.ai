@@ -21,7 +21,10 @@ const CreditCardsPage = async () => {
     getCreditCardSummary(currentMonth),
     db.transaction.findMany({
       where: { userId, paymentMethod: "CREDIT_CARD", creditCardId: { not: null } },
-      include: { creditCard: { select: { name: true } } },
+      include: {
+        creditCard: { select: { name: true } },
+        customCategory: { select: { id: true, name: true } },
+      },
       orderBy: { date: "desc" },
     }),
   ]);
@@ -37,6 +40,7 @@ const CreditCardsPage = async () => {
     date: t.date.toISOString(),
     creditCardId: t.creditCardId,
     creditCardName: t.creditCard?.name ?? "",
+    customCategory: t.customCategory,
   }));
   const creditCardOptions = creditCards.map((c) => ({
     id: c.id,

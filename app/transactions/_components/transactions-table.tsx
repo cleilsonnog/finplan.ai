@@ -13,17 +13,19 @@ import {
   SelectValue,
 } from "@/app/_components/ui/select";
 import {
-  TRANSACTION_CATEGORY_LABELS,
-  TRANSACTION_CATEGORY_OPTIONS,
   TRANSACTION_PAYMENT_METHOD_LABELS,
   TRANSACTION_PAYMENT_METHOD_OPTIONS,
+  buildCategoryOptions,
+  CustomCategoryOption,
 } from "@/app/_constants/transactions";
+import { getCategoryLabel } from "@/app/_utils/category";
 import { FileDown } from "lucide-react";
-import { TransactionCategory, TransactionPaymentMethod } from "@prisma/client";
+import { TransactionPaymentMethod } from "@prisma/client";
 
 interface TransactionsTableProps {
   transactions: SerializedTransaction[];
   creditCards: SerializedCreditCard[];
+  customCategories?: CustomCategoryOption[];
 }
 
 const formatCurrency = (value: number) =>
@@ -35,16 +37,26 @@ const formatCurrency = (value: number) =>
 const TransactionsTable = ({
   transactions,
   creditCards,
+  customCategories = [],
 }: TransactionsTableProps) => {
   const [category, setCategory] = useState("all");
   const [paymentMethod, setPaymentMethod] = useState("all");
   const [creditCardId, setCreditCardId] = useState("all");
 
-  const columns = createTransactionColumns(creditCards);
+  const columns = createTransactionColumns(creditCards, customCategories);
+  const categoryOptions = buildCategoryOptions(customCategories);
 
   const filtered = useMemo(() => {
     return transactions.filter((t) => {
-      if (category !== "all" && t.category !== category) return false;
+      if (category !== "all") {
+        if (category.startsWith("custom:")) {
+          const customId = category.replace("custom:", "");
+          if (t.customCategoryId !== customId) return false;
+        } else {
+          if (t.category !== category) return false;
+          if (category !== "OTHER" && t.customCategoryId) return false;
+        }
+      }
       if (paymentMethod !== "all" && t.paymentMethod !== paymentMethod)
         return false;
       if (
@@ -69,10 +81,10 @@ const TransactionsTable = ({
 
     doc.setFontSize(9);
     const filters: string[] = [];
-    if (category !== "all")
-      filters.push(
-        `Categoria: ${TRANSACTION_CATEGORY_LABELS[category as TransactionCategory]}`,
-      );
+    if (category !== "all") {
+      const catOpt = categoryOptions.find((o) => o.value === category);
+      filters.push(`Categoria: ${catOpt?.label ?? category}`);
+    }
     if (paymentMethod !== "all")
       filters.push(
         `Método: ${TRANSACTION_PAYMENT_METHOD_LABELS[paymentMethod as TransactionPaymentMethod]}`,
@@ -95,7 +107,7 @@ const TransactionsTable = ({
       }
       return [
         t.name,
-        TRANSACTION_CATEGORY_LABELS[t.category],
+        getCategoryLabel(t.category, t.customCategory),
         method,
         new Date(t.date).toLocaleDateString("pt-BR"),
         formatCurrency(t.amount),
@@ -126,7 +138,7 @@ const TransactionsTable = ({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todas categorias</SelectItem>
-            {TRANSACTION_CATEGORY_OPTIONS.map((opt) => (
+            {categoryOptions.map((opt) => (
               <SelectItem key={opt.value} value={opt.value}>
                 {opt.label}
               </SelectItem>

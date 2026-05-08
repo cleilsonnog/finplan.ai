@@ -12,6 +12,7 @@ import {
 } from "./ui/tooltip";
 import Link from "next/link";
 import { CreditCard } from "@prisma/client";
+import { CustomCategoryOption } from "../_constants/transactions";
 
 export type SerializedCreditCard = Omit<CreditCard, "limit"> & {
   limit: number;
@@ -20,11 +21,13 @@ export type SerializedCreditCard = Omit<CreditCard, "limit"> & {
 interface AddTransactionButtonProps {
   canUserAddTransaction: boolean;
   creditCards?: SerializedCreditCard[];
+  customCategories?: CustomCategoryOption[];
 }
 
 const AddTransactionButton = ({
   canUserAddTransaction,
   creditCards = [],
+  customCategories = [],
 }: AddTransactionButtonProps) => {
   const [dialogIsOpen, setDialogIsOpen] = useState(false);
 
@@ -62,6 +65,7 @@ const AddTransactionButton = ({
         isOpen={dialogIsOpen}
         setIsOpen={setDialogIsOpen}
         creditCards={creditCards}
+        customCategories={customCategories}
       />
     </>
   );

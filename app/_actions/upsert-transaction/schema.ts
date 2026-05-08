@@ -14,6 +14,7 @@ export const upsertTransactionSchema = z
     paymentMethod: z.nativeEnum(TransactionPaymentMethod),
     date: z.date(),
     creditCardId: z.string().optional(),
+    customCategoryId: z.string().optional(),
   })
   .refine(
     (data) =>

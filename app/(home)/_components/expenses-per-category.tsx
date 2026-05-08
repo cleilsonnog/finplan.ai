@@ -1,8 +1,8 @@
 import { CardContent, CardHeader, CardTitle } from "@/app/_components/ui/card";
 import { Progress } from "@/app/_components/ui/progress";
 import { ScrollArea } from "@/app/_components/ui/scroll-area";
-import { TRANSACTION_CATEGORY_LABELS } from "@/app/_constants/transactions";
 import { TotalExpensePerCategory } from "@/app/_data/get-dashboard/types";
+import { getCategoryLabel } from "@/app/_utils/category";
 
 interface ExpensesPerCategoryProps {
   expensesPerCategory: TotalExpensePerCategory[];
@@ -19,10 +19,13 @@ const ExpensesPerCategory = ({
 
       <CardContent className="space-y-6">
         {expensesPerCategory.map((category) => (
-          <div key={category.category} className="space-y-2">
+          <div
+            key={category.customCategoryId ?? category.category}
+            className="space-y-2"
+          >
             <div className="flex w-full justify-between">
               <p className="text-sm font-bold">
-                {TRANSACTION_CATEGORY_LABELS[category.category]}
+                {getCategoryLabel(category.category, category.customCategoryId ? { id: category.customCategoryId, name: category.customCategoryName ?? "" } : null)}
               </p>
               <p className="text-sm font-bold">{category.percentageOfTotal}%</p>
             </div>

@@ -19,6 +19,7 @@ interface UpsertTransactionParams {
   paymentMethod: TransactionPaymentMethod;
   date: Date;
   creditCardId?: string;
+  customCategoryId?: string;
 }
 
 export const upsertTransaction = async (params: UpsertTransactionParams) => {
@@ -27,11 +28,20 @@ export const upsertTransaction = async (params: UpsertTransactionParams) => {
   if (!userId) {
     throw new Error("Unauthorized");
   }
+  if (params.customCategoryId) {
+    const customCategory = await db.customCategory.findFirst({
+      where: { id: params.customCategoryId, userId },
+    });
+    if (!customCategory) {
+      throw new Error("Custom category not found");
+    }
+  }
   const data = {
     ...params,
     userId,
     creditCardId:
       params.paymentMethod === "CREDIT_CARD" ? params.creditCardId : null,
+    customCategoryId: params.customCategoryId || null,
   };
   if (params.id) {
     await db.transaction.update({

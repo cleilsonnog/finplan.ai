@@ -61,24 +61,42 @@ export const getDashboard = async (month: string) => {
       (Number(investmentsTotal || 0) / Number(transactionsTotal)) * 100,
     ),
   };
-  const totalExpensePerCategory: TotalExpensePerCategory[] = (
-    await db.transaction.groupBy({
-      by: ["category"],
-      where: {
-        ...where,
-        type: TransactionType.EXPENSE,
-      },
-      _sum: {
-        amount: true,
-      },
-    })
-  ).map((category) => ({
-    category: category.category,
-    totalAmount: Number(category._sum.amount),
-    percentageOfTotal: Math.round(
-      (Number(category._sum.amount) / Number(expensesTotal)) * 100,
-    ),
-  }));
+  const groupedExpenses = await db.transaction.groupBy({
+    by: ["category", "customCategoryId"],
+    where: {
+      ...where,
+      type: TransactionType.EXPENSE,
+    },
+    _sum: {
+      amount: true,
+    },
+  });
+  const customCategoryIds = groupedExpenses
+    .map((g) => g.customCategoryId)
+    .filter((id): id is string => !!id);
+  const customCategoriesMap: Record<string, string> = {};
+  if (customCategoryIds.length > 0) {
+    const customCats = await db.customCategory.findMany({
+      where: { id: { in: customCategoryIds } },
+      select: { id: true, name: true },
+    });
+    for (const cc of customCats) {
+      customCategoriesMap[cc.id] = cc.name;
+    }
+  }
+  const totalExpensePerCategory: TotalExpensePerCategory[] = groupedExpenses.map(
+    (group) => ({
+      category: group.category,
+      totalAmount: Number(group._sum.amount),
+      percentageOfTotal: Math.round(
+        (Number(group._sum.amount) / Number(expensesTotal)) * 100,
+      ),
+      customCategoryId: group.customCategoryId,
+      customCategoryName: group.customCategoryId
+        ? customCategoriesMap[group.customCategoryId] ?? null
+        : null,
+    }),
+  );
   const lastTransactionsRaw = await db.transaction.findMany({
     where,
     orderBy: { date: "desc" },

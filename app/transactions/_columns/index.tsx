@@ -6,19 +6,22 @@ import { ColumnDef } from "@tanstack/react-table";
 export type SerializedTransaction = Omit<Transaction, "amount"> & {
   amount: number;
   creditCard?: { name: string; lastFourDigits: string } | null;
+  customCategory?: { id: string; name: string } | null;
 };
 import TransactionTypeBadge from "../_components/type-badge";
 import { Button } from "../../_components/ui/button";
 import { TrashIcon } from "lucide-react";
 import {
-  TRANSACTION_CATEGORY_LABELS,
   TRANSACTION_PAYMENT_METHOD_LABELS,
+  CustomCategoryOption,
 } from "@/app/_constants/transactions";
+import { getCategoryLabel } from "@/app/_utils/category";
 import EditTransactionButton from "../_components/edit-transaction-button";
 import { SerializedCreditCard } from "@/app/_components/add-transaction-button";
 
 export const createTransactionColumns = (
   creditCards: SerializedCreditCard[] = [],
+  customCategories: CustomCategoryOption[] = [],
 ): ColumnDef<SerializedTransaction>[] => [
   {
     accessorKey: "name",
@@ -35,7 +38,7 @@ export const createTransactionColumns = (
     accessorKey: "category",
     header: "Categoria",
     cell: ({ row: { original: transaction } }) =>
-      TRANSACTION_CATEGORY_LABELS[transaction.category],
+      getCategoryLabel(transaction.category, transaction.customCategory),
   },
   {
     accessorKey: "paymentMethod",
@@ -75,6 +78,7 @@ export const createTransactionColumns = (
           <EditTransactionButton
                 transaction={transaction}
                 creditCards={creditCards}
+                customCategories={customCategories}
               />
           <Button variant="ghost" size="icon" className="text-muted-foreground">
             <TrashIcon />

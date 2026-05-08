@@ -12,19 +12,33 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model CustomCategory {
+  id           String        @id @default(uuid())
+  userId       String
+  name         String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  transactions Transaction[]
+  budgets      Budget[]
+
+  @@unique([userId, name])
+}
+
 model Transaction {
-  id            String                   @id @default(uuid())
-  name          String
-  type          TransactionType
-  amount        Decimal                  @db.Decimal(10, 2)
-  category      TransactionCategory
-  paymentMethod TransactionPaymentMethod
-  date          DateTime
-  createdAt     DateTime                 @default(now())
-  updatedAt     DateTime                 @updatedAt
-  userId        String
-  creditCardId  String?
-  creditCard    CreditCard?              @relation(fields: [creditCardId], references: [id], onDelete: SetNull)
+  id               String                   @id @default(uuid())
+  name             String
+  type             TransactionType
+  amount           Decimal                  @db.Decimal(10, 2)
+  category         TransactionCategory
+  paymentMethod    TransactionPaymentMethod
+  date             DateTime
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  userId           String
+  creditCardId     String?
+  creditCard       CreditCard?              @relation(fields: [creditCardId], references: [id], onDelete: SetNull)
+  customCategoryId String?
+  customCategory   CustomCategory?          @relation(fields: [customCategoryId], references: [id], onDelete: SetNull)
 }
 
 enum TransactionType {
@@ -65,16 +79,18 @@ enum CardBrand {
 }
 
 model Budget {
-  id        String              @id @default(uuid())
-  userId    String
-  category  TransactionCategory
-  amount    Decimal             @db.Decimal(10, 2)
-  month     Int
-  year      Int
-  createdAt DateTime            @default(now())
-  updatedAt DateTime            @updatedAt
+  id               String              @id @default(uuid())
+  userId           String
+  category         TransactionCategory
+  amount           Decimal             @db.Decimal(10, 2)
+  month            Int
+  year             Int
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  customCategoryId String?
+  customCategory   CustomCategory?     @relation(fields: [customCategoryId], references: [id], onDelete: SetNull)
 
-  @@unique([userId, category, month, year])
+  @@unique([userId, category, customCategoryId, month, year])
 }
 
 model CreditCard {

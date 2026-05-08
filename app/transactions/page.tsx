@@ -12,16 +12,25 @@ const TransactionsPage = async () => {
   if (!userId) {
     redirect("/login");
   }
-  const [transactions, creditCards, canAddTransaction] = await Promise.all([
-    db.transaction.findMany({
-      where: { userId },
-      include: { creditCard: { select: { name: true, lastFourDigits: true } } },
-    }),
-    db.creditCard.findMany({
-      where: { userId },
-    }),
-    canUserAddTransaction(),
-  ]);
+  const [transactions, creditCards, canAddTransaction, customCategories] =
+    await Promise.all([
+      db.transaction.findMany({
+        where: { userId },
+        include: {
+          creditCard: { select: { name: true, lastFourDigits: true } },
+          customCategory: { select: { id: true, name: true } },
+        },
+      }),
+      db.creditCard.findMany({
+        where: { userId },
+      }),
+      canUserAddTransaction(),
+      db.customCategory.findMany({
+        where: { userId },
+        orderBy: { name: "asc" },
+        select: { id: true, name: true },
+      }),
+    ]);
   const serializedTransactions = transactions.map((t) => ({
     ...t,
     amount: Number(t.amount),
@@ -40,12 +49,14 @@ const TransactionsPage = async () => {
           <AddTransactionButton
             canUserAddTransaction={canAddTransaction}
             creditCards={serializedCreditCards}
+            customCategories={customCategories}
           />
         </div>
         <ScrollArea>
           <TransactionsTable
             transactions={serializedTransactions}
             creditCards={serializedCreditCards}
+            customCategories={customCategories}
           />
         </ScrollArea>
       </div>

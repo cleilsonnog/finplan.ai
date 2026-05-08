@@ -1,13 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/_components/ui/card";
 import { Progress } from "@/app/_components/ui/progress";
-import {
-  TRANSACTION_CATEGORY_LABELS,
-} from "@/app/_constants/transactions";
 import { TransactionCategory } from "@prisma/client";
 import { AlertTriangleIcon } from "lucide-react";
 
 interface CategoryBudget {
   category: TransactionCategory;
+  customCategoryId?: string | null;
+  label: string;
   budgeted: number;
   spent: number;
 }
@@ -80,15 +79,15 @@ const BudgetProgress = ({
               seus gastos.
             </p>
           )}
-          {categories.map(({ category, budgeted, spent }) => {
+          {categories.map(({ category, customCategoryId, label, budgeted, spent }) => {
             const percentage =
               budgeted > 0 ? Math.min((spent / budgeted) * 100, 100) : 0;
             const isOver = spent > budgeted;
             return (
-              <div key={category} className="space-y-2">
+              <div key={customCategoryId ?? category} className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-2 text-sm font-medium">
-                    {TRANSACTION_CATEGORY_LABELS[category]}
+                    {label}
                     {isOver && (
                       <AlertTriangleIcon className="h-4 w-4 text-red-500" />
                     )}

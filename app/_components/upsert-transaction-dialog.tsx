@@ -28,9 +28,10 @@ import {
   SelectValue,
 } from "./ui/select";
 import {
-  TRANSACTION_CATEGORY_OPTIONS,
   TRANSACTION_PAYMENT_METHOD_OPTIONS,
   TRANSACTION_TYPE_OPTIONS,
+  buildCategoryOptions,
+  CustomCategoryOption,
 } from "../_constants/transactions";
 import { DatePicker } from "./ui/date-picker";
 import { z } from "zod";
@@ -51,6 +52,7 @@ interface UpsertTransactionDialogProps {
   transactionId?: string;
   setIsOpen: (isOpen: boolean) => void;
   creditCards?: SerializedCreditCard[];
+  customCategories?: CustomCategoryOption[];
 }
 
 const formSchema = z
@@ -68,7 +70,7 @@ const formSchema = z
     type: z.nativeEnum(TransactionType, {
       required_error: "O tipo é obrigatório.",
     }),
-    category: z.nativeEnum(TransactionCategory, {
+    categoryValue: z.string({
       required_error: "A categoria é obrigatória.",
     }),
     paymentMethod: z.nativeEnum(TransactionPaymentMethod, {
@@ -91,18 +93,35 @@ const formSchema = z
 
 type FormSchema = z.infer<typeof formSchema>;
 
+function parseCategoryValue(value: string) {
+  if (value.startsWith("custom:")) {
+    return {
+      category: TransactionCategory.OTHER,
+      customCategoryId: value.replace("custom:", ""),
+    };
+  }
+  return {
+    category: value as TransactionCategory,
+    customCategoryId: undefined,
+  };
+}
+
+
 const UpsertTransactionDialog = ({
   isOpen,
   defaultValues,
   transactionId,
   setIsOpen,
   creditCards = [],
+  customCategories = [],
 }: UpsertTransactionDialogProps) => {
+  const categoryOptions = buildCategoryOptions(customCategories);
+
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: defaultValues ?? {
       amount: 50,
-      category: TransactionCategory.OTHER,
+      categoryValue: TransactionCategory.OTHER,
       date: new Date(),
       name: "",
       paymentMethod: TransactionPaymentMethod.CASH,
@@ -122,7 +141,20 @@ const UpsertTransactionDialog = ({
 
   const onSubmit = async (data: FormSchema) => {
     try {
-      await upsertTransaction({ ...data, id: transactionId });
+      const { category, customCategoryId } = parseCategoryValue(
+        data.categoryValue,
+      );
+      await upsertTransaction({
+        name: data.name,
+        amount: data.amount,
+        type: data.type,
+        category,
+        customCategoryId,
+        paymentMethod: data.paymentMethod,
+        date: data.date,
+        creditCardId: data.creditCardId,
+        id: transactionId,
+      });
       setIsOpen(false);
       form.reset();
     } catch (error) {
@@ -178,7 +210,7 @@ const UpsertTransactionDialog = ({
                     <MoneyInput
                       placeholder="Digite o valor..."
                       value={field.value}
-                      onValueChange={({ floatValue }: { floatValue: number }) =>
+                      onValueChange={({ floatValue }: { floatValue?: number }) =>
                         field.onChange(floatValue)
                       }
                       onBlur={field.onBlur}
@@ -218,7 +250,7 @@ const UpsertTransactionDialog = ({
             />
             <FormField
               control={form.control}
-              name="category"
+              name="categoryValue"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Categoria</FormLabel>
@@ -232,7 +264,7 @@ const UpsertTransactionDialog = ({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {TRANSACTION_CATEGORY_OPTIONS.map((option) => (
+                      {categoryOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
                         </SelectItem>

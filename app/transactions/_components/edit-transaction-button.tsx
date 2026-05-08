@@ -3,6 +3,7 @@
 import { Button } from "@/app/_components/ui/button";
 import UpsertTransactionDialog from "@/app/_components/upsert-transaction-dialog";
 import { SerializedCreditCard } from "@/app/_components/add-transaction-button";
+import { CustomCategoryOption } from "@/app/_constants/transactions";
 import { SerializedTransaction } from "../_columns";
 import { PencilIcon } from "lucide-react";
 import { useState } from "react";
@@ -10,13 +11,20 @@ import { useState } from "react";
 interface EditTransactionButtonProps {
   transaction: SerializedTransaction;
   creditCards?: SerializedCreditCard[];
+  customCategories?: CustomCategoryOption[];
 }
 
 const EditTransactionButton = ({
   transaction,
   creditCards = [],
+  customCategories = [],
 }: EditTransactionButtonProps) => {
   const [dialogIsOpen, setDialogIsOpen] = useState(false);
+
+  const categoryValue =
+    transaction.category === "OTHER" && transaction.customCategoryId
+      ? `custom:${transaction.customCategoryId}`
+      : transaction.category;
 
   return (
     <>
@@ -32,12 +40,17 @@ const EditTransactionButton = ({
         isOpen={dialogIsOpen}
         setIsOpen={setDialogIsOpen}
         defaultValues={{
-          ...transaction,
+          name: transaction.name,
           amount: Number(transaction.amount),
+          type: transaction.type,
+          categoryValue,
+          paymentMethod: transaction.paymentMethod,
+          date: new Date(transaction.date),
           creditCardId: transaction.creditCardId ?? undefined,
         }}
         transactionId={transaction.id}
         creditCards={creditCards}
+        customCategories={customCategories}
       />
     </>
   );

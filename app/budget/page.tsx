@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import BudgetForm from "./_components/budget-form";
 import BudgetProgress from "./_components/budget-progress";
+import { getCategoryKey, getCategoryLabel } from "../_utils/category";
 
 export const dynamic = "force-dynamic";
 
@@ -20,8 +21,17 @@ const BudgetPage = async () => {
   const month = now.getMonth() + 1;
   const year = now.getFullYear();
 
+  const [customCategories] = await Promise.all([
+    db.customCategory.findMany({
+      where: { userId },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    }),
+  ]);
+
   let budgets = await db.budget.findMany({
     where: { userId, month, year },
+    include: { customCategory: { select: { id: true, name: true } } },
   });
 
   // Se não há orçamento no mês atual, copiar do mês anterior
@@ -36,6 +46,7 @@ const BudgetPage = async () => {
         data: previousBudgets.map((b) => ({
           userId,
           category: b.category,
+          customCategoryId: b.customCategoryId,
           amount: b.amount,
           month,
           year,
@@ -43,12 +54,13 @@ const BudgetPage = async () => {
       });
       budgets = await db.budget.findMany({
         where: { userId, month, year },
+        include: { customCategory: { select: { id: true, name: true } } },
       });
     }
   }
 
   const expenses = await db.transaction.groupBy({
-    by: ["category"],
+    by: ["category", "customCategoryId"],
     where: {
       userId,
       type: "EXPENSE",
@@ -62,21 +74,28 @@ const BudgetPage = async () => {
 
   const existingBudgets: Record<string, number> = {};
   for (const b of budgets) {
-    existingBudgets[b.category] = Number(b.amount);
+    const key = getCategoryKey(b.category, b.customCategoryId);
+    existingBudgets[key] = Number(b.amount);
   }
 
   const spentByCategory: Record<string, number> = {};
   for (const e of expenses) {
-    spentByCategory[e.category] = Number(e._sum.amount ?? 0);
+    const key = getCategoryKey(e.category, e.customCategoryId);
+    spentByCategory[key] = Number(e._sum.amount ?? 0);
   }
 
   const categories = budgets
     .filter((b) => Number(b.amount) > 0)
-    .map((b) => ({
-      category: b.category as TransactionCategory,
-      budgeted: Number(b.amount),
-      spent: spentByCategory[b.category] ?? 0,
-    }))
+    .map((b) => {
+      const key = getCategoryKey(b.category, b.customCategoryId);
+      return {
+        category: b.category as TransactionCategory,
+        customCategoryId: b.customCategoryId,
+        label: getCategoryLabel(b.category, b.customCategory),
+        budgeted: Number(b.amount),
+        spent: spentByCategory[key] ?? 0,
+      };
+    })
     .sort((a, b) => {
       const aOver = a.spent > a.budgeted ? 1 : 0;
       const bOver = b.spent > b.budgeted ? 1 : 0;
@@ -103,6 +122,7 @@ const BudgetPage = async () => {
             year={year}
             existingBudgets={existingBudgets}
             initialEditing={!hasBudgets}
+            customCategories={customCategories}
           />
           <BudgetProgress
             categories={categories}
