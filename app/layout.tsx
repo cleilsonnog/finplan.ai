@@ -9,9 +9,62 @@ const mulish = Mulish({
   subsets: ["latin-ext"],
 });
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://finplan.ai";
+
 export const metadata: Metadata = {
-  title: "FinPlan.ai",
-  description: "Gestão de finanças pessoais com IA",
+  title: {
+    default: "FinPlan.ai — Planeje hoje. Garanta amanhã.",
+    template: "%s | FinPlan.ai",
+  },
+  description:
+    "Organize suas finanças pessoais com inteligência artificial. Controle transações, orçamentos, cartões de crédito e receba relatórios com insights personalizados.",
+  keywords: [
+    "finanças pessoais",
+    "controle financeiro",
+    "orçamento",
+    "gestão financeira",
+    "inteligência artificial",
+    "planejamento financeiro",
+    "transações",
+    "cartão de crédito",
+    "finplan",
+    "finplan.ai",
+  ],
+  authors: [{ name: "FinPlan.ai" }],
+  creator: "FinPlan.ai",
+  metadataBase: new URL(APP_URL),
+  openGraph: {
+    type: "website",
+    locale: "pt_BR",
+    url: APP_URL,
+    siteName: "FinPlan.ai",
+    title: "FinPlan.ai — Planeje hoje. Garanta amanhã.",
+    description:
+      "Organize suas finanças pessoais com inteligência artificial. Controle transações, orçamentos e receba relatórios com insights personalizados.",
+    images: [
+      {
+        url: "/finplan-ai.png",
+        width: 512,
+        height: 512,
+        alt: "FinPlan.ai — Gestão de finanças pessoais com IA",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary",
+    title: "FinPlan.ai — Planeje hoje. Garanta amanhã.",
+    description:
+      "Organize suas finanças pessoais com inteligência artificial. Controle transações, orçamentos e receba relatórios com insights.",
+    images: ["/finplan-ai.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+    },
+  },
   icons: {
     icon: "/icon-finplanai-pwa.svg",
     apple: "/icon-finplanai-pwa.svg",
@@ -29,7 +82,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="pt-BR">
       <body className={`${mulish.className} dark antialiased`}>
         <ClerkProvider appearance={{ baseTheme: dark }}>
           {children}
