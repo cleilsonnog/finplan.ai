@@ -33,6 +33,9 @@ const Navbar = () => {
             <Link href="/transactions" className={linkClass("/transactions")}>
               Transações
             </Link>
+            <Link href="/budget" className={linkClass("/budget")}>
+              Orçamento
+            </Link>
             <Link href="/credit-cards" className={linkClass("/credit-cards")}>
               Cartões
             </Link>
@@ -67,6 +70,13 @@ const Navbar = () => {
             onClick={() => setMenuOpen(false)}
           >
             Transações
+          </Link>
+          <Link
+            href="/budget"
+            className={linkClass("/budget")}
+            onClick={() => setMenuOpen(false)}
+          >
+            Orçamento
           </Link>
           <Link
             href="/credit-cards"
