@@ -20,12 +20,15 @@ const Navbar = () => {
     <nav className="border-b border-solid">
       <div className="flex items-center justify-between px-4 py-4 sm:px-8">
         <div className="flex items-center gap-10">
-          <Image
-            src="/logo-finplanai-nav.svg"
-            width={173}
-            height={39}
-            alt="Finance AI"
-          />
+          <Link href="/" className="flex items-center gap-2">
+            <Image
+              src="/icon-finplanai-pwa.svg"
+              width={36}
+              height={36}
+              alt="FinPlan AI"
+            />
+            <span className="text-lg font-bold hidden sm:inline">FinPlan.ai</span>
+          </Link>
           <div className="hidden md:flex items-center gap-10">
             <Link href="/" className={linkClass("/")}>
               Dashboard

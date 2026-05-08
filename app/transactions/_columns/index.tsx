@@ -9,8 +9,7 @@ export type SerializedTransaction = Omit<Transaction, "amount"> & {
   customCategory?: { id: string; name: string } | null;
 };
 import TransactionTypeBadge from "../_components/type-badge";
-import { Button } from "../../_components/ui/button";
-import { TrashIcon } from "lucide-react";
+import DeleteTransactionButton from "../_components/delete-transaction-button";
 import {
   TRANSACTION_PAYMENT_METHOD_LABELS,
   CustomCategoryOption,
@@ -80,9 +79,7 @@ export const createTransactionColumns = (
                 creditCards={creditCards}
                 customCategories={customCategories}
               />
-          <Button variant="ghost" size="icon" className="text-muted-foreground">
-            <TrashIcon />
-          </Button>
+          <DeleteTransactionButton transactionId={transaction.id} />
         </div>
       );
     },
