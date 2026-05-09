@@ -110,9 +110,9 @@ const BudgetPage = async () => {
     monthName.charAt(0).toUpperCase() + monthName.slice(1);
 
   return (
-    <>
+    <div className="flex h-full flex-col overflow-hidden">
       <Navbar />
-      <div className="space-y-6 overflow-auto p-4 md:p-6">
+      <div className="flex-1 space-y-6 overflow-auto p-4 md:p-6">
         <h1 className="text-2xl font-bold">
           Orçamento Mensal — {capitalizedMonth}
         </h1>
@@ -131,7 +131,7 @@ const BudgetPage = async () => {
           />
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

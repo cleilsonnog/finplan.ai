@@ -82,8 +82,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR">
-      <body className={`${mulish.className} dark antialiased`}>
+    <html lang="pt-BR" className="h-full">
+      <body className={`${mulish.className} dark antialiased h-full`}>
         <ClerkProvider appearance={{ baseTheme: dark }}>
           {children}
           <PwaInstallPrompt />

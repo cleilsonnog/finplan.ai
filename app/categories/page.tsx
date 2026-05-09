@@ -21,9 +21,9 @@ const CategoriesPage = async () => {
 
   if (!hasPremiumPlan) {
     return (
-      <>
+      <div className="flex h-full flex-col overflow-hidden">
         <Navbar />
-        <div className="flex flex-col items-center justify-center gap-4 p-6 pt-20">
+        <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6">
           <h1 className="text-2xl font-bold">Categorias Customizadas</h1>
           <p className="text-muted-foreground">
             Categorias customizadas estão disponíveis apenas no plano premium.
@@ -35,7 +35,7 @@ const CategoriesPage = async () => {
             </Link>
           </Button>
         </div>
-      </>
+      </div>
     );
   }
 
@@ -45,15 +45,15 @@ const CategoriesPage = async () => {
   });
 
   return (
-    <>
+    <div className="flex h-full flex-col overflow-hidden">
       <Navbar />
-      <div className="space-y-6 overflow-auto p-4 md:p-6">
+      <div className="flex-1 space-y-6 overflow-auto p-4 md:p-6">
         <h1 className="text-2xl font-bold">Categorias Customizadas</h1>
         <div className="max-w-xl">
           <CategoryList categories={categories} />
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

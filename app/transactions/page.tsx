@@ -40,10 +40,9 @@ const TransactionsPage = async () => {
     limit: Number(c.limit),
   }));
   return (
-    <>
+    <div className="flex h-full flex-col overflow-hidden">
       <Navbar />
-      <div className="space-y-6 overflow-auto p-4 md:p-6">
-        {/* TÍTULO E BOTÃO */}
+      <div className="flex flex-1 flex-col space-y-6 overflow-hidden p-4 md:p-6">
         <div className="flex w-full items-center justify-between">
           <h1 className="text-2xl font-bold">Transações</h1>
           <AddTransactionButton
@@ -52,7 +51,7 @@ const TransactionsPage = async () => {
             customCategories={customCategories}
           />
         </div>
-        <ScrollArea>
+        <ScrollArea className="flex-1">
           <TransactionsTable
             transactions={serializedTransactions}
             creditCards={serializedCreditCards}
@@ -60,7 +59,7 @@ const TransactionsPage = async () => {
           />
         </ScrollArea>
       </div>
-    </>
+    </div>
   );
 };
 

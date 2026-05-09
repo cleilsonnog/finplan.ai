@@ -49,9 +49,9 @@ const Home = async ({ searchParams }: HomeProps) => {
     limit: Number(c.limit),
   }));
   return (
-    <>
+    <div className="flex h-full flex-col overflow-hidden">
       <Navbar />
-      <div className="flex h-full flex-col space-y-6 overflow-auto p-4 md:p-6">
+      <div className="flex flex-1 flex-col space-y-6 overflow-auto p-4 md:p-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Dashboard</h1>
           <div className="flex items-center gap-3">
@@ -78,7 +78,7 @@ const Home = async ({ searchParams }: HomeProps) => {
           <LastTransactions lastTransactions={dashboard.lastTransactions} />
         </div>
       </div>
-    </>
+    </div>
   );
 };
 
