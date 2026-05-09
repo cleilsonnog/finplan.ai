@@ -55,42 +55,32 @@ interface UpsertTransactionDialogProps {
   customCategories?: CustomCategoryOption[];
 }
 
-const formSchema = z
-  .object({
-    name: z.string().trim().min(1, {
-      message: "O nome é obrigatório.",
+const formSchema = z.object({
+  name: z.string().trim().min(1, {
+    message: "O nome é obrigatório.",
+  }),
+  amount: z
+    .number({
+      required_error: "O valor é obrigatório.",
+    })
+    .positive({
+      message: "O valor deve ser positivo.",
     }),
-    amount: z
-      .number({
-        required_error: "O valor é obrigatório.",
-      })
-      .positive({
-        message: "O valor deve ser positivo.",
-      }),
-    type: z.nativeEnum(TransactionType, {
-      required_error: "O tipo é obrigatório.",
-    }),
-    categoryValue: z.string({
-      required_error: "A categoria é obrigatória.",
-    }),
-    paymentMethod: z.nativeEnum(TransactionPaymentMethod, {
-      required_error: "O método de pagamento é obrigatório.",
-    }),
-    date: z.date({
-      required_error: "A data é obrigatória.",
-    }),
-    creditCardId: z.string().optional(),
-    installments: z.number().int().min(1).max(48),
-  })
-  .refine(
-    (data) =>
-      data.paymentMethod !== TransactionPaymentMethod.CREDIT_CARD ||
-      !!data.creditCardId,
-    {
-      message: "O cartão de crédito é obrigatório.",
-      path: ["creditCardId"],
-    },
-  );
+  type: z.nativeEnum(TransactionType, {
+    required_error: "O tipo é obrigatório.",
+  }),
+  categoryValue: z.string({
+    required_error: "A categoria é obrigatória.",
+  }),
+  paymentMethod: z.nativeEnum(TransactionPaymentMethod, {
+    required_error: "O método de pagamento é obrigatório.",
+  }),
+  date: z.date({
+    required_error: "A data é obrigatória.",
+  }),
+  creditCardId: z.string().optional(),
+  installments: z.number().int().min(1).max(48),
+});
 
 type FormSchema = z.infer<typeof formSchema>;
 
@@ -121,7 +111,7 @@ const UpsertTransactionDialog = ({
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: defaultValues ?? {
-      amount: 50,
+      amount: undefined as unknown as number,
       categoryValue: TransactionCategory.OTHER,
       date: new Date(),
       name: "",
@@ -189,7 +179,7 @@ const UpsertTransactionDialog = ({
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="flex flex-col gap-4 overflow-y-auto px-1"
+            className="flex flex-col gap-4 overflow-y-auto scroll-smooth scrollbar-thin px-1"
           >
             <FormField
               control={form.control}
@@ -306,7 +296,7 @@ const UpsertTransactionDialog = ({
                 </FormItem>
               )}
             />
-            {isCreditCard && (
+            {isCreditCard && creditCards.length > 0 && (
               <>
                 <FormField
                   control={form.control}

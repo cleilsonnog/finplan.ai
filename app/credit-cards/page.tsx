@@ -120,7 +120,7 @@ const CreditCardsPage = async () => {
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <Navbar />
-      <div className="flex flex-1 flex-col space-y-6 overflow-auto p-4 md:p-6">
+      <div className="flex flex-1 flex-col space-y-6 overflow-auto scroll-smooth scrollbar-thin p-4 md:p-6">
         <div className="flex w-full items-center justify-between">
           <h1 className="text-2xl font-bold">Cartões de Crédito</h1>
           <AddCreditCardButton />
