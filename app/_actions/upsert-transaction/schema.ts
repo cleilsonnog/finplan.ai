@@ -15,6 +15,7 @@ export const upsertTransactionSchema = z
     date: z.date(),
     creditCardId: z.string().optional(),
     customCategoryId: z.string().optional(),
+    installments: z.number().int().min(1).max(48).default(1),
   })
   .refine(
     (data) =>

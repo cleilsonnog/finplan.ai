@@ -47,6 +47,7 @@ const EditTransactionButton = ({
           paymentMethod: transaction.paymentMethod,
           date: new Date(transaction.date),
           creditCardId: transaction.creditCardId ?? undefined,
+          installments: transaction.installments ?? 1,
         }}
         transactionId={transaction.id}
         creditCards={creditCards}

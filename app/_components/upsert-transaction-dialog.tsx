@@ -80,6 +80,7 @@ const formSchema = z
       required_error: "A data é obrigatória.",
     }),
     creditCardId: z.string().optional(),
+    installments: z.number().int().min(1).max(48),
   })
   .refine(
     (data) =>
@@ -127,6 +128,7 @@ const UpsertTransactionDialog = ({
       paymentMethod: TransactionPaymentMethod.CASH,
       type: TransactionType.EXPENSE,
       creditCardId: undefined,
+      installments: 1,
     },
   });
 
@@ -136,6 +138,7 @@ const UpsertTransactionDialog = ({
   useEffect(() => {
     if (!isCreditCard) {
       form.setValue("creditCardId", undefined);
+      form.setValue("installments", 1);
     }
   }, [isCreditCard, form]);
 
@@ -153,6 +156,7 @@ const UpsertTransactionDialog = ({
         paymentMethod: data.paymentMethod,
         date: data.date,
         creditCardId: data.creditCardId,
+        installments: data.installments,
         id: transactionId,
       });
       setIsOpen(false);
@@ -303,33 +307,66 @@ const UpsertTransactionDialog = ({
               )}
             />
             {isCreditCard && (
-              <FormField
-                control={form.control}
-                name="creditCardId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cartão de Crédito</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione um cartão..." />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {creditCards.map((card) => (
-                          <SelectItem key={card.id} value={card.id}>
-                            {card.name} (****{card.lastFourDigits})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
+              <>
+                <FormField
+                  control={form.control}
+                  name="creditCardId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Cartão de Crédito</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione um cartão..." />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {creditCards.map((card) => (
+                            <SelectItem key={card.id} value={card.id}>
+                              {card.name} (****{card.lastFourDigits})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                {!isUpdate && (
+                  <FormField
+                    control={form.control}
+                    name="installments"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Parcelas</FormLabel>
+                        <Select
+                          onValueChange={(value) => field.onChange(Number(value))}
+                          defaultValue={String(field.value)}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione as parcelas..." />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {Array.from({ length: 48 }, (_, i) => i + 1).map(
+                              (n) => (
+                                <SelectItem key={n} value={String(n)}>
+                                  {n}x {n === 1 ? "(à vista)" : ""}
+                                </SelectItem>
+                              ),
+                            )}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 )}
-              />
+              </>
             )}
             <FormField
               control={form.control}

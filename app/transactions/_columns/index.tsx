@@ -44,7 +44,11 @@ export const createTransactionColumns = (
     header: "Método de Pagamento",
     cell: ({ row: { original: transaction } }) => {
       if (transaction.paymentMethod === "CREDIT_CARD" && transaction.creditCard) {
-        return `${transaction.creditCard.name} (****${transaction.creditCard.lastFourDigits})`;
+        const cardLabel = `${transaction.creditCard.name} (****${transaction.creditCard.lastFourDigits})`;
+        if (transaction.installments > 1) {
+          return `${cardLabel} - ${transaction.installmentNumber}/${transaction.installments}`;
+        }
+        return cardLabel;
       }
       return TRANSACTION_PAYMENT_METHOD_LABELS[transaction.paymentMethod];
     },
