@@ -1,7 +1,7 @@
 import Navbar from "../_components/navbar";
-import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { db } from "../_lib/prisma";
+import { getEffectiveUserId } from "../_lib/get-effective-user-id";
 import { TransactionCategory } from "@prisma/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -12,10 +12,11 @@ import { getCategoryKey, getCategoryLabel } from "../_utils/category";
 export const dynamic = "force-dynamic";
 
 const BudgetPage = async () => {
-  const { userId } = await auth();
-  if (!userId) {
+  const result = await getEffectiveUserId();
+  if (!result) {
     redirect("/login");
   }
+  const userId = result.effectiveUserId;
 
   const now = new Date();
   const month = now.getMonth() + 1;

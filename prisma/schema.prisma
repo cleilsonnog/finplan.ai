@@ -109,3 +109,25 @@ model CreditCard {
   updatedAt      DateTime      @updatedAt
   transactions   Transaction[]
 }
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+model AccountShare {
+  id        String   @id @default(uuid())
+  ownerId   String
+  memberId  String   @unique
+  createdAt DateTime @default(now())
+}
+
+model AccountShareInvite {
+  id           String       @id @default(uuid())
+  ownerId      String
+  invitedEmail String
+  status       InviteStatus @default(PENDING)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}

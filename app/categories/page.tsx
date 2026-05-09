@@ -1,7 +1,8 @@
 import Navbar from "../_components/navbar";
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { clerkClient } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { db } from "../_lib/prisma";
+import { getEffectiveUserId } from "../_lib/get-effective-user-id";
 import CategoryList from "./_components/category-list";
 import { Button } from "../_components/ui/button";
 import { ArrowRightIcon } from "lucide-react";
@@ -10,10 +11,11 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 const CategoriesPage = async () => {
-  const { userId } = await auth();
-  if (!userId) {
+  const result = await getEffectiveUserId();
+  if (!result) {
     redirect("/login");
   }
+  const userId = result.effectiveUserId;
 
   const client = await clerkClient();
   const user = await client.users.getUser(userId);

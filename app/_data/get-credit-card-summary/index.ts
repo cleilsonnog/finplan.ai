@@ -1,5 +1,5 @@
 import { db } from "@/app/_lib/prisma";
-import { auth } from "@clerk/nextjs/server";
+import { getEffectiveUserId } from "@/app/_lib/get-effective-user-id";
 
 export interface CreditCardSummaryItem {
   card: {
@@ -27,10 +27,9 @@ export interface CreditCardSummary {
 export const getCreditCardSummary = async (
   month: string,
 ): Promise<CreditCardSummary> => {
-  const { userId } = await auth();
-  if (!userId) {
-    throw new Error("Unauthorized");
-  }
+  const result = await getEffectiveUserId();
+  if (!result) throw new Error("Unauthorized");
+  const userId = result.effectiveUserId;
 
   const creditCards = await db.creditCard.findMany({
     where: { userId },

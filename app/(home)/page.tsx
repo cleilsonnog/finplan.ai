@@ -1,4 +1,3 @@
-import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import Navbar from "../_components/navbar";
 import SummaryCards from "./_components/summary-cards";
@@ -12,6 +11,11 @@ import { db } from "../_lib/prisma";
 import { canUserAddTransaction } from "../_data/can-user-add-transaction";
 import AiReportButton from "./_components/ai-report-button";
 import { clerkClient } from "@clerk/nextjs/server";
+import { getEffectiveUserId } from "../_lib/get-effective-user-id";
+import { getShareStatus, getPendingInvitesForUser } from "../_data/get-share-status";
+import ShareAccountButton from "./_components/share-account-button";
+import PendingInvitesBanner from "../_components/pending-invites-banner";
+import SharedAccountBadge from "../_components/shared-account-badge";
 
 interface HomeProps {
   searchParams: Promise<{
@@ -21,28 +25,31 @@ interface HomeProps {
 
 const Home = async ({ searchParams }: HomeProps) => {
   const { month } = await searchParams;
-  const { userId } = await auth();
-  if (!userId) {
+  const result = await getEffectiveUserId();
+  if (!result) {
     redirect("/login");
   }
+  const { effectiveUserId } = result;
   const monthIsInvalid = !month || !isMatch(month, "MM");
   if (monthIsInvalid) {
     redirect(`?month=${new Date().getMonth() + 1}`);
   }
   const client = await clerkClient();
-  const user = await client.users.getUser(userId);
+  const user = await client.users.getUser(effectiveUserId);
   const hasPremiumPlan =
     user.publicMetadata.subscriptionPlan === "premium";
-  const [dashboard, creditCardsRaw, canAddTransaction, customCategories] =
+  const [dashboard, creditCardsRaw, canAddTransaction, customCategories, shareStatus, pendingInvites] =
     await Promise.all([
       getDashboard(month),
-      db.creditCard.findMany({ where: { userId } }),
+      db.creditCard.findMany({ where: { userId: effectiveUserId } }),
       canUserAddTransaction(),
       db.customCategory.findMany({
-        where: { userId },
+        where: { userId: effectiveUserId },
         orderBy: { name: "asc" },
         select: { id: true, name: true },
       }),
+      getShareStatus(),
+      getPendingInvitesForUser(),
     ]);
   const creditCards = creditCardsRaw.map((c) => ({
     ...c,
@@ -52,9 +59,22 @@ const Home = async ({ searchParams }: HomeProps) => {
     <div className="flex h-full flex-col overflow-hidden">
       <Navbar />
       <div className="flex flex-1 flex-col space-y-6 overflow-auto p-4 md:p-6">
+        <PendingInvitesBanner invites={pendingInvites} />
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Dashboard</h1>
           <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold">Dashboard</h1>
+            {shareStatus.role !== "none" && (
+              <SharedAccountBadge
+                role={shareStatus.role}
+                partnerName={shareStatus.partnerName}
+              />
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            <ShareAccountButton
+              hasPremiumPlan={hasPremiumPlan}
+              shareStatus={shareStatus}
+            />
             <AiReportButton month={month} hasPremiumPlan={hasPremiumPlan} />
             <TimeSelect />
           </div>

@@ -4,6 +4,7 @@ import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { dark } from "@clerk/themes";
 import PwaInstallPrompt from "./_components/pwa-install-prompt";
+import { Toaster } from "sonner";
 
 const mulish = Mulish({
   subsets: ["latin-ext"],
@@ -87,6 +88,7 @@ export default function RootLayout({
         <ClerkProvider appearance={{ baseTheme: dark }}>
           {children}
           <PwaInstallPrompt />
+          <Toaster theme="dark" />
         </ClerkProvider>
       </body>
     </html>

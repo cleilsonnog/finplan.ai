@@ -1,17 +1,18 @@
 import { db } from "../_lib/prisma";
 import AddTransactionButton from "../_components/add-transaction-button";
 import Navbar from "../_components/navbar";
-import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { canUserAddTransaction } from "../_data/can-user-add-transaction";
 import { ScrollArea } from "../_components/ui/scroll-area";
 import TransactionsTable from "./_components/transactions-table";
+import { getEffectiveUserId } from "../_lib/get-effective-user-id";
 
 const TransactionsPage = async () => {
-  const { userId } = await auth();
-  if (!userId) {
+  const result = await getEffectiveUserId();
+  if (!result) {
     redirect("/login");
   }
+  const userId = result.effectiveUserId;
   const [transactions, creditCards, canAddTransaction, customCategories] =
     await Promise.all([
       db.transaction.findMany({

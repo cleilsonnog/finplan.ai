@@ -1,14 +1,13 @@
 import { db } from "@/app/_lib/prisma";
 import { TransactionType } from "@prisma/client";
 import { TotalExpensePerCategory, TransactionPercentagePerType } from "./types";
-import { auth } from "@clerk/nextjs/server";
+import { getEffectiveUserId } from "@/app/_lib/get-effective-user-id";
 import { getCreditCardSummary } from "../get-credit-card-summary";
 
 export const getDashboard = async (month: string) => {
-  const { userId } = await auth();
-  if (!userId) {
-    throw new Error("Unauthorized");
-  }
+  const result = await getEffectiveUserId();
+  if (!result) throw new Error("Unauthorized");
+  const userId = result.effectiveUserId;
   const year = new Date().getFullYear();
   const where = {
     userId,

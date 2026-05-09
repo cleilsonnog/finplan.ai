@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/app/_lib/prisma";
-import { auth } from "@clerk/nextjs/server";
+import { getEffectiveUserId } from "@/app/_lib/get-effective-user-id";
 import { TransactionCategory } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -22,10 +22,9 @@ type UpsertBudgetsInput = z.infer<typeof upsertBudgetsSchema>;
 
 export const upsertBudgets = async (input: UpsertBudgetsInput) => {
   upsertBudgetsSchema.parse(input);
-  const { userId } = await auth();
-  if (!userId) {
-    throw new Error("Unauthorized");
-  }
+  const result = await getEffectiveUserId();
+  if (!result) throw new Error("Unauthorized");
+  const userId = result.effectiveUserId;
 
   await Promise.all(
     input.budgets.map(async (budget) => {

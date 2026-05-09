@@ -1,24 +1,27 @@
 "use server";
 
 import { db } from "@/app/_lib/prisma";
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { clerkClient } from "@clerk/nextjs/server";
+import { getEffectiveUserId } from "@/app/_lib/get-effective-user-id";
 import { revalidatePath } from "next/cache";
 import { customCategorySchema } from "./schema";
 
 async function requirePremium() {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+  const result = await getEffectiveUserId();
+  if (!result) throw new Error("Unauthorized");
+  const { effectiveUserId } = result;
   const client = await clerkClient();
-  const user = await client.users.getUser(userId);
+  const user = await client.users.getUser(effectiveUserId);
   if (user.publicMetadata.subscriptionPlan !== "premium") {
     throw new Error("Premium plan required");
   }
-  return userId;
+  return effectiveUserId;
 }
 
 export const listCustomCategories = async () => {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+  const result = await getEffectiveUserId();
+  if (!result) throw new Error("Unauthorized");
+  const userId = result.effectiveUserId;
   return db.customCategory.findMany({
     where: { userId },
     orderBy: { name: "asc" },

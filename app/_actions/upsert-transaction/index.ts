@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/app/_lib/prisma";
-import { auth } from "@clerk/nextjs/server";
+import { getEffectiveUserId } from "@/app/_lib/get-effective-user-id";
 import {
   TransactionCategory,
   TransactionPaymentMethod,
@@ -25,10 +25,9 @@ interface UpsertTransactionParams {
 
 export const upsertTransaction = async (params: UpsertTransactionParams) => {
   upsertTransactionSchema.parse(params);
-  const { userId } = await auth();
-  if (!userId) {
-    throw new Error("Unauthorized");
-  }
+  const result = await getEffectiveUserId();
+  if (!result) throw new Error("Unauthorized");
+  const userId = result.effectiveUserId;
   if (params.customCategoryId) {
     const customCategory = await db.customCategory.findFirst({
       where: { id: params.customCategoryId, userId },

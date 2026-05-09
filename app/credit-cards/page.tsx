@@ -3,19 +3,20 @@ import { DataTable } from "../_components/ui/data-table";
 import { creditCardColumns } from "./_columns";
 import AddCreditCardButton from "../_components/add-credit-card-button";
 import Navbar from "../_components/navbar";
-import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import CreditCardsSummary from "../(home)/_components/credit-cards-summary";
 import DashboardCreditCards from "../(home)/_components/dashboard-credit-cards";
 import { getCreditCardSummary } from "../_data/get-credit-card-summary";
 import CreditCardTransactions from "./_components/credit-card-transactions";
 import CreditCardInstallments from "./_components/credit-card-installments";
+import { getEffectiveUserId } from "../_lib/get-effective-user-id";
 
 const CreditCardsPage = async () => {
-  const { userId } = await auth();
-  if (!userId) {
+  const result = await getEffectiveUserId();
+  if (!result) {
     redirect("/login");
   }
+  const userId = result.effectiveUserId;
   const currentMonth = String(new Date().getMonth() + 1);
   const [creditCards, creditCardSummary, ccTransactions, installmentTransactions] =
     await Promise.all([
