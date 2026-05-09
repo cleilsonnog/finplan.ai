@@ -43,12 +43,20 @@ const SubscriptionPage = async () => {
                 </p>
               </div>
               <div className="flex items-center gap-2">
+                <CheckIcon className="text-primary" />
+                <p>Controle de cartão de crédito</p>
+              </div>
+              <div className="flex items-center gap-2">
                 <XIcon />
                 <p>Relatórios de IA</p>
               </div>
               <div className="flex items-center gap-2">
                 <XIcon />
                 <p>Adicione categorias personalizadas</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <XIcon />
+                <p>Compartilhar Conta</p>
               </div>
             </CardContent>
           </Card>
@@ -76,11 +84,19 @@ const SubscriptionPage = async () => {
               </div>
               <div className="flex items-center gap-2">
                 <CheckIcon className="text-primary" />
+                <p>Controle de cartão de crédito</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckIcon className="text-primary" />
                 <p>Relatórios de IA</p>
               </div>
               <div className="flex items-center gap-2">
                 <CheckIcon className="text-primary" />
                 <p>Adicione categorias personalizadas</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckIcon className="text-primary" />
+                <p>Compartilhar Conta</p>
               </div>
               <AcquirePlanButton />
             </CardContent>
