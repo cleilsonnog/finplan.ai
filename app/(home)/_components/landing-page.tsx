@@ -3,6 +3,7 @@
 import { SignInButton } from "@clerk/nextjs";
 import { Button } from "@/app/_components/ui/button";
 import Image from "next/image";
+import WhatsAppFloatButton from "@/app/_components/whatsapp-float-button";
 import {
   ArrowRightIcon,
   BarChart3Icon,
@@ -423,6 +424,8 @@ const LandingPage = () => {
           </p>
         </div>
       </footer>
+
+      <WhatsAppFloatButton />
     </div>
   );
 };

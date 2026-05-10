@@ -6,6 +6,7 @@ import { CheckIcon, XIcon } from "lucide-react";
 import AcquirePlanButton from "./_components/acquire-plan-button";
 import { Badge } from "../_components/ui/badge";
 import { getCurrentMonthTransactions } from "@/app/_data/get-current-month-transactions";
+import WhatsAppFloatButton from "../_components/whatsapp-float-button";
 
 const SubscriptionPage = async () => {
   const { userId } = await auth();
@@ -103,6 +104,7 @@ const SubscriptionPage = async () => {
           </Card>
         </div>
       </div>
+      <WhatsAppFloatButton />
     </div>
   );
 };

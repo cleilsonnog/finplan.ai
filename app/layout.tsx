@@ -10,7 +10,7 @@ const mulish = Mulish({
   subsets: ["latin-ext"],
 });
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://finplan.ai";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://finplanai.nogueiradev.com";
 
 export const metadata: Metadata = {
   title: {
@@ -44,9 +44,10 @@ export const metadata: Metadata = {
       "Organize suas finanças pessoais com inteligência artificial. Controle transações, orçamentos e receba relatórios com insights personalizados.",
     images: [
       {
-        url: "/og-image.png",
+        url: `${APP_URL}/og-image.png`,
         width: 1200,
         height: 630,
+        type: "image/png",
         alt: "FinPlan.ai — Gestão de finanças pessoais com IA",
       },
     ],
@@ -56,7 +57,7 @@ export const metadata: Metadata = {
     title: "FinPlan.ai — Planeje hoje. Garanta amanhã.",
     description:
       "Organize suas finanças pessoais com inteligência artificial. Controle transações, orçamentos e receba relatórios com insights.",
-    images: ["/og-image.png"],
+    images: [`${APP_URL}/og-image.png`],
   },
   robots: {
     index: true,
