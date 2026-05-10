@@ -16,6 +16,7 @@ import { getShareStatus, getPendingInvitesForUser } from "../_data/get-share-sta
 import ShareAccountButton from "./_components/share-account-button";
 import PendingInvitesBanner from "../_components/pending-invites-banner";
 import SharedAccountBadge from "../_components/shared-account-badge";
+import LandingPage from "./_components/landing-page";
 
 interface HomeProps {
   searchParams: Promise<{
@@ -24,11 +25,11 @@ interface HomeProps {
 }
 
 const Home = async ({ searchParams }: HomeProps) => {
-  const { month } = await searchParams;
   const result = await getEffectiveUserId();
   if (!result) {
-    redirect("/login");
+    return <LandingPage />;
   }
+  const { month } = await searchParams;
   const { effectiveUserId } = result;
   const monthIsInvalid = !month || !isMatch(month, "MM");
   if (monthIsInvalid) {

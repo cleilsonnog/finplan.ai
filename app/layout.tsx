@@ -44,19 +44,19 @@ export const metadata: Metadata = {
       "Organize suas finanças pessoais com inteligência artificial. Controle transações, orçamentos e receba relatórios com insights personalizados.",
     images: [
       {
-        url: "/finplan-ai.png",
-        width: 512,
-        height: 512,
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
         alt: "FinPlan.ai — Gestão de finanças pessoais com IA",
       },
     ],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "FinPlan.ai — Planeje hoje. Garanta amanhã.",
     description:
       "Organize suas finanças pessoais com inteligência artificial. Controle transações, orçamentos e receba relatórios com insights.",
-    images: ["/finplan-ai.png"],
+    images: ["/og-image.png"],
   },
   robots: {
     index: true,
