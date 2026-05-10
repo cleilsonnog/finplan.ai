@@ -3,7 +3,7 @@
 const WhatsAppFloatButton = () => {
   return (
     <a
-      href="https://wa.me/5522988516223"
+      href="https://wa.me/5522988516223?text=Ol%C3%A1%2C%20vim%20pelo%20FinPlan.ai%20e%20gostaria%20de%20mais%20informa%C3%A7%C3%B5es!"
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Falar no WhatsApp"
