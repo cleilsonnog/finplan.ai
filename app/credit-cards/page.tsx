@@ -9,6 +9,8 @@ import DashboardCreditCards from "../(home)/_components/dashboard-credit-cards";
 import { getCreditCardSummary } from "../_data/get-credit-card-summary";
 import CreditCardTransactions from "./_components/credit-card-transactions";
 import CreditCardInstallments from "./_components/credit-card-installments";
+import CreditCardBills from "./_components/credit-card-bills";
+import { getCreditCardBills } from "../_data/get-credit-card-bills";
 import { getEffectiveUserId } from "../_lib/get-effective-user-id";
 
 const CreditCardsPage = async () => {
@@ -18,10 +20,11 @@ const CreditCardsPage = async () => {
   }
   const userId = result.effectiveUserId;
   const currentMonth = String(new Date().getMonth() + 1);
-  const [creditCards, creditCardSummary, ccTransactions, installmentTransactions] =
+  const [creditCards, creditCardSummary, creditCardBills, ccTransactions, installmentTransactions] =
     await Promise.all([
       db.creditCard.findMany({ where: { userId } }),
       getCreditCardSummary(currentMonth),
+      getCreditCardBills(currentMonth),
       db.transaction.findMany({
         where: {
           userId,
@@ -130,6 +133,11 @@ const CreditCardsPage = async () => {
         <CreditCardsSummary creditCardSummary={creditCardSummary} />
 
         <DashboardCreditCards cards={creditCardSummary.cards} />
+
+        <CreditCardBills
+          bills={creditCardBills}
+          creditCards={creditCardOptions}
+        />
 
         <div className="overflow-x-auto">
           <DataTable

@@ -1,4 +1,11 @@
-import { CardBrand } from "@prisma/client";
+import { BillStatus, CardBrand } from "@prisma/client";
+
+export const BILL_STATUS_LABELS: Record<BillStatus, string> = {
+  OPEN: "Aberta",
+  CLOSED: "Fechada",
+  PAID: "Paga",
+  OVERDUE: "Atrasada",
+};
 
 export const CARD_BRAND_LABELS = {
   VISA: "Visa",

@@ -80,6 +80,31 @@ enum CardBrand {
   OTHER
 }
 
+enum BillStatus {
+  OPEN
+  CLOSED
+  PAID
+  OVERDUE
+}
+
+model CreditCardBill {
+  id           String     @id @default(uuid())
+  creditCardId String
+  creditCard   CreditCard @relation(fields: [creditCardId], references: [id], onDelete: Cascade)
+  month        Int
+  year         Int
+  closingDate  DateTime
+  dueDate      DateTime
+  totalAmount  Decimal    @db.Decimal(10, 2) @default(0)
+  status       BillStatus @default(OPEN)
+  paidAt       DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  userId       String
+
+  @@unique([creditCardId, month, year])
+}
+
 model Budget {
   id               String              @id @default(uuid())
   userId           String
@@ -108,6 +133,7 @@ model CreditCard {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
   transactions   Transaction[]
+  bills          CreditCardBill[]
 }
 
 enum InviteStatus {
