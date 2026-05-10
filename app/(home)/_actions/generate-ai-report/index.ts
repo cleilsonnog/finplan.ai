@@ -24,48 +24,162 @@ export const generateAiReport = async ({ month }: GenerateAiReportSchema) => {
     await new Promise((resolve) => setTimeout(resolve, 1000));
     return DUMMY_REPORT;
   }
+
+  const year = new Date().getFullYear();
+  const monthNum = Number(month);
+  const startDate = new Date(year, monthNum - 1, 1);
+  const endDate = new Date(year, monthNum, 1);
+
+  // Buscar dados em paralelo
   const openAi = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
   });
-  // pegar as transações do mês recebido
-  const transactions = await db.transaction.findMany({
-    where: {
-      date: {
-        gte: new Date(`2026-${month}-01`),
-        lt: new Date(`2026-${month}-31`),
+
+  const [transactions, budgets, creditCards, bills] = await Promise.all([
+    db.transaction.findMany({
+      where: {
+        userId,
+        date: { gte: startDate, lt: endDate },
       },
-    },
-    include: {
-      customCategory: { select: { name: true } },
-    },
-  });
-  // mandar as transações para o ChatGPT e pedir para ele gerar um relatório com insights
-  const content = `Gere um relatório com insights sobre as minhas finanças, com dicas e orientações de como melhorar minha vida financeira. As transações estão divididas por ponto e vírgula. A estrutura de cada uma é {DATA}-{TIPO}-{VALOR}-{CATEGORIA}. São elas:
-  ${transactions
-    .map(
-      (transaction) => {
-        const categoryName =
-          transaction.category === "OTHER" && transaction.customCategory
-            ? transaction.customCategory.name
-            : transaction.category;
-        return `${transaction.date.toLocaleDateString("pt-BR")}-R$${transaction.amount}-${transaction.type}-${categoryName}`;
+      include: {
+        customCategory: { select: { name: true } },
+        creditCard: { select: { name: true, lastFourDigits: true } },
       },
-    )
-    .join(";")}`;
+      orderBy: { date: "asc" },
+    }),
+    db.budget.findMany({
+      where: { userId, month: monthNum, year },
+      include: { customCategory: { select: { name: true } } },
+    }),
+    db.creditCard.findMany({
+      where: { userId },
+    }),
+    db.creditCardBill.findMany({
+      where: { userId, month: monthNum, year },
+      include: { creditCard: { select: { name: true, lastFourDigits: true } } },
+    }),
+  ]);
+
+  // Formatar transações
+  const transactionsText = transactions
+    .map((t) => {
+      const categoryName =
+        t.category === "OTHER" && t.customCategory
+          ? t.customCategory.name
+          : t.category;
+      const card = t.creditCard
+        ? ` | Cartão: ${t.creditCard.name} (****${t.creditCard.lastFourDigits})`
+        : "";
+      const installment =
+        t.installments > 1
+          ? ` | Parcela ${t.installmentNumber}/${t.installments}`
+          : "";
+      return `${t.date.toLocaleDateString("pt-BR")} | ${t.type} | R$${Number(t.amount).toFixed(2)} | ${categoryName} | ${t.paymentMethod} | "${t.name}"${card}${installment}`;
+    })
+    .join("\n");
+
+  // Formatar orçamentos
+  const budgetsText =
+    budgets.length > 0
+      ? budgets
+          .map((b) => {
+            const catName =
+              b.category === "OTHER" && b.customCategory
+                ? b.customCategory.name
+                : b.category;
+            return `${catName}: R$${Number(b.amount).toFixed(2)}`;
+          })
+          .join("\n")
+      : "Nenhum orçamento definido";
+
+  // Formatar cartões e faturas
+  const creditCardsText =
+    creditCards.length > 0
+      ? creditCards
+          .map((cc) => {
+            const bill = bills.find((b) => b.creditCardId === cc.id);
+            const billInfo = bill
+              ? `Fatura: R$${Number(bill.totalAmount).toFixed(2)} (${bill.status}) | Fecha dia ${cc.closingDay} | Vence dia ${cc.dueDay}`
+              : "Sem fatura no mês";
+            return `${cc.name} (****${cc.lastFourDigits}) | Limite: R$${Number(cc.limit).toFixed(2)} | ${billInfo}`;
+          })
+          .join("\n")
+      : "Nenhum cartão cadastrado";
+
+  // Calcular resumo
+  const totalDeposits = transactions
+    .filter((t) => t.type === "DEPOSIT")
+    .reduce((sum, t) => sum + Number(t.amount), 0);
+  const totalExpenses = transactions
+    .filter((t) => t.type === "EXPENSE")
+    .reduce((sum, t) => sum + Number(t.amount), 0);
+  const totalInvestments = transactions
+    .filter((t) => t.type === "INVESTMENT")
+    .reduce((sum, t) => sum + Number(t.amount), 0);
+  const balance = totalDeposits - totalExpenses - totalInvestments;
+
+  const monthNames = [
+    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+  ];
+
+  const userContent = `Analise meus dados financeiros de ${monthNames[monthNum - 1]}/${year} e gere um relatório completo.
+
+## RESUMO DO MÊS
+- Receitas (depósitos): R$${totalDeposits.toFixed(2)}
+- Despesas: R$${totalExpenses.toFixed(2)}
+- Investimentos: R$${totalInvestments.toFixed(2)}
+- Saldo: R$${balance.toFixed(2)}
+- Total de transações: ${transactions.length}
+
+## TRANSAÇÕES
+${transactionsText || "Nenhuma transação no período"}
+
+## ORÇAMENTOS DEFINIDOS
+${budgetsText}
+
+## CARTÕES DE CRÉDITO
+${creditCardsText}`;
+
   const completion = await openAi.chat.completions.create({
     model: "gpt-4o-mini",
     messages: [
       {
         role: "system",
-        content:
-          "Você é um especialista em gestão e organização de finanças pessoais. Você ajuda as pessoas a organizarem melhor as suas finanças.",
+        content: `Você é o FinPlan AI, um consultor financeiro pessoal inteligente e experiente. Seu papel é analisar os dados financeiros do usuário e gerar relatórios detalhados, personalizados e acionáveis.
+
+## DIRETRIZES
+- Responda sempre em português brasileiro
+- Use formatação Markdown com títulos, listas e negrito para destaque
+- Seja direto, prático e específico — evite conselhos genéricos
+- Base suas análises nos DADOS REAIS fornecidos, não invente números
+- Use emojis com moderação para tornar o relatório mais visual
+- Valores monetários sempre no formato R$ X.XXX,XX
+
+## ESTRUTURA DO RELATÓRIO
+1. **Resumo Executivo** — visão geral da saúde financeira do mês (receitas vs despesas, saldo)
+2. **Análise de Gastos por Categoria** — ranking das categorias com maior gasto, percentual sobre o total
+3. **Cartões de Crédito** — análise do uso dos cartões, nível de comprometimento do limite, faturas abertas/atrasadas, alerta se uso > 30% do limite
+4. **Orçamento vs Realidade** — se o usuário definiu orçamentos, compare o planejado com o realizado por categoria e destaque estouros
+5. **Compras Parceladas** — identifique parcelas ativas e o comprometimento futuro
+6. **Padrões e Alertas** — identifique padrões de gasto (dias com mais despesas, gastos recorrentes, categorias crescentes)
+7. **Dicas Personalizadas** — 3 a 5 ações concretas e específicas baseadas nos dados do usuário, não conselhos genéricos
+8. **Score do Mês** — dê uma nota de 0 a 10 para a saúde financeira do mês com justificativa
+
+## REGRAS IMPORTANTES
+- Se receitas > despesas, parabenize mas sugira investir o excedente
+- Se despesas > receitas, alerte com urgência e sugira cortes específicos
+- Se há faturas atrasadas (OVERDUE), destaque como prioridade máxima
+- Se não há orçamento definido, recomende criar um
+- Parcelas comprometem renda futura — sempre mencione o impacto
+- Compare o padrão de gastos com boas práticas (ex: moradia até 30% da renda, alimentação até 15%)`,
       },
       {
         role: "user",
-        content,
+        content: userContent,
       },
     ],
   });
-  // pegar o relatório gerado pelo ChatGPT e retornar para o usuário
+
   return completion.choices[0].message.content;
 };
