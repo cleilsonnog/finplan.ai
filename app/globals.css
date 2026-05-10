@@ -80,6 +80,10 @@ body {
   }
 }
 
+.cl-userButtonOuterIdentifier {
+  color: hsl(var(--foreground)) !important;
+}
+
 .scrollbar-thin {
   scrollbar-width: thin;
   scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
