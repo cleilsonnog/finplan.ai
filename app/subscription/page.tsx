@@ -1,4 +1,4 @@
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import Navbar from "../_components/navbar";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader } from "../_components/ui/card";
@@ -7,6 +7,7 @@ import AcquirePlanButton from "./_components/acquire-plan-button";
 import AcquireLifetimeButton from "./_components/acquire-lifetime-button";
 import { Badge } from "../_components/ui/badge";
 import { getCurrentMonthTransactions } from "@/app/_data/get-current-month-transactions";
+import { hasPremiumAccess } from "@/app/_lib/has-premium-access";
 import WhatsAppFloatButton from "../_components/whatsapp-float-button";
 
 const SubscriptionPage = async () => {
@@ -14,10 +15,8 @@ const SubscriptionPage = async () => {
   if (!userId) {
     redirect("/login");
   }
-  const client = await clerkClient();
-  const user = await client.users.getUser(userId);
   const currentMonthTransactions = await getCurrentMonthTransactions();
-  const hasPremiumPlan = user.publicMetadata.subscriptionPlan == "premium";
+  const hasPremiumPlan = await hasPremiumAccess();
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <Navbar />

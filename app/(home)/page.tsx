@@ -10,8 +10,8 @@ import LastTransactions from "./_components/last-transactions";
 import { db } from "../_lib/prisma";
 import { canUserAddTransaction } from "../_data/can-user-add-transaction";
 import AiReportButton from "./_components/ai-report-button";
-import { clerkClient } from "@clerk/nextjs/server";
 import { getEffectiveUserId } from "../_lib/get-effective-user-id";
+import { hasPremiumAccess } from "../_lib/has-premium-access";
 import { getShareStatus, getPendingInvitesForUser } from "../_data/get-share-status";
 import ShareAccountButton from "./_components/share-account-button";
 import PendingInvitesBanner from "../_components/pending-invites-banner";
@@ -35,10 +35,7 @@ const Home = async ({ searchParams }: HomeProps) => {
   if (monthIsInvalid) {
     redirect(`?month=${new Date().getMonth() + 1}`);
   }
-  const client = await clerkClient();
-  const user = await client.users.getUser(effectiveUserId);
-  const hasPremiumPlan =
-    user.publicMetadata.subscriptionPlan === "premium";
+  const hasPremiumPlan = await hasPremiumAccess();
   const [dashboard, creditCardsRaw, canAddTransaction, customCategories, shareStatus, pendingInvites] =
     await Promise.all([
       getDashboard(month),

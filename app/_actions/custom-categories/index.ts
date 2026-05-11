@@ -1,21 +1,19 @@
 "use server";
 
 import { db } from "@/app/_lib/prisma";
-import { clerkClient } from "@clerk/nextjs/server";
 import { getEffectiveUserId } from "@/app/_lib/get-effective-user-id";
+import { hasPremiumAccess } from "@/app/_lib/has-premium-access";
 import { revalidatePath } from "next/cache";
 import { customCategorySchema } from "./schema";
 
 async function requirePremium() {
   const result = await getEffectiveUserId();
   if (!result) throw new Error("Unauthorized");
-  const { effectiveUserId } = result;
-  const client = await clerkClient();
-  const user = await client.users.getUser(effectiveUserId);
-  if (user.publicMetadata.subscriptionPlan !== "premium") {
+  const hasPremium = await hasPremiumAccess();
+  if (!hasPremium) {
     throw new Error("Premium plan required");
   }
-  return effectiveUserId;
+  return result.effectiveUserId;
 }
 
 export const listCustomCategories = async () => {

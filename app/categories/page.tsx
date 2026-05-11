@@ -1,8 +1,8 @@
 import Navbar from "../_components/navbar";
-import { clerkClient } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { db } from "../_lib/prisma";
 import { getEffectiveUserId } from "../_lib/get-effective-user-id";
+import { hasPremiumAccess } from "../_lib/has-premium-access";
 import CategoryList from "./_components/category-list";
 import { Button } from "../_components/ui/button";
 import { ArrowRightIcon } from "lucide-react";
@@ -17,9 +17,7 @@ const CategoriesPage = async () => {
   }
   const userId = result.effectiveUserId;
 
-  const client = await clerkClient();
-  const user = await client.users.getUser(userId);
-  const hasPremiumPlan = user.publicMetadata.subscriptionPlan === "premium";
+  const hasPremiumPlan = await hasPremiumAccess();
 
   if (!hasPremiumPlan) {
     return (

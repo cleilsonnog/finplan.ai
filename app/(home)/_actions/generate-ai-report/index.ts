@@ -1,7 +1,8 @@
 "use server";
 
 import { db } from "@/app/_lib/prisma";
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
+import { hasPremiumAccess } from "@/app/_lib/has-premium-access";
 import OpenAI from "openai";
 import { GenerateAiReportSchema, generateAiReportSchema } from "./schema";
 
@@ -14,10 +15,7 @@ export const generateAiReport = async ({ month }: GenerateAiReportSchema) => {
   if (!userId) {
     throw new Error("Unauthorized");
   }
-  const client = await clerkClient();
-  const user = await client.users.getUser(userId);
-  const hasPremiumPlan = user.publicMetadata.subscriptionPlan === "premium";
-  if (!hasPremiumPlan) {
+  if (!(await hasPremiumAccess())) {
     throw new Error("You need a premium plan to generate AI reports");
   }
   if (!process.env.OPENAI_API_KEY) {
