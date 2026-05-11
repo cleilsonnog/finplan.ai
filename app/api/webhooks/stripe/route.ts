@@ -32,6 +32,36 @@ export const POST = async (request: Request) => {
       case "checkout.session.completed": {
         const session = event.data.object;
         const subscriptionId = session.subscription;
+
+        // Lifetime one-time payment
+        if (
+          !subscriptionId &&
+          session.metadata?.plan_type === "lifetime"
+        ) {
+          const clerkUserId = session.metadata.clerk_user_id;
+          if (!clerkUserId) {
+            console.log(
+              "checkout.session.completed (lifetime): no clerk_user_id",
+            );
+            return NextResponse.json(
+              { error: "Missing clerk_user_id" },
+              { status: 400 },
+            );
+          }
+          const client = await clerkClient();
+          await client.users.updateUser(clerkUserId, {
+            privateMetadata: {
+              stripeCustomerId: session.customer as string,
+              lifetimePurchase: true,
+            },
+            publicMetadata: {
+              subscriptionPlan: "premium",
+            },
+          });
+          break;
+        }
+
+        // Monthly subscription
         if (!subscriptionId) {
           console.log("checkout.session.completed: no subscription, skipping");
           return NextResponse.json({ received: true });
@@ -75,6 +105,16 @@ export const POST = async (request: Request) => {
           );
         }
         const client = await clerkClient();
+        const user = await client.users.getUser(clerkUserId);
+
+        // Don't revoke access for lifetime users
+        if (user.privateMetadata?.lifetimePurchase) {
+          console.log(
+            "subscription.deleted: user has lifetime, keeping premium",
+          );
+          break;
+        }
+
         await client.users.updateUser(clerkUserId, {
           privateMetadata: {
             stripeCustomerId: null,
