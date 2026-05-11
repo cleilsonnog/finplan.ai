@@ -24,6 +24,60 @@ const SubscriptionPage = async () => {
       <div className="flex-1 space-y-6 overflow-auto p-4 md:p-6">
         <h1 className="text-2xl font-bold">Assinatura</h1>
 
+        {/* Promo Vitalício */}
+        {!hasPremiumPlan && (
+          <Card className="relative overflow-hidden border-green-600/50 bg-gradient-to-br from-green-950/40 to-background lg:max-w-[930px]">
+            <div className="absolute right-0 top-0 rounded-bl-lg bg-green-600 px-3 py-1 text-xs font-bold text-white">
+              OFERTA DE LANCAMENTO
+            </div>
+            <CardHeader className="pb-2 pt-8">
+              <div className="flex items-center gap-2">
+                <FlameIcon className="h-6 w-6 text-orange-500" />
+                <h2 className="text-xl font-bold text-green-500">
+                  Acesso Vitalicio Launch Edition
+                </h2>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Os 100 primeiros usuarios terao acesso vitalicio pagando apenas
+                o valor de 1 mensalidade. Sem recorrencia, pague uma vez e use
+                para sempre.
+              </p>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <ZapIcon className="h-4 w-4 text-green-500" />
+                  <p className="text-sm">
+                    Tudo do plano Premium incluso
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <ZapIcon className="h-4 w-4 text-green-500" />
+                  <p className="text-sm">Pagamento unico — sem mensalidade</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <ZapIcon className="h-4 w-4 text-green-500" />
+                  <p className="text-sm">Acesso permanente a todas as funcionalidades</p>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Apenas 100 vagas. Oferta valida apenas para os primeiros
+                  usuarios.
+                </p>
+              </div>
+              <div className="flex flex-col items-center gap-3">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-2xl text-muted-foreground">R$</span>
+                  <span className="text-5xl font-bold text-green-500">
+                    14,99
+                  </span>
+                  <span className="text-sm text-muted-foreground">unico</span>
+                </div>
+                <AcquireLifetimeButton />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <div className="flex flex-col gap-6 lg:flex-row">
           <Card className="w-full lg:w-[450px]">
             <CardHeader className="border-b border-solid py-8">
@@ -104,60 +158,6 @@ const SubscriptionPage = async () => {
             </CardContent>
           </Card>
         </div>
-
-        {/* Promo Vitalício */}
-        {!hasPremiumPlan && (
-          <Card className="relative overflow-hidden border-green-600/50 bg-gradient-to-br from-green-950/40 to-background lg:max-w-[930px]">
-            <div className="absolute right-0 top-0 rounded-bl-lg bg-green-600 px-3 py-1 text-xs font-bold text-white">
-              OFERTA DE LANCAMENTO
-            </div>
-            <CardHeader className="pb-2 pt-8">
-              <div className="flex items-center gap-2">
-                <FlameIcon className="h-6 w-6 text-orange-500" />
-                <h2 className="text-xl font-bold text-green-500">
-                  Acesso Vitalicio Launch Edition
-                </h2>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Os 100 primeiros usuarios terao acesso vitalicio pagando apenas
-                o valor de 1 mensalidade. Sem recorrencia, pague uma vez e use
-                para sempre.
-              </p>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <ZapIcon className="h-4 w-4 text-green-500" />
-                  <p className="text-sm">
-                    Tudo do plano Premium incluso
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <ZapIcon className="h-4 w-4 text-green-500" />
-                  <p className="text-sm">Pagamento unico — sem mensalidade</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <ZapIcon className="h-4 w-4 text-green-500" />
-                  <p className="text-sm">Acesso permanente a todas as funcionalidades</p>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Apenas 100 vagas. Oferta valida apenas para os primeiros
-                  usuarios.
-                </p>
-              </div>
-              <div className="flex flex-col items-center gap-3">
-                <div className="flex items-baseline gap-1">
-                  <span className="text-2xl text-muted-foreground">R$</span>
-                  <span className="text-5xl font-bold text-green-500">
-                    14,99
-                  </span>
-                  <span className="text-sm text-muted-foreground">unico</span>
-                </div>
-                <AcquireLifetimeButton />
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
       <WhatsAppFloatButton />
     </div>

@@ -285,6 +285,77 @@ const LandingPage = () => {
         </div>
       </section>
 
+      {/* PROMO VITALÍCIO */}
+      <section className="border-t border-white/10 bg-gradient-to-b from-green-950/20 to-transparent">
+        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-8 sm:py-24">
+          <div className="relative overflow-hidden rounded-2xl border border-green-600/50 bg-gradient-to-br from-green-950/40 to-background p-8 sm:p-12">
+            <div className="absolute right-0 top-0 rounded-bl-xl bg-green-600 px-4 py-1.5 text-sm font-bold text-white">
+              OFERTA DE LANCAMENTO
+            </div>
+
+            <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+              <div className="max-w-xl space-y-4">
+                <div className="flex items-center gap-2">
+                  <FlameIcon className="h-7 w-7 text-orange-500" />
+                  <h2 className="text-2xl font-bold text-green-500 sm:text-3xl">
+                    Acesso Vitalicio Launch Edition
+                  </h2>
+                </div>
+                <p className="text-lg text-muted-foreground">
+                  Os 100 primeiros usuarios terao acesso vitalicio pagando
+                  apenas o valor de 1 mensalidade. Sem recorrencia, pague uma
+                  vez e use para sempre.
+                </p>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <ZapIcon className="h-4 w-4 text-green-500" />
+                    <p className="text-sm">Tudo do plano Premium incluso</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <ZapIcon className="h-4 w-4 text-green-500" />
+                    <p className="text-sm">
+                      Pagamento unico — sem mensalidade
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <ZapIcon className="h-4 w-4 text-green-500" />
+                    <p className="text-sm">
+                      Acesso permanente a todas as funcionalidades
+                    </p>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Apenas 100 vagas. Oferta valida apenas para os primeiros
+                  usuarios.
+                </p>
+              </div>
+
+              <div className="flex flex-col items-center gap-4">
+                <div className="text-center">
+                  <div className="flex items-baseline justify-center gap-1">
+                    <span className="text-2xl text-muted-foreground">R$</span>
+                    <span className="text-6xl font-bold text-green-500">
+                      14,99
+                    </span>
+                  </div>
+                  <span className="text-sm text-muted-foreground">
+                    pagamento unico
+                  </span>
+                </div>
+                <SignInButton>
+                  <Button
+                    size="lg"
+                    className="rounded-full bg-green-600 px-8 text-base font-bold hover:bg-green-700"
+                  >
+                    Garantir acesso vitalicio
+                  </Button>
+                </SignInButton>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* PLANS */}
       <section className="border-t border-white/10">
         <div className="mx-auto max-w-6xl px-4 py-16 sm:px-8 sm:py-24">
@@ -369,77 +440,6 @@ const LandingPage = () => {
               <SignInButton>
                 <Button className="w-full">Assinar Premium</Button>
               </SignInButton>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* PROMO VITALÍCIO */}
-      <section className="border-t border-white/10 bg-gradient-to-b from-green-950/20 to-transparent">
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-8 sm:py-24">
-          <div className="relative overflow-hidden rounded-2xl border border-green-600/50 bg-gradient-to-br from-green-950/40 to-background p-8 sm:p-12">
-            <div className="absolute right-0 top-0 rounded-bl-xl bg-green-600 px-4 py-1.5 text-sm font-bold text-white">
-              OFERTA DE LANCAMENTO
-            </div>
-
-            <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
-              <div className="max-w-xl space-y-4">
-                <div className="flex items-center gap-2">
-                  <FlameIcon className="h-7 w-7 text-orange-500" />
-                  <h2 className="text-2xl font-bold text-green-500 sm:text-3xl">
-                    Acesso Vitalicio Launch Edition
-                  </h2>
-                </div>
-                <p className="text-lg text-muted-foreground">
-                  Os 100 primeiros usuarios terao acesso vitalicio pagando
-                  apenas o valor de 1 mensalidade. Sem recorrencia, pague uma
-                  vez e use para sempre.
-                </p>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <ZapIcon className="h-4 w-4 text-green-500" />
-                    <p className="text-sm">Tudo do plano Premium incluso</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <ZapIcon className="h-4 w-4 text-green-500" />
-                    <p className="text-sm">
-                      Pagamento unico — sem mensalidade
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <ZapIcon className="h-4 w-4 text-green-500" />
-                    <p className="text-sm">
-                      Acesso permanente a todas as funcionalidades
-                    </p>
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Apenas 100 vagas. Oferta valida apenas para os primeiros
-                  usuarios.
-                </p>
-              </div>
-
-              <div className="flex flex-col items-center gap-4">
-                <div className="text-center">
-                  <div className="flex items-baseline justify-center gap-1">
-                    <span className="text-2xl text-muted-foreground">R$</span>
-                    <span className="text-6xl font-bold text-green-500">
-                      14,99
-                    </span>
-                  </div>
-                  <span className="text-sm text-muted-foreground">
-                    pagamento unico
-                  </span>
-                </div>
-                <SignInButton>
-                  <Button
-                    size="lg"
-                    className="rounded-full bg-green-600 px-8 text-base font-bold hover:bg-green-700"
-                  >
-                    Garantir acesso vitalicio
-                  </Button>
-                </SignInButton>
-              </div>
             </div>
           </div>
         </div>
