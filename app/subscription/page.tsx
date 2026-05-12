@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader } from "../_components/ui/card";
 import { CheckIcon, XIcon, ZapIcon, FlameIcon } from "lucide-react";
 import AcquirePlanButton from "./_components/acquire-plan-button";
 import AcquireLifetimeButton from "./_components/acquire-lifetime-button";
+import PixPaymentModal from "./_components/pix-payment-modal";
 import { Badge } from "../_components/ui/badge";
 import { getCurrentMonthTransactions } from "@/app/_data/get-current-month-transactions";
 import { hasPremiumAccess } from "@/app/_lib/has-premium-access";
@@ -117,6 +118,7 @@ const SubscriptionPage = async () => {
                   <span className="text-sm text-muted-foreground">unico</span>
                 </div>
                 <AcquireLifetimeButton />
+                <PixPaymentModal />
               </div>
             </CardContent>
           </Card>
