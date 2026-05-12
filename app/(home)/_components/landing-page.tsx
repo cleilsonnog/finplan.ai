@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { SignInButton } from "@clerk/nextjs";
 import { Button } from "@/app/_components/ui/button";
 import Image from "next/image";
@@ -75,7 +76,32 @@ const HIGHLIGHTS = [
   },
 ];
 
+const DESKTOP_SCREENSHOTS = [
+  {
+    src: "/screenshots/desktop-dashboard.jpeg",
+    alt: "Dashboard - Visão geral das finanças",
+    label: "Dashboard",
+  },
+  {
+    src: "/screenshots/desktop-transacoes.jpeg",
+    alt: "Transações - Controle detalhado",
+    label: "Transações",
+  },
+  {
+    src: "/screenshots/desktop-cartoes.jpeg",
+    alt: "Cartões de Crédito - Faturas e limites",
+    label: "Cartões",
+  },
+  {
+    src: "/screenshots/desktop-orcamento.jpeg",
+    alt: "Orçamento - Limites por categoria",
+    label: "Orçamento",
+  },
+];
+
 const LandingPage = () => {
+  const [activeScreenshot, setActiveScreenshot] = useState(0);
+  const [activeMobile, setActiveMobile] = useState<number | null>(null);
   return (
     <div className="flex min-h-full flex-col">
       {/* NAVBAR */}
@@ -146,10 +172,10 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* SCREENSHOTS DESKTOP */}
+      {/* SCREENSHOTS */}
       <section className="border-t border-white/10 bg-white/[0.02]">
         <div className="mx-auto max-w-6xl px-4 py-16 sm:px-8 sm:py-24">
-          <div className="mb-12 text-center">
+          <div className="mb-10 text-center">
             <h2 className="mb-4 text-3xl font-bold sm:text-4xl">
               Veja o <span className="text-primary">FinPlan.ai</span> em ação
             </h2>
@@ -158,94 +184,97 @@ const LandingPage = () => {
               orçamentos — tudo em um só lugar.
             </p>
           </div>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            {[
-              {
-                src: "/screenshots/desktop-dashboard.jpeg",
-                alt: "Dashboard - Visão geral das finanças",
-                label: "Dashboard",
-              },
-              {
-                src: "/screenshots/desktop-transacoes.jpeg",
-                alt: "Transações - Controle detalhado",
-                label: "Transações",
-              },
-              {
-                src: "/screenshots/desktop-cartoes.jpeg",
-                alt: "Cartões de Crédito - Faturas e limites",
-                label: "Cartões de Crédito",
-              },
-              {
-                src: "/screenshots/desktop-orcamento.jpeg",
-                alt: "Orçamento - Limites por categoria",
-                label: "Orçamento",
-              },
-            ].map((shot) => (
-              <div key={shot.label} className="space-y-3">
-                <div className="overflow-hidden rounded-xl border border-white/10">
-                  <Image
-                    src={shot.src}
-                    alt={shot.alt}
-                    width={1456}
-                    height={816}
-                    className="w-full object-cover"
-                  />
-                </div>
-                <p className="text-center text-sm font-medium text-muted-foreground">
-                  {shot.label}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* SCREENSHOTS MOBILE */}
-      <section className="border-t border-white/10">
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-8 sm:py-24">
-          <div className="mb-4 text-center">
-            <div className="mb-4 inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
-              <SmartphoneIcon className="mr-2 h-4 w-4" />
-              Disponível como PWA
-            </div>
-            <h2 className="mb-4 text-3xl font-bold sm:text-4xl">
-              Suas finanças na{" "}
-              <span className="text-primary">palma da mão</span>
-            </h2>
-            <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-              Não espere chegar em casa para registrar seus gastos — você pode
-              esquecer. Com o FinPlan.ai instalado no celular, controle suas
-              finanças de qualquer lugar, a qualquer momento.
-            </p>
+          {/* Desktop: imagem principal + miniaturas */}
+          <div className="overflow-hidden rounded-xl border border-white/10">
+            <Image
+              src={DESKTOP_SCREENSHOTS[activeScreenshot].src}
+              alt={DESKTOP_SCREENSHOTS[activeScreenshot].alt}
+              width={1456}
+              height={816}
+              className="w-full object-cover"
+            />
           </div>
-          <div className="mt-12 flex items-center justify-center gap-6 sm:gap-10">
-            {[
-              {
-                src: "/screenshots/mobile-dashboard.jpeg",
-                alt: "Dashboard no celular",
-              },
-              {
-                src: "/screenshots/mobile-menu.jpeg",
-                alt: "Menu de navegação mobile",
-              },
-              {
-                src: "/screenshots/mobile-cartoes.jpeg",
-                alt: "Cartões de crédito no celular",
-              },
-            ].map((shot) => (
-              <div
-                key={shot.alt}
-                className="w-[160px] overflow-hidden rounded-2xl border-2 border-white/10 shadow-2xl sm:w-[200px] lg:w-[240px]"
+          <div className="mt-4 grid grid-cols-4 gap-3">
+            {DESKTOP_SCREENSHOTS.map((shot, index) => (
+              <button
+                key={shot.label}
+                onClick={() => setActiveScreenshot(index)}
+                className={`overflow-hidden rounded-lg border-2 transition-all ${
+                  activeScreenshot === index
+                    ? "border-primary shadow-lg shadow-primary/20"
+                    : "border-white/10 opacity-60 hover:opacity-100"
+                }`}
               >
                 <Image
                   src={shot.src}
                   alt={shot.alt}
-                  width={1080}
-                  height={2340}
+                  width={364}
+                  height={204}
                   className="w-full object-cover"
                 />
-              </div>
+                <p className="bg-background/80 py-1.5 text-center text-xs font-medium text-muted-foreground">
+                  {shot.label}
+                </p>
+              </button>
             ))}
+          </div>
+
+          {/* Mobile */}
+          <div className="mt-16 flex flex-col items-center gap-6">
+            <div className="text-center">
+              <div className="mb-3 inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
+                <SmartphoneIcon className="mr-2 h-4 w-4" />
+                Disponível como PWA
+              </div>
+              <p className="mx-auto max-w-xl text-sm text-muted-foreground">
+                Instale no celular e controle suas finanças de qualquer lugar.
+              </p>
+            </div>
+            <div
+              className="flex items-center justify-center gap-4 sm:gap-6"
+              onMouseLeave={() => setActiveMobile(null)}
+            >
+              {[
+                {
+                  src: "/screenshots/mobile-dashboard.jpeg",
+                  alt: "Dashboard no celular",
+                },
+                {
+                  src: "/screenshots/mobile-menu.jpeg",
+                  alt: "Menu de navegação mobile",
+                },
+                {
+                  src: "/screenshots/mobile-cartoes.jpeg",
+                  alt: "Cartões de crédito no celular",
+                },
+              ].map((shot, index) => (
+                <button
+                  key={shot.alt}
+                  onClick={() =>
+                    setActiveMobile(activeMobile === index ? null : index)
+                  }
+                  onBlur={(e) => {
+                    if (!e.currentTarget.parentElement?.contains(e.relatedTarget)) {
+                      setActiveMobile(null);
+                    }
+                  }}
+                  className={`overflow-hidden rounded-2xl border-2 shadow-xl transition-all duration-300 ${
+                    activeMobile === index
+                      ? "z-10 w-[180px] border-primary shadow-2xl shadow-primary/20 sm:w-[220px] lg:w-[260px]"
+                      : "w-[110px] border-white/10 sm:w-[140px] lg:w-[170px]"
+                  }`}
+                >
+                  <Image
+                    src={shot.src}
+                    alt={shot.alt}
+                    width={1080}
+                    height={2340}
+                    className="w-full object-cover"
+                  />
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </section>
