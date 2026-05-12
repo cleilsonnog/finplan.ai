@@ -8,6 +8,7 @@ import AcquireLifetimeButton from "./_components/acquire-lifetime-button";
 import { Badge } from "../_components/ui/badge";
 import { getCurrentMonthTransactions } from "@/app/_data/get-current-month-transactions";
 import { hasPremiumAccess } from "@/app/_lib/has-premium-access";
+import { hasLifetimeAccess } from "@/app/_lib/has-lifetime-access";
 import WhatsAppFloatButton from "../_components/whatsapp-float-button";
 
 const SubscriptionPage = async () => {
@@ -17,14 +18,58 @@ const SubscriptionPage = async () => {
   }
   const currentMonthTransactions = await getCurrentMonthTransactions();
   const hasPremiumPlan = await hasPremiumAccess();
+  const isLifetime = await hasLifetimeAccess();
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <Navbar />
       <div className="flex-1 space-y-6 overflow-auto p-4 md:p-6">
         <h1 className="text-2xl font-bold">Assinatura</h1>
 
-        {/* Promo Vitalício */}
-        {!hasPremiumPlan && (
+        {/* Promo Vitalício — mostra oferta para não-premium OU confirmação para vitalícios */}
+        {isLifetime ? (
+          <Card className="relative overflow-hidden border-green-600/50 bg-gradient-to-br from-green-950/40 to-background lg:max-w-[930px]">
+            <div className="absolute right-0 top-0 rounded-bl-lg bg-green-600 px-3 py-1 text-xs font-bold text-white">
+              LAUNCH EDITION
+            </div>
+            <CardHeader className="pb-2 pt-8">
+              <div className="flex items-center gap-2">
+                <FlameIcon className="h-6 w-6 text-orange-500" />
+                <h2 className="text-xl font-bold text-green-500">
+                  Acesso Vitalicio Ativo
+                </h2>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Voce faz parte dos primeiros usuarios do FinPlan.ai! Seu acesso
+                Premium e vitalicio — sem mensalidade, sem renovacao. Aproveite
+                todas as funcionalidades para sempre.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <CheckIcon className="h-4 w-4 text-green-500" />
+                  <p className="text-sm">Transacoes ilimitadas</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckIcon className="h-4 w-4 text-green-500" />
+                  <p className="text-sm">Relatorios de IA</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckIcon className="h-4 w-4 text-green-500" />
+                  <p className="text-sm">Categorias personalizadas</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckIcon className="h-4 w-4 text-green-500" />
+                  <p className="text-sm">Compartilhar conta</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckIcon className="h-4 w-4 text-green-500" />
+                  <p className="text-sm">Acesso permanente — sem cobrancas futuras</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : !hasPremiumPlan ? (
           <Card className="relative overflow-hidden border-green-600/50 bg-gradient-to-br from-green-950/40 to-background lg:max-w-[930px]">
             <div className="absolute right-0 top-0 rounded-bl-lg bg-green-600 px-3 py-1 text-xs font-bold text-white">
               OFERTA DE LANCAMENTO
@@ -75,7 +120,7 @@ const SubscriptionPage = async () => {
               </div>
             </CardContent>
           </Card>
-        )}
+        ) : null}
 
         <div className="flex flex-col gap-6 lg:flex-row">
           <Card className="w-full lg:w-[450px]">
@@ -120,7 +165,7 @@ const SubscriptionPage = async () => {
             <CardHeader className="relative border-b border-solid py-8">
               {hasPremiumPlan && (
                 <Badge className="absolute left-4 top-12 bg-primary/10 text-primary">
-                  Ativo
+                  {isLifetime ? "Vitalicio" : "Ativo"}
                 </Badge>
               )}
               <h2 className="text-center text-2xl font-semibold">
@@ -129,7 +174,9 @@ const SubscriptionPage = async () => {
               <div className="flex items-center justify-center gap-3">
                 <span className="text-4xl">R$</span>
                 <span className="text-6xl font-semibold">14,99</span>
-                <div className="text-2xl text-muted-foreground">/mês</div>
+                <div className="text-2xl text-muted-foreground">
+                  {isLifetime ? "unico" : "/mês"}
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-6 py-8">
