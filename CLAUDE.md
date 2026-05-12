@@ -51,6 +51,7 @@ docker compose up -d # Start local PostgreSQL
 - **Installments** — Up to 48x, creates N transactions with divided amounts spread monthly
 - **AI Reports** — OpenAI-powered financial analysis with transactions, budgets, credit cards, bills data. Structured prompt with scoring.
 - **Account Sharing** — Share financial data with a partner via invite system
+- **PIX Payment** — Mercado Pago integration for lifetime plan. QR code modal on subscription page, webhook with HMAC validation, Telegram notification on payment received.
 - **WhatsApp Float Button** — Floating contact button on landing and subscription pages
 - **PWA** — Installable as mobile app
 - **OG Image** — 1200x630 dashboard preview for link sharing
@@ -76,7 +77,15 @@ docker compose up -d # Start local PostgreSQL
 - `userId` is obtained via `getEffectiveUserId()` which supports account sharing
 - Environment vars: `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`
 
+### Payments
+
+- **Stripe** — Monthly subscription (card) and lifetime checkout (card)
+- **Mercado Pago** — PIX payment for lifetime plan. SDK `mercadopago`, webhook at `/api/webhooks/mercadopago`
+- **Telegram Bot** — Notifies owner on PIX payment received (via bot API, no SDK)
+- Subscription state managed via Clerk metadata (`publicMetadata.subscriptionPlan`, `privateMetadata.lifetimePurchase`)
+
 ### Pricing
 
 - **Free**: 15 transactions/month, dashboard, credit cards, budgets
 - **Premium (R$14,99/mês)**: Unlimited transactions, AI reports, account sharing, custom categories
+- **Lifetime (R$14,99 único)**: Same as premium, one-time payment via Stripe (card) or Mercado Pago (PIX)
