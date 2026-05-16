@@ -48,6 +48,9 @@ const Navbar = () => {
             <Link href="/subscription" className={linkClass("/subscription")}>
               Assinatura
             </Link>
+            <Link href="/settings" className={linkClass("/settings")}>
+              Config
+            </Link>
           </div>
         </div>
         <div className="hidden md:block">
@@ -104,6 +107,13 @@ const Navbar = () => {
             onClick={() => setMenuOpen(false)}
           >
             Assinatura
+          </Link>
+          <Link
+            href="/settings"
+            className={linkClass("/settings")}
+            onClick={() => setMenuOpen(false)}
+          >
+            Config
           </Link>
           <div className="pt-2 border-t">
             <UserButton showName />
