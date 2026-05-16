@@ -118,7 +118,7 @@ async function sendWhatsApp(phone: string, message: string) {
         },
         body: JSON.stringify({
           number: phone,
-          text: message,
+          textMessage: { text: message },
         }),
       },
     );
