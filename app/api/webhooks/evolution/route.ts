@@ -457,6 +457,15 @@ async function handleSession(
   userId: string,
   messageId: string,
 ) {
+  // Atomic lock: only one concurrent request can claim this session step
+  const claimed = await db.whatsAppSession.deleteMany({
+    where: { phone, step: session.step },
+  });
+  if (claimed.count === 0) {
+    // Another request already processed this step — skip
+    return NextResponse.json({ received: true });
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const data = session.pendingData as any;
 
@@ -464,6 +473,7 @@ async function handleSession(
     const category =
       CATEGORY_BY_NUMBER[text] || CATEGORY_MAP[text];
     if (!category) {
+      await db.whatsAppSession.create({ data: { phone, step: "CATEGORY", pendingData: data as Prisma.JsonObject } }).catch(() => {});
       await sendWhatsApp(phone, "Nao entendi. Responda com o numero (1-9) ou o nome da categoria.");
       return NextResponse.json({ received: true });
     }
@@ -471,9 +481,8 @@ async function handleSession(
 
     if (!data.paymentMethod) {
       data._msgId = messageId;
-      await db.whatsAppSession.update({
-        where: { phone },
-        data: { step: "PAYMENT_METHOD", pendingData: data as Prisma.JsonObject },
+      await db.whatsAppSession.create({
+        data: { phone, step: "PAYMENT_METHOD", pendingData: data as Prisma.JsonObject },
       });
       await sendWhatsApp(
         phone,
@@ -495,6 +504,7 @@ async function handleSession(
     const method =
       PAYMENT_BY_NUMBER[text] || PAYMENT_MAP[text];
     if (!method) {
+      await db.whatsAppSession.create({ data: { phone, step: "PAYMENT_METHOD", pendingData: data as Prisma.JsonObject } }).catch(() => {});
       await sendWhatsApp(phone, "Nao entendi. Responda com o numero (1-7) ou o nome do metodo.");
       return NextResponse.json({ received: true });
     }
@@ -515,6 +525,7 @@ async function handleSession(
     const index = parseInt(text) - 1;
 
     if (isNaN(index) || index < 0 || index >= cardIds.length) {
+      await db.whatsAppSession.create({ data: { phone, step: "SELECT_CARD", pendingData: data as Prisma.JsonObject } }).catch(() => {});
       await sendWhatsApp(
         phone,
         `Responda com o numero do cartao (1-${cardIds.length}).`,
@@ -526,9 +537,9 @@ async function handleSession(
     data.creditCardName = cardNames[index];
 
     data._msgId = messageId;
-    await db.whatsAppSession.update({
-      where: { phone },
+    await db.whatsAppSession.create({
       data: {
+        phone,
         step: "INSTALLMENTS",
         pendingData: data as Prisma.JsonObject,
       },
@@ -544,6 +555,7 @@ async function handleSession(
   if (session.step === "INSTALLMENTS") {
     const installments = parseInt(text);
     if (isNaN(installments) || installments < 1 || installments > 48) {
+      await db.whatsAppSession.create({ data: { phone, step: "INSTALLMENTS", pendingData: data as Prisma.JsonObject } }).catch(() => {});
       await sendWhatsApp(phone, "Numero invalido. Informe entre 1 e 48 parcelas.");
       return NextResponse.json({ received: true });
     }
