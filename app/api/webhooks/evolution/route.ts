@@ -268,6 +268,33 @@ export const POST = async (request: Request) => {
 
   const userId = link.userId;
   const normalizedText = normalizeText(text);
+  const messageId = message.key?.id || "";
+
+  // Dedup: prevent processing the same message twice (Evolution sends duplicate webhooks)
+  const existingSession = await db.whatsAppSession.findUnique({ where: { phone } });
+
+  if (!existingSession) {
+    // No active session — try to acquire a processing lock for this messageId
+    try {
+      await db.whatsAppSession.create({
+        data: { phone, step: `lock:${messageId}`, pendingData: {} },
+      });
+    } catch {
+      // Another request already acquired the lock — skip duplicate
+      return NextResponse.json({ received: true });
+    }
+    // Delete the lock immediately — real sessions will be created as needed
+    await db.whatsAppSession.delete({ where: { phone } }).catch(() => {});
+  } else if (existingSession.step === `lock:${messageId}`) {
+    // Same message already being processed
+    return NextResponse.json({ received: true });
+  } else {
+    // Active session exists — check if this messageId was already processed for this step
+    const pendingData = existingSession.pendingData as Record<string, unknown>;
+    if (pendingData._msgId === messageId) {
+      return NextResponse.json({ received: true });
+    }
+  }
 
   // Check for help command
   if (normalizedText === "ajuda" || normalizedText === "help") {
@@ -287,10 +314,8 @@ export const POST = async (request: Request) => {
   }
 
   // Check if there's an active session (waiting for card selection or installments)
-  const session = await db.whatsAppSession.findUnique({ where: { phone } });
-
-  if (session) {
-    return handleSession(session, normalizedText, phone, userId);
+  if (existingSession && !existingSession.step.startsWith("lock:")) {
+    return handleSession(existingSession, normalizedText, phone, userId, messageId);
   }
 
   // Parse new transaction
@@ -312,6 +337,7 @@ export const POST = async (request: Request) => {
     const pendingData: Prisma.JsonObject = {
       type: parsed.type ?? "EXPENSE",
       amount: parsed.amount!,
+      _msgId: messageId,
     };
     if (parsed.paymentMethod) pendingData.paymentMethod = parsed.paymentMethod;
     await db.whatsAppSession.upsert({
@@ -331,6 +357,7 @@ export const POST = async (request: Request) => {
       type: parsed.type ?? "EXPENSE",
       amount: parsed.amount!,
       category: parsed.category!,
+      _msgId: messageId,
     };
     await db.whatsAppSession.upsert({
       where: { phone },
@@ -367,6 +394,7 @@ export const POST = async (request: Request) => {
       paymentMethod: parsed.paymentMethod!,
       cardIds: cards.map((c) => c.id),
       cardNames: cards.map((c) => `${c.name} (****${c.lastFourDigits})`),
+      _msgId: messageId,
     };
     await db.whatsAppSession.upsert({
       where: { phone },
@@ -414,6 +442,7 @@ async function handleSession(
   text: string,
   phone: string,
   userId: string,
+  messageId: string,
 ) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const data = session.pendingData as any;
@@ -428,6 +457,7 @@ async function handleSession(
     data.category = category;
 
     if (!data.paymentMethod) {
+      data._msgId = messageId;
       await db.whatsAppSession.update({
         where: { phone },
         data: { step: "PAYMENT_METHOD", pendingData: data as Prisma.JsonObject },
@@ -482,6 +512,7 @@ async function handleSession(
     data.creditCardId = cardIds[index];
     data.creditCardName = cardNames[index];
 
+    data._msgId = messageId;
     await db.whatsAppSession.update({
       where: { phone },
       data: {
