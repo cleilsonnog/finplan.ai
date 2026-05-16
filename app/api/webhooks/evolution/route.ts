@@ -210,6 +210,12 @@ export const POST = async (request: Request) => {
     return NextResponse.json({ received: true });
   }
 
+  // Skip messages sent by the bot (via API) — only process messages from mobile
+  const source = message.source || "";
+  if (message.key?.fromMe && source !== "android" && source !== "ios") {
+    return NextResponse.json({ received: true });
+  }
+
   // Extract phone from sender field (top-level) or remoteJid fallback
   // Evolution API v1.8.6+ uses LID format in remoteJid, but sender has the real number
   const senderField = body.sender || "";
