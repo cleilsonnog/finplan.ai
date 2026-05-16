@@ -273,25 +273,31 @@ export const POST = async (request: Request) => {
   // Dedup: prevent processing the same message twice (Evolution sends duplicate webhooks)
   const existingSession = await db.whatsAppSession.findUnique({ where: { phone } });
 
-  if (!existingSession) {
-    // No active session — try to acquire a processing lock for this messageId
+  if (existingSession) {
+    if (existingSession.step === `lock:${messageId}` || existingSession.step === `done:${messageId}`) {
+      // Same message already processed — skip
+      return NextResponse.json({ received: true });
+    }
+    if (existingSession.step.startsWith("lock:") || existingSession.step.startsWith("done:")) {
+      // Stale lock from previous message — delete and continue
+      await db.whatsAppSession.delete({ where: { phone } }).catch(() => {});
+    } else {
+      // Active multi-step session — check if this messageId was already processed
+      const pendingData = existingSession.pendingData as Record<string, unknown>;
+      if (pendingData._msgId === messageId) {
+        return NextResponse.json({ received: true });
+      }
+    }
+  }
+
+  // For new messages (no active session), acquire a processing lock
+  if (!existingSession || existingSession.step.startsWith("lock:") || existingSession.step.startsWith("done:")) {
     try {
       await db.whatsAppSession.create({
         data: { phone, step: `lock:${messageId}`, pendingData: {} },
       });
     } catch {
       // Another request already acquired the lock — skip duplicate
-      return NextResponse.json({ received: true });
-    }
-    // Delete the lock immediately — real sessions will be created as needed
-    await db.whatsAppSession.delete({ where: { phone } }).catch(() => {});
-  } else if (existingSession.step === `lock:${messageId}`) {
-    // Same message already being processed
-    return NextResponse.json({ received: true });
-  } else {
-    // Active session exists — check if this messageId was already processed for this step
-    const pendingData = existingSession.pendingData as Record<string, unknown>;
-    if (pendingData._msgId === messageId) {
       return NextResponse.json({ received: true });
     }
   }
@@ -412,6 +418,13 @@ export const POST = async (request: Request) => {
     paymentMethod: parsed.paymentMethod,
   }, phone);
 
+  // Mark message as processed (keep lock so duplicate webhook is rejected)
+  await db.whatsAppSession.upsert({
+    where: { phone },
+    create: { phone, step: `done:${messageId}`, pendingData: {} },
+    update: { step: `done:${messageId}`, pendingData: {} },
+  }).catch(() => {});
+
   return NextResponse.json({ received: true });
 }
 
@@ -473,8 +486,8 @@ async function handleSession(
       return startCardSelection(phone, userId, data);
     }
 
-    await deleteSession(phone);
     await createTransaction(userId, data, phone);
+    await markDone(phone, messageId);
     return NextResponse.json({ received: true });
   }
 
@@ -491,8 +504,8 @@ async function handleSession(
       return startCardSelection(phone, userId, data);
     }
 
-    await deleteSession(phone);
     await createTransaction(userId, data, phone);
+    await markDone(phone, messageId);
     return NextResponse.json({ received: true });
   }
 
@@ -536,8 +549,8 @@ async function handleSession(
     }
 
     data.installments = installments;
-    await deleteSession(phone);
     await createTransaction(userId, data, phone);
+    await markDone(phone, messageId);
     return NextResponse.json({ received: true });
   }
 
@@ -588,6 +601,14 @@ async function startCardSelection(
 
 async function deleteSession(phone: string) {
   await db.whatsAppSession.delete({ where: { phone } }).catch(() => {});
+}
+
+async function markDone(phone: string, messageId: string) {
+  await db.whatsAppSession.upsert({
+    where: { phone },
+    create: { phone, step: `done:${messageId}`, pendingData: {} },
+    update: { step: `done:${messageId}`, pendingData: {} },
+  }).catch(() => {});
 }
 
 async function createTransaction(
