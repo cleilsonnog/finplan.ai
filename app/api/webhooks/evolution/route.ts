@@ -206,11 +206,16 @@ export const POST = async (request: Request) => {
   }
 
   const message = body.data;
-  if (!message || message.key?.fromMe) {
+  if (!message) {
     return NextResponse.json({ received: true });
   }
 
-  const phone = message.key?.remoteJid?.replace("@s.whatsapp.net", "") || "";
+  // Extract phone from sender field (top-level) or remoteJid fallback
+  // Evolution API v1.8.6+ uses LID format in remoteJid, but sender has the real number
+  const senderField = body.sender || "";
+  const remoteJid = message.key?.remoteJid || "";
+  const phone = senderField.replace("@s.whatsapp.net", "")
+    || remoteJid.replace("@s.whatsapp.net", "").replace("@lid", "");
   const text =
     message.message?.conversation ||
     message.message?.extendedTextMessage?.text ||
