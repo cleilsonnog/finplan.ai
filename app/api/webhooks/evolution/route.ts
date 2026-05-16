@@ -216,6 +216,31 @@ export const POST = async (request: Request) => {
     return NextResponse.json({ received: true });
   }
 
+  // Skip bot response messages (they start with bold markdown or contain bot signatures)
+  const rawText =
+    message.message?.conversation ||
+    message.message?.extendedTextMessage?.text ||
+    "";
+  if (
+    rawText.startsWith("*Transacao registrada") ||
+    rawText.startsWith("*Finplan.ai") ||
+    rawText.startsWith("Nao entendi") ||
+    rawText.startsWith("Seu numero nao esta") ||
+    rawText.startsWith("Qual a categoria") ||
+    rawText.startsWith("Qual o metodo") ||
+    rawText.startsWith("Qual cartao") ||
+    rawText.startsWith("Cartao:") ||
+    rawText.startsWith("Voce nao tem cartoes") ||
+    rawText.startsWith("Algo deu errado") ||
+    rawText.startsWith("Erro ao registrar") ||
+    rawText.startsWith("Numero invalido") ||
+    rawText.startsWith("Nao entendi. Responda") ||
+    rawText.startsWith("Responda com o numero") ||
+    rawText.startsWith("Teste do finplan")
+  ) {
+    return NextResponse.json({ received: true });
+  }
+
   // Extract phone from sender field (top-level) or remoteJid fallback
   // Evolution API v1.8.6+ uses LID format in remoteJid, but sender has the real number
   const senderField = body.sender || "";
@@ -549,6 +574,20 @@ async function createTransaction(
   const creditCardName = data.creditCardName as string | undefined;
 
   const name = `${TYPE_LABELS[type]} - ${CATEGORY_LABELS[category]} (WhatsApp)`;
+
+  // Dedup: skip if same transaction was created in the last 60 seconds
+  const recent = await db.transaction.findFirst({
+    where: {
+      userId,
+      name,
+      amount,
+      category,
+      createdAt: { gte: new Date(Date.now() - 60000) },
+    },
+  });
+  if (recent) {
+    return;
+  }
 
   try {
     if (paymentMethod === "CREDIT_CARD" && installments > 1 && creditCardId) {
