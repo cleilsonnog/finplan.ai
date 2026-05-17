@@ -140,10 +140,16 @@ interface ParsedTransaction {
   amount: number;
   category: TransactionCategory;
   paymentMethod: TransactionPaymentMethod;
+  customCategoryId?: string;
   name: string;
 }
 
-function parseMessage(text: string): Partial<ParsedTransaction> | null {
+interface CustomCat {
+  id: string;
+  name: string;
+}
+
+function parseMessage(text: string, customCategories: CustomCat[]): Partial<ParsedTransaction> | null {
   const normalized = normalizeText(text);
   const words = normalized.split(/\s+/);
 
@@ -151,6 +157,17 @@ function parseMessage(text: string): Partial<ParsedTransaction> | null {
   let amount: number | undefined;
   let category: TransactionCategory | undefined;
   let paymentMethod: TransactionPaymentMethod | undefined;
+  let customCategoryId: string | undefined;
+
+  // Check custom categories first (supports multi-word names)
+  for (const cat of customCategories) {
+    const catNormalized = normalizeText(cat.name);
+    if (normalized.includes(catNormalized)) {
+      customCategoryId = cat.id;
+      category = "OTHER";
+      break;
+    }
+  }
 
   for (const word of words) {
     if (!type && TYPE_MAP[word]) {
@@ -166,7 +183,7 @@ function parseMessage(text: string): Partial<ParsedTransaction> | null {
       }
     }
 
-    if (!category && CATEGORY_MAP[word]) {
+    if (!category && !customCategoryId && CATEGORY_MAP[word]) {
       category = CATEGORY_MAP[word];
     }
 
@@ -182,6 +199,7 @@ function parseMessage(text: string): Partial<ParsedTransaction> | null {
     amount,
     category,
     paymentMethod,
+    customCategoryId,
   };
 }
 
@@ -270,6 +288,12 @@ export const POST = async (request: Request) => {
   const normalizedText = normalizeText(text);
   const messageId = message.key?.id || "";
 
+  // Fetch user's custom categories
+  const customCategories = await db.customCategory.findMany({
+    where: { userId },
+    select: { id: true, name: true },
+  });
+
   // Dedup: prevent processing the same message twice (Evolution sends duplicate webhooks)
   const existingSession = await db.whatsAppSession.findUnique({ where: { phone } });
 
@@ -304,6 +328,7 @@ export const POST = async (request: Request) => {
 
   // Check for help command
   if (normalizedText === "ajuda" || normalizedText === "help") {
+    const customCatNames = customCategories.map((c) => c.name.toLowerCase()).join(", ");
     await sendWhatsApp(
       phone,
       `*Finplan.ai - Comandos*\n\n` +
@@ -312,8 +337,9 @@ export const POST = async (request: Request) => {
         `recebi 3000 salario transferencia\n` +
         `investi 500 educacao pix\n\n` +
         `*Tipos:* gastei, recebi, investi\n` +
-        `*Categorias:* moradia, transporte, alimentacao, entretenimento, saude, utilidades, salario, educacao, outros\n` +
-        `*Pagamento:* pix, credito, debito, dinheiro, transferencia, boleto\n\n` +
+        `*Categorias:* moradia, transporte, alimentacao, entretenimento, saude, utilidades, salario, educacao, outros` +
+        (customCatNames ? `\n*Suas categorias:* ${customCatNames}` : "") +
+        `\n*Pagamento:* pix, credito, debito, dinheiro, transferencia, boleto\n\n` +
         `Se pagar com *credito*, vou perguntar qual cartao e quantas parcelas.`,
     );
     return NextResponse.json({ received: true });
@@ -321,11 +347,11 @@ export const POST = async (request: Request) => {
 
   // Check if there's an active session (waiting for card selection or installments)
   if (existingSession && !existingSession.step.startsWith("lock:")) {
-    return handleSession(existingSession, normalizedText, phone, userId, messageId);
+    return handleSession(existingSession, normalizedText, phone, userId, messageId, customCategories);
   }
 
   // Parse new transaction
-  const parsed = parseMessage(text);
+  const parsed = parseMessage(text, customCategories);
 
   if (!parsed || !parsed.amount) {
     await sendWhatsApp(
@@ -336,14 +362,24 @@ export const POST = async (request: Request) => {
   }
 
   if (!parsed.category) {
-    await sendWhatsApp(
-      phone,
-      `Qual a categoria?\n\n1. Moradia\n2. Transporte\n3. Alimentacao\n4. Entretenimento\n5. Saude\n6. Utilidades\n7. Salario\n8. Educacao\n9. Outros\n\nResponda com o numero ou nome.`,
-    );
+    let categoryPrompt = `Qual a categoria?\n\n1. Moradia\n2. Transporte\n3. Alimentacao\n4. Entretenimento\n5. Saude\n6. Utilidades\n7. Salario\n8. Educacao\n9. Outros`;
+    const customCatIds: string[] = [];
+    const customCatNames: string[] = [];
+    if (customCategories.length > 0) {
+      customCategories.forEach((c, i) => {
+        categoryPrompt += `\n${10 + i}. ${c.name}`;
+        customCatIds.push(c.id);
+        customCatNames.push(c.name);
+      });
+    }
+    categoryPrompt += `\n\nResponda com o numero ou nome.`;
+    await sendWhatsApp(phone, categoryPrompt);
     const pendingData: Prisma.JsonObject = {
       type: parsed.type ?? "EXPENSE",
       amount: parsed.amount!,
       _msgId: messageId,
+      customCatIds,
+      customCatNames,
     };
     if (parsed.paymentMethod) pendingData.paymentMethod = parsed.paymentMethod;
     await db.whatsAppSession.upsert({
@@ -365,6 +401,7 @@ export const POST = async (request: Request) => {
       category: parsed.category!,
       _msgId: messageId,
     };
+    if (parsed.customCategoryId) pendingData.customCategoryId = parsed.customCategoryId;
     await db.whatsAppSession.upsert({
       where: { phone },
       create: { phone, step: "PAYMENT_METHOD", pendingData },
@@ -402,6 +439,7 @@ export const POST = async (request: Request) => {
       cardNames: cards.map((c) => `${c.name} (****${c.lastFourDigits})`),
       _msgId: messageId,
     };
+    if (parsed.customCategoryId) cardPendingData.customCategoryId = parsed.customCategoryId;
     await db.whatsAppSession.upsert({
       where: { phone },
       create: { phone, step: "SELECT_CARD", pendingData: cardPendingData },
@@ -416,6 +454,7 @@ export const POST = async (request: Request) => {
     amount: parsed.amount,
     category: parsed.category,
     paymentMethod: parsed.paymentMethod,
+    customCategoryId: parsed.customCategoryId,
   }, phone);
 
   // Mark message as processed (keep lock so duplicate webhook is rejected)
@@ -456,6 +495,7 @@ async function handleSession(
   phone: string,
   userId: string,
   messageId: string,
+  customCategories: CustomCat[],
 ) {
   // Atomic lock: only one concurrent request can claim this session step
   const claimed = await db.whatsAppSession.deleteMany({
@@ -470,14 +510,38 @@ async function handleSession(
   const data = session.pendingData as any;
 
   if (session.step === "CATEGORY") {
-    const category =
+    let category: TransactionCategory | undefined =
       CATEGORY_BY_NUMBER[text] || CATEGORY_MAP[text];
+    let customCategoryId: string | undefined;
+
+    if (!category) {
+      // Check custom categories by number (10+) or name
+      const customCatIds = (data.customCatIds as string[]) || [];
+      const customCatNames = (data.customCatNames as string[]) || [];
+      const num = parseInt(text);
+      if (!isNaN(num) && num >= 10 && num - 10 < customCatIds.length) {
+        customCategoryId = customCatIds[num - 10];
+        category = "OTHER";
+      } else {
+        // Try matching by name from session data or fetched categories
+        const allCustom = customCatIds.length > 0
+          ? customCatIds.map((id, i) => ({ id, name: customCatNames[i] }))
+          : customCategories;
+        const match = allCustom.find((c) => normalizeText(c.name) === text);
+        if (match) {
+          customCategoryId = match.id;
+          category = "OTHER";
+        }
+      }
+    }
+
     if (!category) {
       await db.whatsAppSession.create({ data: { phone, step: "CATEGORY", pendingData: data as Prisma.JsonObject } }).catch(() => {});
-      await sendWhatsApp(phone, "Nao entendi. Responda com o numero (1-9) ou o nome da categoria.");
+      await sendWhatsApp(phone, "Nao entendi. Responda com o numero ou o nome da categoria.");
       return NextResponse.json({ received: true });
     }
     data.category = category;
+    if (customCategoryId) data.customCategoryId = customCategoryId;
 
     if (!data.paymentMethod) {
       data._msgId = messageId;
@@ -636,8 +700,19 @@ async function createTransaction(
   const creditCardId = data.creditCardId as string | undefined;
   const installments = (data.installments as number) || 1;
   const creditCardName = data.creditCardName as string | undefined;
+  const customCategoryId = data.customCategoryId as string | undefined;
 
-  const name = `${TYPE_LABELS[type]} - ${CATEGORY_LABELS[category]} (WhatsApp)`;
+  // Resolve custom category name for display
+  let categoryLabel = CATEGORY_LABELS[category] || "Outros";
+  if (customCategoryId) {
+    const customCat = await db.customCategory.findUnique({
+      where: { id: customCategoryId },
+      select: { name: true },
+    });
+    if (customCat) categoryLabel = customCat.name;
+  }
+
+  const name = `${TYPE_LABELS[type]} - ${categoryLabel} (WhatsApp)`;
 
   // Dedup: skip if same transaction was created in the last 60 seconds
   const recent = await db.transaction.findFirst({
@@ -671,6 +746,7 @@ async function createTransaction(
             date,
             userId,
             creditCardId,
+            customCategoryId: customCategoryId || null,
             installments,
             installmentNumber: i + 1,
           },
@@ -682,7 +758,7 @@ async function createTransaction(
         phone,
         `*Transacao registrada!*\n\n` +
           `${TYPE_LABELS[type]}: *R$ ${amount.toFixed(2)}*\n` +
-          `Categoria: ${CATEGORY_LABELS[category]}\n` +
+          `Categoria: ${categoryLabel}\n` +
           `Cartao: ${creditCardName}\n` +
           `Parcelado: *${installments}x de R$ ${installmentAmount2}*\n` +
           `Data: ${new Date().toLocaleDateString("pt-BR")}`,
@@ -698,6 +774,7 @@ async function createTransaction(
           date: new Date(),
           userId,
           creditCardId: creditCardId || null,
+          customCategoryId: customCategoryId || null,
           installments: 1,
           installmentNumber: 1,
         },
@@ -707,7 +784,7 @@ async function createTransaction(
         phone,
         `*Transacao registrada!*\n\n` +
           `${TYPE_LABELS[type]}: *R$ ${amount.toFixed(2)}*\n` +
-          `Categoria: ${CATEGORY_LABELS[category]}\n` +
+          `Categoria: ${categoryLabel}\n` +
           `Pagamento: ${PAYMENT_LABELS[paymentMethod]}` +
           (creditCardName ? `\nCartao: ${creditCardName}` : "") +
           `\nData: ${new Date().toLocaleDateString("pt-BR")}`,
