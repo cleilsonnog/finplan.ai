@@ -32,6 +32,7 @@ docker compose up -d # Start local PostgreSQL
 - `app/budget/` — Monthly budget by category
 - `app/categories/` — Custom categories management
 - `app/subscription/` — Plans page (free vs premium)
+- `app/settings/` — Settings page (WhatsApp link)
 - `middleware.ts` — Clerk auth middleware
 - `prisma/schema.prisma` — Database models and enums
 
@@ -43,6 +44,8 @@ docker compose up -d # Start local PostgreSQL
 - **Budget** — Monthly budget limits per category
 - **CustomCategory** — User-defined categories
 - **AccountShare / AccountShareInvite** — Account sharing between users
+- **WhatsAppLink** — Links a user's phone number to their account for WhatsApp transactions
+- **WhatsAppSession** — Tracks multi-step conversation state and message dedup locks
 
 ### Key Features
 
@@ -52,6 +55,7 @@ docker compose up -d # Start local PostgreSQL
 - **AI Reports** — OpenAI-powered financial analysis with transactions, budgets, credit cards, bills data. Structured prompt with scoring.
 - **Account Sharing** — Share financial data with a partner via invite system
 - **PIX Payment** — Mercado Pago integration for lifetime plan. QR code modal on subscription page, webhook with HMAC validation, Telegram notification on payment received.
+- **WhatsApp Transactions** — Register transactions via WhatsApp using Evolution API. Webhook at `/api/webhooks/evolution`. Supports credit card selection, installments, multi-step conversation. Settings page at `/settings` to link/unlink phone number.
 - **WhatsApp Float Button** — Floating contact button on landing and subscription pages
 - **PWA** — Installable as mobile app
 - **OG Image** — 1200x630 dashboard preview for link sharing
@@ -82,6 +86,7 @@ docker compose up -d # Start local PostgreSQL
 - **Stripe** — Monthly subscription (card) and lifetime checkout (card)
 - **Mercado Pago** — PIX payment for lifetime plan. SDK `mercadopago`, webhook at `/api/webhooks/mercadopago`
 - **Telegram Bot** — Notifies owner on PIX payment received (via bot API, no SDK)
+- **Evolution API** — WhatsApp integration for transaction registration. Instance on VPS (212.56.33.113:8080), webhook sends messages to `/api/webhooks/evolution`
 - Subscription state managed via Clerk metadata (`publicMetadata.subscriptionPlan`, `privateMetadata.lifetimePurchase`)
 
 ### Pricing
