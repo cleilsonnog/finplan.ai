@@ -229,8 +229,9 @@ export const POST = async (request: Request) => {
     return NextResponse.json({ received: true });
   }
 
-  // Skip all messages sent by the bot itself (API responses or self-chat)
-  if (message.key?.fromMe) {
+  // Skip messages sent by the bot (via API) — only process messages from mobile
+  const source = message.source || "";
+  if (message.key?.fromMe && source !== "android" && source !== "ios") {
     return NextResponse.json({ received: true });
   }
 
