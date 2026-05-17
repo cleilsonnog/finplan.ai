@@ -192,7 +192,8 @@ function parseMessage(text: string, customCategories: CustomCat[]): Partial<Pars
     }
   }
 
-  if (!type && !amount) return null;
+  // Only treat as transaction if a type keyword was found (gastei, recebi, investi, etc.)
+  if (!type) return null;
 
   return {
     type: type || "EXPENSE",
@@ -363,7 +364,14 @@ export const POST = async (request: Request) => {
   // Parse new transaction
   const parsed = parseMessage(text, customCategories);
 
-  if (!parsed || !parsed.amount) {
+  if (!parsed) {
+    // Message doesn't look like a transaction at all — stay silent
+    await db.whatsAppSession.delete({ where: { phone } }).catch(() => {});
+    return NextResponse.json({ received: true });
+  }
+
+  if (!parsed.amount) {
+    // Has a type keyword but no amount — likely a malformed attempt, give feedback
     await sendWhatsApp(
       phone,
       `Nao entendi. Tente assim:\n*gastei 50 alimentacao pix*\n\nDigite *ajuda* para ver os comandos.`,
