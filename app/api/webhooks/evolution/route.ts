@@ -228,16 +228,29 @@ export const POST = async (request: Request) => {
     return NextResponse.json({ received: true });
   }
 
-  // Skip messages sent by the bot (via API) — only process messages from mobile
-  const source = message.source || "";
-  if (message.key?.fromMe && source !== "android" && source !== "ios") {
+  // Skip all messages sent by the bot itself (API responses or self-chat)
+  if (message.key?.fromMe) {
+    return NextResponse.json({ received: true });
+  }
+
+  // Skip media messages (photos, documents, audio, video, stickers)
+  const msg = message.message || {};
+  if (
+    msg.imageMessage ||
+    msg.documentMessage ||
+    msg.audioMessage ||
+    msg.videoMessage ||
+    msg.stickerMessage ||
+    msg.contactMessage ||
+    msg.locationMessage
+  ) {
     return NextResponse.json({ received: true });
   }
 
   // Skip bot response messages (they start with bold markdown or contain bot signatures)
   const rawText =
-    message.message?.conversation ||
-    message.message?.extendedTextMessage?.text ||
+    msg.conversation ||
+    msg.extendedTextMessage?.text ||
     "";
   if (
     rawText.startsWith("*Transacao registrada") ||
@@ -265,10 +278,7 @@ export const POST = async (request: Request) => {
   const remoteJid = message.key?.remoteJid || "";
   const phone = senderField.replace("@s.whatsapp.net", "")
     || remoteJid.replace("@s.whatsapp.net", "").replace("@lid", "");
-  const text =
-    message.message?.conversation ||
-    message.message?.extendedTextMessage?.text ||
-    "";
+  const text = rawText;
 
   if (!phone || !text) {
     return NextResponse.json({ received: true });
