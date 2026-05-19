@@ -327,7 +327,9 @@ export const POST = async (request: Request) => {
   }
 
   // For new messages (no active session), acquire a processing lock
-  if (!existingSession || existingSession.step.startsWith("lock:") || existingSession.step.startsWith("done:")) {
+  // Check if session still exists (it may have been deleted above when abandoning old flow)
+  const currentSession = await db.whatsAppSession.findUnique({ where: { phone } });
+  if (!currentSession) {
     try {
       await db.whatsAppSession.create({
         data: { phone, step: `lock:${messageId}`, pendingData: {} },
@@ -358,8 +360,15 @@ export const POST = async (request: Request) => {
   }
 
   // Check if there's an active session (waiting for card selection or installments)
-  if (existingSession && !existingSession.step.startsWith("lock:")) {
-    return handleSession(existingSession, normalizedText, phone, userId, messageId, customCategories);
+  if (existingSession && !existingSession.step.startsWith("lock:") && !existingSession.step.startsWith("done:")) {
+    // If the message looks like a NEW transaction, abandon the old session and process fresh
+    const maybeNewTransaction = parseMessage(text, customCategories);
+    if (maybeNewTransaction && maybeNewTransaction.type) {
+      await db.whatsAppSession.delete({ where: { phone } }).catch(() => {});
+      // Fall through to parse as new transaction below
+    } else {
+      return handleSession(existingSession, normalizedText, phone, userId, messageId, customCategories);
+    }
   }
 
   // Parse new transaction
@@ -555,6 +564,7 @@ async function handleSession(
     }
 
     if (!category) {
+      data._msgId = messageId;
       await db.whatsAppSession.create({ data: { phone, step: "CATEGORY", pendingData: data as Prisma.JsonObject } }).catch(() => {});
       await sendWhatsApp(phone, "Nao entendi. Responda com o numero ou o nome da categoria.");
       return NextResponse.json({ received: true });
@@ -587,6 +597,7 @@ async function handleSession(
     const method =
       PAYMENT_BY_NUMBER[text] || PAYMENT_MAP[text];
     if (!method) {
+      data._msgId = messageId;
       await db.whatsAppSession.create({ data: { phone, step: "PAYMENT_METHOD", pendingData: data as Prisma.JsonObject } }).catch(() => {});
       await sendWhatsApp(phone, "Nao entendi. Responda com o numero (1-7) ou o nome do metodo.");
       return NextResponse.json({ received: true });
@@ -608,6 +619,7 @@ async function handleSession(
     const index = parseInt(text) - 1;
 
     if (isNaN(index) || index < 0 || index >= cardIds.length) {
+      data._msgId = messageId;
       await db.whatsAppSession.create({ data: { phone, step: "SELECT_CARD", pendingData: data as Prisma.JsonObject } }).catch(() => {});
       await sendWhatsApp(
         phone,
@@ -638,6 +650,7 @@ async function handleSession(
   if (session.step === "INSTALLMENTS") {
     const installments = parseInt(text);
     if (isNaN(installments) || installments < 1 || installments > 48) {
+      data._msgId = messageId;
       await db.whatsAppSession.create({ data: { phone, step: "INSTALLMENTS", pendingData: data as Prisma.JsonObject } }).catch(() => {});
       await sendWhatsApp(phone, "Numero invalido. Informe entre 1 e 48 parcelas.");
       return NextResponse.json({ received: true });
