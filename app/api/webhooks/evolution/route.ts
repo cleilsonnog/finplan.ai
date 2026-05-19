@@ -141,6 +141,7 @@ interface ParsedTransaction {
   category: TransactionCategory;
   paymentMethod: TransactionPaymentMethod;
   customCategoryId?: string;
+  description?: string;
   name: string;
 }
 
@@ -169,9 +170,14 @@ function parseMessage(text: string, customCategories: CustomCat[]): Partial<Pars
     }
   }
 
-  for (const word of words) {
+  const usedWords = new Set<number>();
+
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i];
+
     if (!type && TYPE_MAP[word]) {
       type = TYPE_MAP[word];
+      usedWords.add(i);
     }
 
     if (!amount) {
@@ -180,20 +186,40 @@ function parseMessage(text: string, customCategories: CustomCat[]): Partial<Pars
       const num = parseFloat(cleaned);
       if (!isNaN(num) && num > 0) {
         amount = num;
+        usedWords.add(i);
       }
     }
 
     if (!category && !customCategoryId && CATEGORY_MAP[word]) {
       category = CATEGORY_MAP[word];
+      usedWords.add(i);
     }
 
     if (!paymentMethod && PAYMENT_MAP[word]) {
       paymentMethod = PAYMENT_MAP[word];
+      usedWords.add(i);
+    }
+  }
+
+  // Mark custom category words as used
+  if (customCategoryId) {
+    const matchedCat = customCategories.find((c) => c.id === customCategoryId);
+    if (matchedCat) {
+      const catWords = normalizeText(matchedCat.name).split(/\s+/);
+      for (let i = 0; i < words.length; i++) {
+        if (catWords.includes(words[i])) usedWords.add(i);
+      }
     }
   }
 
   // Only treat as transaction if a type keyword was found (gastei, recebi, investi, etc.)
   if (!type) return null;
+
+  // Remaining words become the description
+  const description = words
+    .filter((_, i) => !usedWords.has(i))
+    .join(" ")
+    .trim();
 
   return {
     type: type || "EXPENSE",
@@ -201,11 +227,8 @@ function parseMessage(text: string, customCategories: CustomCat[]): Partial<Pars
     category,
     paymentMethod,
     customCategoryId,
+    description: description || undefined,
   };
-}
-
-function buildTransactionName(parsed: ParsedTransaction): string {
-  return `${TYPE_LABELS[parsed.type]} - ${CATEGORY_LABELS[parsed.category]} (WhatsApp)`;
 }
 
 export const POST = async (request: Request) => {
@@ -410,6 +433,7 @@ export const POST = async (request: Request) => {
       customCatNames,
     };
     if (parsed.paymentMethod) pendingData.paymentMethod = parsed.paymentMethod;
+    if (parsed.description) pendingData.description = parsed.description;
     await db.whatsAppSession.upsert({
       where: { phone },
       create: { phone, step: "CATEGORY", pendingData },
@@ -430,6 +454,7 @@ export const POST = async (request: Request) => {
       _msgId: messageId,
     };
     if (parsed.customCategoryId) pendingData.customCategoryId = parsed.customCategoryId;
+    if (parsed.description) pendingData.description = parsed.description;
     await db.whatsAppSession.upsert({
       where: { phone },
       create: { phone, step: "PAYMENT_METHOD", pendingData },
@@ -468,6 +493,7 @@ export const POST = async (request: Request) => {
       _msgId: messageId,
     };
     if (parsed.customCategoryId) cardPendingData.customCategoryId = parsed.customCategoryId;
+    if (parsed.description) cardPendingData.description = parsed.description;
     await db.whatsAppSession.upsert({
       where: { phone },
       create: { phone, step: "SELECT_CARD", pendingData: cardPendingData },
@@ -483,6 +509,7 @@ export const POST = async (request: Request) => {
     category: parsed.category,
     paymentMethod: parsed.paymentMethod,
     customCategoryId: parsed.customCategoryId,
+    description: parsed.description,
   }, phone);
 
   // Mark message as processed (keep lock so duplicate webhook is rejected)
@@ -733,6 +760,7 @@ async function createTransaction(
   const installments = (data.installments as number) || 1;
   const creditCardName = data.creditCardName as string | undefined;
   const customCategoryId = data.customCategoryId as string | undefined;
+  const description = data.description as string | undefined;
 
   // Resolve custom category name for display
   let categoryLabel = CATEGORY_LABELS[category] || "Outros";
@@ -744,7 +772,11 @@ async function createTransaction(
     if (customCat) categoryLabel = customCat.name;
   }
 
-  const name = `${TYPE_LABELS[type]} - ${categoryLabel} (WhatsApp)`;
+  // Use description if provided, capitalize first letter
+  const displayName = description
+    ? description.charAt(0).toUpperCase() + description.slice(1)
+    : `${TYPE_LABELS[type]} - ${categoryLabel}`;
+  const name = `${displayName} (WhatsApp)`;
 
   // Dedup: skip if same transaction was created in the last 60 seconds
   const recent = await db.transaction.findFirst({
