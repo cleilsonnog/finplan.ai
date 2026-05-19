@@ -62,9 +62,21 @@ export const upsertTransaction = async (params: UpsertTransactionParams) => {
     const installmentAmount = Math.round((params.amount / installments) * 100) / 100;
     const baseDate = new Date(params.date);
 
+    // Determine first installment month based on credit card closing day
+    let monthOffset = 1; // default: next month
+    if (params.creditCardId) {
+      const card = await db.creditCard.findUnique({
+        where: { id: params.creditCardId },
+        select: { closingDay: true },
+      });
+      if (card && baseDate.getDate() > card.closingDay) {
+        monthOffset = 2; // purchase after closing → skips to month after next
+      }
+    }
+
     const transactions = Array.from({ length: installments }, (_, i) => {
       const date = new Date(baseDate);
-      date.setMonth(date.getMonth() + i);
+      date.setMonth(date.getMonth() + monthOffset + i);
       return {
         name: params.name,
         amount: installmentAmount,

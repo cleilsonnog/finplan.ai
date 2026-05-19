@@ -798,8 +798,18 @@ async function createTransaction(
       const installmentAmount = Math.round((amount / installments) * 100) / 100;
       const now = new Date();
 
+      // Determine first installment month based on credit card closing day
+      let monthOffset = 1; // default: next month
+      const card = await db.creditCard.findUnique({
+        where: { id: creditCardId },
+        select: { closingDay: true },
+      });
+      if (card && now.getDate() > card.closingDay) {
+        monthOffset = 2; // purchase after closing → skips to month after next
+      }
+
       for (let i = 0; i < installments; i++) {
-        const date = new Date(now.getFullYear(), now.getMonth() + i, now.getDate());
+        const date = new Date(now.getFullYear(), now.getMonth() + monthOffset + i, now.getDate());
         await db.transaction.create({
           data: {
             name,
