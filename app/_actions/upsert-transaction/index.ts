@@ -95,6 +95,22 @@ export const upsertTransaction = async (params: UpsertTransactionParams) => {
     await db.transaction.createMany({ data: transactions });
   } else {
     // Single transaction
+    let transactionDate = new Date(params.date);
+
+    // Credit card purchases always go to next bill
+    if (isCreditCard && params.creditCardId) {
+      let monthOffset = 1;
+      const card = await db.creditCard.findUnique({
+        where: { id: params.creditCardId },
+        select: { closingDay: true },
+      });
+      if (card && transactionDate.getDate() > card.closingDay) {
+        monthOffset = 2;
+      }
+      transactionDate = new Date(transactionDate);
+      transactionDate.setMonth(transactionDate.getMonth() + monthOffset);
+    }
+
     await db.transaction.create({
       data: {
         name: params.name,
@@ -102,7 +118,7 @@ export const upsertTransaction = async (params: UpsertTransactionParams) => {
         type: params.type,
         category: params.category,
         paymentMethod: params.paymentMethod,
-        date: params.date,
+        date: transactionDate,
         userId,
         creditCardId: isCreditCard ? params.creditCardId : null,
         customCategoryId: params.customCategoryId || null,

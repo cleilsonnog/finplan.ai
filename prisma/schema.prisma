@@ -18,8 +18,9 @@ model CustomCategory {
   name         String
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
-  transactions Transaction[]
-  budgets      Budget[]
+  transactions      Transaction[]
+  budgets           Budget[]
+  recurringExpenses RecurringExpense[]
 
   @@unique([userId, name])
 }
@@ -39,8 +40,10 @@ model Transaction {
   installmentNumber Int                     @default(1)
   creditCardId     String?
   creditCard       CreditCard?              @relation(fields: [creditCardId], references: [id], onDelete: SetNull)
-  customCategoryId String?
-  customCategory   CustomCategory?          @relation(fields: [customCategoryId], references: [id], onDelete: SetNull)
+  customCategoryId   String?
+  customCategory     CustomCategory?          @relation(fields: [customCategoryId], references: [id], onDelete: SetNull)
+  recurringExpenseId String?
+  recurringExpense   RecurringExpense?        @relation(fields: [recurringExpenseId], references: [id], onDelete: SetNull)
 }
 
 enum TransactionType {
@@ -163,6 +166,23 @@ model WhatsAppLink {
   userId    String   @unique
   phone     String   @unique
   createdAt DateTime @default(now())
+}
+
+model RecurringExpense {
+  id               String              @id @default(uuid())
+  userId           String
+  name             String
+  amount           Decimal             @db.Decimal(10, 2)
+  category         TransactionCategory
+  customCategoryId String?
+  customCategory   CustomCategory?     @relation(fields: [customCategoryId], references: [id], onDelete: SetNull)
+  dueDay           Int
+  active           Boolean             @default(true)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  transactions     Transaction[]
+
+  @@index([userId])
 }
 
 model WhatsAppSession {

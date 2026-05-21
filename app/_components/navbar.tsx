@@ -42,6 +42,9 @@ const Navbar = () => {
             <Link href="/credit-cards" className={linkClass("/credit-cards")}>
               Cartões
             </Link>
+            <Link href="/recurring" className={linkClass("/recurring")}>
+              Recorrentes
+            </Link>
             <Link href="/categories" className={linkClass("/categories")}>
               Categorias
             </Link>
@@ -93,6 +96,13 @@ const Navbar = () => {
             onClick={() => setMenuOpen(false)}
           >
             Cartões
+          </Link>
+          <Link
+            href="/recurring"
+            className={linkClass("/recurring")}
+            onClick={() => setMenuOpen(false)}
+          >
+            Recorrentes
           </Link>
           <Link
             href="/categories"

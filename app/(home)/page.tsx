@@ -17,6 +17,8 @@ import ShareAccountButton from "./_components/share-account-button";
 import PendingInvitesBanner from "../_components/pending-invites-banner";
 import SharedAccountBadge from "../_components/shared-account-badge";
 import LandingPage from "./_components/landing-page";
+import UpcomingRecurring from "./_components/upcoming-recurring";
+import { getUpcomingRecurring } from "../_data/get-recurring-expenses";
 
 interface HomeProps {
   searchParams: Promise<{
@@ -36,7 +38,7 @@ const Home = async ({ searchParams }: HomeProps) => {
     redirect(`?month=${new Date().getMonth() + 1}`);
   }
   const hasPremiumPlan = await hasPremiumAccess();
-  const [dashboard, creditCardsRaw, canAddTransaction, customCategories, shareStatus, pendingInvites] =
+  const [dashboard, creditCardsRaw, canAddTransaction, customCategories, shareStatus, pendingInvites, upcomingRecurring] =
     await Promise.all([
       getDashboard(month),
       db.creditCard.findMany({ where: { userId: effectiveUserId } }),
@@ -48,6 +50,7 @@ const Home = async ({ searchParams }: HomeProps) => {
       }),
       getShareStatus(),
       getPendingInvitesForUser(),
+      getUpcomingRecurring(),
     ]);
   const creditCards = creditCardsRaw.map((c) => ({
     ...c,
@@ -58,6 +61,7 @@ const Home = async ({ searchParams }: HomeProps) => {
       <Navbar />
       <div className="flex flex-1 flex-col space-y-6 overflow-auto p-4 md:p-6">
         <PendingInvitesBanner invites={pendingInvites} />
+        <UpcomingRecurring items={upcomingRecurring} />
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold">Dashboard</h1>
