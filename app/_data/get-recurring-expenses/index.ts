@@ -1,12 +1,18 @@
 import { db } from "@/app/_lib/prisma";
 import { getEffectiveUserId } from "@/app/_lib/get-effective-user-id";
 
+function getBrazilNow() {
+  return new Date(
+    new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }),
+  );
+}
+
 export const getRecurringExpenses = async () => {
   const result = await getEffectiveUserId();
   if (!result) throw new Error("Unauthorized");
   const userId = result.effectiveUserId;
 
-  const now = new Date();
+  const now = getBrazilNow();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
@@ -42,7 +48,7 @@ export const getUpcomingRecurring = async () => {
   if (!result) return [];
   const userId = result.effectiveUserId;
 
-  const now = new Date();
+  const now = getBrazilNow();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
   const currentDay = now.getDate();
@@ -63,7 +69,7 @@ export const getUpcomingRecurring = async () => {
   });
 
   return expenses
-    .filter((e) => e.transactions.length === 0) // exclude already paid
+    .filter((e) => e.transactions.length === 0)
     .map((e) => {
       const effectiveDueDay = Math.min(e.dueDay, daysInMonth);
       let daysUntil = effectiveDueDay - currentDay;
