@@ -35,7 +35,10 @@ export const GET = async (request: Request) => {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const today = new Date();
+  // Use Brazil timezone (UTC-3) since all users are Brazilian
+  const today = new Date(
+    new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }),
+  );
   const currentDay = today.getDate();
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
   const monthEnd = new Date(

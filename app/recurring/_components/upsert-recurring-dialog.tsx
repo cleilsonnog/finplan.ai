@@ -32,6 +32,7 @@ import {
   CustomCategoryOption,
 } from "@/app/_constants/transactions";
 import { z } from "zod";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { upsertRecurringExpense } from "@/app/_actions/recurring-expense";
@@ -84,20 +85,28 @@ const UpsertRecurringDialog = ({
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: defaultValues
-      ? {
+    defaultValues: {
+      name: "",
+      amount: 0,
+      category: "",
+      dueDay: 1,
+    },
+  });
+
+  useEffect(() => {
+    if (isOpen) {
+      if (defaultValues) {
+        form.reset({
           name: defaultValues.name,
           amount: defaultValues.amount,
           category: getCategoryValue(),
           dueDay: defaultValues.dueDay,
-        }
-      : {
-          name: "",
-          amount: 0,
-          category: "",
-          dueDay: 1,
-        },
-  });
+        });
+      } else {
+        form.reset({ name: "", amount: 0, category: "", dueDay: 1 });
+      }
+    }
+  }, [isOpen, defaultValues]);
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -169,7 +178,7 @@ const UpsertRecurringDialog = ({
                   <FormLabel>Categoria</FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    defaultValue={field.value}
+                    value={field.value}
                   >
                     <FormControl>
                       <SelectTrigger>
