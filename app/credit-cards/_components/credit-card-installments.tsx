@@ -23,6 +23,8 @@ import {
 } from "@/app/_components/ui/table";
 import { Badge } from "@/app/_components/ui/badge";
 import { Progress } from "@/app/_components/ui/progress";
+import { Button } from "@/app/_components/ui/button";
+import { FileDown } from "lucide-react";
 import { useState } from "react";
 
 interface InstallmentGroup {
@@ -67,6 +69,48 @@ const CreditCardInstallments = ({
       : installmentGroups.filter((g) => g.creditCardId === selectedCardId);
 
   const totalRemaining = filtered.reduce((sum, g) => sum + g.remainingAmount, 0);
+  const totalMonthly = filtered.reduce((sum, g) => sum + g.installmentAmount, 0);
+
+  const handleExportPdf = async () => {
+    const { default: jsPDF } = await import("jspdf");
+    const autoTable = (await import("jspdf-autotable")).default;
+
+    const doc = new jsPDF();
+
+    doc.setFontSize(16);
+    doc.text("Compras Parceladas", 14, 20);
+
+    doc.setFontSize(9);
+    let startY = 28;
+    if (selectedCardId !== "all") {
+      const card = creditCards.find((c) => c.id === selectedCardId);
+      if (card) {
+        doc.text(`Cartao: ${card.name} (****${card.lastFourDigits})`, 14, 27);
+        startY = 32;
+      }
+    }
+
+    const rows = filtered.map((g) => [
+      g.name,
+      g.creditCardName,
+      `${g.paidInstallments}/${g.totalInstallments}`,
+      formatCurrency(g.installmentAmount),
+      formatCurrency(g.totalAmount),
+      formatCurrency(g.remainingAmount),
+    ]);
+
+    autoTable(doc, {
+      startY,
+      head: [["Nome", "Cartao", "Progresso", "Parcela", "Total", "Restante"]],
+      body: rows,
+      foot: [["", "", "", "", formatCurrency(totalMonthly), formatCurrency(totalRemaining)]],
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [30, 30, 30], textColor: 255 },
+      footStyles: { fillColor: [40, 40, 40], textColor: 255, fontStyle: "bold" },
+    });
+
+    doc.save("compras-parceladas.pdf");
+  };
 
   return (
     <Card>
@@ -74,19 +118,30 @@ const CreditCardInstallments = ({
         <CardTitle className="text-base font-bold">
           Compras Parceladas
         </CardTitle>
-        <Select value={selectedCardId} onValueChange={setSelectedCardId}>
-          <SelectTrigger className="w-full sm:w-[220px]">
-            <SelectValue placeholder="Filtrar por cartão" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os cartões</SelectItem>
-            {creditCards.map((card) => (
-              <SelectItem key={card.id} value={card.id}>
-                {card.name} (****{card.lastFourDigits})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Select value={selectedCardId} onValueChange={setSelectedCardId}>
+            <SelectTrigger className="w-full sm:w-[220px]">
+              <SelectValue placeholder="Filtrar por cartão" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os cartões</SelectItem>
+              {creditCards.map((card) => (
+                <SelectItem key={card.id} value={card.id}>
+                  {card.name} (****{card.lastFourDigits})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportPdf}
+            disabled={filtered.length === 0}
+          >
+            <FileDown className="mr-1 h-4 w-4" />
+            PDF
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {filtered.length === 0 ? (
@@ -140,9 +195,12 @@ const CreditCardInstallments = ({
                 </TableBody>
               </Table>
             </div>
-            <div className="mt-4 flex justify-end border-t pt-4">
-              <p className="text-sm font-bold">
-                Total restante: {formatCurrency(totalRemaining)}
+            <div className="mt-4 flex justify-end gap-6 border-t pt-4">
+              <p className="text-sm text-muted-foreground">
+                Parcela mensal: <span className="font-bold text-foreground">{formatCurrency(totalMonthly)}</span>
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Total restante: <span className="font-bold text-foreground">{formatCurrency(totalRemaining)}</span>
               </p>
             </div>
           </>
