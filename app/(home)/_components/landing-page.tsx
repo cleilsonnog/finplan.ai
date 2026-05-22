@@ -8,10 +8,12 @@ import WhatsAppFloatButton from "@/app/_components/whatsapp-float-button";
 import {
   ArrowRightIcon,
   BarChart3Icon,
+  BellRingIcon,
   BrainCircuitIcon,
   CreditCardIcon,
   FlameIcon,
   PiggyBankIcon,
+  RepeatIcon,
   ShieldCheckIcon,
   SmartphoneIcon,
   UsersIcon,
@@ -51,6 +53,18 @@ const FEATURES = [
       "Visualize suas finanças com gráficos interativos, resumos mensais e tendências de gastos.",
   },
   {
+    icon: RepeatIcon,
+    title: "Gastos Recorrentes",
+    description:
+      "Cadastre contas fixas como aluguel, luz e internet. Marque como pago e acompanhe vencimentos no dashboard.",
+  },
+  {
+    icon: BellRingIcon,
+    title: "Lembretes via WhatsApp",
+    description:
+      "Receba lembretes de vencimento e registre transações diretamente pelo WhatsApp, sem abrir o app.",
+  },
+  {
     icon: UsersIcon,
     title: "Conta Compartilhada",
     description:
@@ -66,8 +80,8 @@ const HIGHLIGHTS = [
   },
   {
     icon: SmartphoneIcon,
-    title: "PWA",
-    description: "Instale no celular como um app nativo",
+    title: "PWA + WhatsApp",
+    description: "Use no celular como app ou direto pelo WhatsApp",
   },
   {
     icon: BrainCircuitIcon,
@@ -131,9 +145,9 @@ const LandingPage = () => {
           Planeje hoje. <span className="text-primary">Garanta amanhã.</span>
         </h1>
         <p className="mb-10 max-w-2xl text-lg text-muted-foreground sm:text-xl">
-          Organize suas finanças pessoais e conte com ajuda da inteligência
-          artificial. Controle transações, orçamentos, cartões de crédito e
-          receba relatórios com insights personalizados.
+          Organize suas finanças pessoais com inteligência artificial.
+          Controle transações, orçamentos, cartões de crédito, gastos
+          recorrentes e receba lembretes pelo WhatsApp.
         </p>
         <div className="flex flex-col gap-4 sm:flex-row">
           <SignInButton>
@@ -239,6 +253,10 @@ const LandingPage = () => {
                 {
                   src: "/screenshots/mobile-dashboard.jpeg",
                   alt: "Dashboard no celular",
+                },
+                {
+                  src: "/screenshots/mobile-whatsapp.jpeg",
+                  alt: "Transações e lembretes via WhatsApp",
                 },
                 {
                   src: "/screenshots/mobile-menu.jpeg",
@@ -424,6 +442,10 @@ const LandingPage = () => {
                   <ShieldCheckIcon className="h-4 w-4 text-primary" />
                   Orçamentos por categoria
                 </li>
+                <li className="flex items-center gap-2">
+                  <ShieldCheckIcon className="h-4 w-4 text-primary" />
+                  Gastos recorrentes
+                </li>
               </ul>
               <SignInButton>
                 <Button variant="outline" className="w-full">
@@ -456,6 +478,14 @@ const LandingPage = () => {
                 <li className="flex items-center gap-2">
                   <ShieldCheckIcon className="h-4 w-4 text-primary" />
                   Relatórios com IA
+                </li>
+                <li className="flex items-center gap-2">
+                  <ShieldCheckIcon className="h-4 w-4 text-primary" />
+                  Transações via WhatsApp
+                </li>
+                <li className="flex items-center gap-2">
+                  <ShieldCheckIcon className="h-4 w-4 text-primary" />
+                  Lembretes de vencimento
                 </li>
                 <li className="flex items-center gap-2">
                   <ShieldCheckIcon className="h-4 w-4 text-primary" />
