@@ -111,8 +111,10 @@ export const payRecurringExpense = async (
   });
   if (!expense) throw new Error("Recurring expense not found");
 
-  // Check if already paid this month
-  const now = new Date();
+  // Check if already paid this month (use Brazil timezone)
+  const now = new Date(
+    new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }),
+  );
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
   const existing = await db.transaction.findFirst({
