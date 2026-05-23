@@ -1,6 +1,6 @@
 "use client";
 
-import { UserButton } from "@clerk/nextjs";
+import { UserButton, useUser } from "@clerk/nextjs";
 import { MenuIcon, XIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -9,6 +9,7 @@ import { useState } from "react";
 
 const Navbar = () => {
   const pathname = usePathname();
+  const { user } = useUser();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const linkClass = (path: string) =>
@@ -59,12 +60,18 @@ const Navbar = () => {
         <div className="hidden md:block">
           <UserButton showName />
         </div>
-        <button
-          className="md:hidden text-muted-foreground"
-          onClick={() => setMenuOpen(!menuOpen)}
-        >
-          {menuOpen ? <XIcon size={24} /> : <MenuIcon size={24} />}
-        </button>
+        <div className="flex items-center gap-3 md:hidden">
+          {user?.firstName && (
+            <span className="text-sm font-medium">{user.firstName}</span>
+          )}
+          <UserButton />
+          <button
+            className="text-muted-foreground"
+            onClick={() => setMenuOpen(!menuOpen)}
+          >
+            {menuOpen ? <XIcon size={24} /> : <MenuIcon size={24} />}
+          </button>
+        </div>
       </div>
 
       {menuOpen && (
@@ -125,9 +132,6 @@ const Navbar = () => {
           >
             Config
           </Link>
-          <div className="pt-2 border-t">
-            <UserButton showName />
-          </div>
         </div>
       )}
     </nav>

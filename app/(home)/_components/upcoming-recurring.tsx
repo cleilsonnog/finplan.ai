@@ -9,6 +9,7 @@ import {
 import { TRANSACTION_CATEGORY_LABELS } from "@/app/_constants/transactions";
 import { TransactionCategory } from "@prisma/client";
 import { BellIcon } from "lucide-react";
+import Link from "next/link";
 
 interface UpcomingItem {
   id: string;
@@ -48,9 +49,10 @@ const UpcomingRecurring = ({ items }: UpcomingRecurringProps) => {
       <CardContent>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-6">
           {items.map((item) => (
-            <div
+            <Link
+              href="/recurring"
               key={item.id}
-              className="flex items-center justify-between rounded-lg border p-3"
+              className="flex items-center justify-between rounded-lg border p-3 transition-colors hover:bg-accent"
             >
               <div className="flex flex-col gap-0.5">
                 <span className="text-sm font-medium">{item.name}</span>
@@ -75,7 +77,7 @@ const UpcomingRecurring = ({ items }: UpcomingRecurringProps) => {
                   {getDueLabel(item.daysUntil)}
                 </span>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </CardContent>

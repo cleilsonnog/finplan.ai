@@ -62,7 +62,7 @@ const Home = async ({ searchParams }: HomeProps) => {
       <div className="flex flex-1 flex-col space-y-6 overflow-auto p-4 md:p-6">
         <PendingInvitesBanner invites={pendingInvites} />
         <UpcomingRecurring items={upcomingRecurring} />
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold">Dashboard</h1>
             {shareStatus.role !== "none" && (

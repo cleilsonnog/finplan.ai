@@ -154,7 +154,7 @@ const RecurringList = ({ expenses, customCategories }: RecurringListProps) => {
             expenses.map((expense) => (
               <div
                 key={expense.id}
-                className={`flex items-center justify-between rounded-lg border p-4 ${
+                className={`flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between ${
                   !expense.active ? "opacity-50" : ""
                 } ${expense.paidThisMonth ? "border-green-500/30 bg-green-500/5" : ""}`}
               >
@@ -171,7 +171,7 @@ const RecurringList = ({ expenses, customCategories }: RecurringListProps) => {
                       </Badge>
                     )}
                   </div>
-                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                  <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                     <span className="font-semibold text-foreground">
                       {formatCurrency(expense.amount)}
                     </span>
@@ -179,7 +179,7 @@ const RecurringList = ({ expenses, customCategories }: RecurringListProps) => {
                     <span>Vence dia {expense.dueDay}</span>
                   </div>
                 </div>
-                <div className="flex gap-1">
+                <div className="flex shrink-0 gap-1">
                   {expense.active && !expense.paidThisMonth && (
                     <Button
                       size="icon"
