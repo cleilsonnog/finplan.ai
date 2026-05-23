@@ -26,7 +26,7 @@ const RecurringPage = async () => {
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <Navbar />
-      <div className="flex-1 space-y-6 overflow-auto p-4 md:p-6">
+      <div className="flex-1 space-y-6 overflow-auto p-4 scrollbar-thin md:p-6">
         <h1 className="text-2xl font-bold">Gastos Recorrentes</h1>
         <div className="max-w-2xl">
           <RecurringList
