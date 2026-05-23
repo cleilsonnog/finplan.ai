@@ -16,12 +16,18 @@ const formatCurrency = (value: number) =>
     maximumFractionDigits: 0,
   }).format(value);
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+interface TooltipEntry {
+  name: string;
+  value: number;
+  color: string;
+}
+
+const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: TooltipEntry[]; label?: string }) => {
   if (!active || !payload) return null;
   return (
     <div className="rounded-lg border bg-background p-3 shadow-md">
       <p className="mb-2 text-sm font-bold">{label}</p>
-      {payload.map((entry: any) => (
+      {payload.map((entry: TooltipEntry) => (
         <p key={entry.name} className="text-xs" style={{ color: entry.color }}>
           {entry.name}: {formatCurrency(entry.value)}
         </p>
