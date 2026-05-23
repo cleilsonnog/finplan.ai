@@ -30,9 +30,11 @@ docker compose up -d # Start local PostgreSQL
 - `app/transactions/` — Transactions page with `_columns/` and `_components/`
 - `app/credit-cards/` — Credit cards, bills, installments management
 - `app/budget/` — Monthly budget by category
+- `app/recurring/` — Recurring expenses management (CRUD, pay, toggle)
 - `app/categories/` — Custom categories management
 - `app/subscription/` — Plans page (free vs premium)
 - `app/settings/` — Settings page (WhatsApp link)
+- `app/api/cron/recurring-reminders/` — Daily WhatsApp reminders for due expenses
 - `middleware.ts` — Clerk auth middleware
 - `prisma/schema.prisma` — Database models and enums
 
@@ -44,6 +46,7 @@ docker compose up -d # Start local PostgreSQL
 - **Budget** — Monthly budget limits per category
 - **CustomCategory** — User-defined categories
 - **AccountShare / AccountShareInvite** — Account sharing between users
+- **RecurringExpense** — Fixed monthly expenses (rent, utilities) with due day, active/inactive, linked transactions for payment tracking
 - **WhatsAppLink** — Links a user's phone number to their account for WhatsApp transactions
 - **WhatsAppSession** — Tracks multi-step conversation state and message dedup locks
 
@@ -55,8 +58,11 @@ docker compose up -d # Start local PostgreSQL
 - **AI Reports** — OpenAI-powered financial analysis with transactions, budgets, credit cards, bills data. Structured prompt with scoring.
 - **Account Sharing** — Share financial data with a partner via invite system
 - **PIX Payment** — Mercado Pago integration for lifetime plan. QR code modal on subscription page, webhook with HMAC validation, Telegram notification on payment received.
+- **Recurring Expenses** — Fixed monthly bills (rent, utilities, internet). CRUD with category, due day, active/inactive toggle. "Pay" button creates a real Transaction linked via `recurringExpenseId`. Badge shows Paid/Pending per month. Dashboard widget shows upcoming due dates (next 7 days, excludes paid).
+- **Recurring Reminders** — Vercel Cron (`/api/cron/recurring-reminders`) runs daily at 9h BRT. Sends WhatsApp message to users with unpaid expenses due today. Protected with `CRON_SECRET`.
 - **WhatsApp Transactions** — Register transactions via WhatsApp using Evolution API. Webhook at `/api/webhooks/evolution`. Supports credit card selection, installments, multi-step conversation. Settings page at `/settings` to link/unlink phone number.
 - **WhatsApp Float Button** — Floating contact button on landing and subscription pages
+- **PDF Export** — Credit card installments and transactions exportable as PDF (jspdf + jspdf-autotable). Respects card filter.
 - **PWA** — Installable as mobile app
 - **OG Image** — 1200x630 dashboard preview for link sharing
 
@@ -67,6 +73,7 @@ docker compose up -d # Start local PostgreSQL
 - **Server Actions** — Validated with Zod schemas, authenticated via `getEffectiveUserId()`, call `revalidatePath` after mutations
 - **UI components** — Based on shadcn/ui (Radix + CVA + Tailwind). Dark theme only
 - **Path alias** — `@/*` maps to project root
+- **Brazil timezone** — All date calculations for recurring expenses use `America/Sao_Paulo` (Vercel runs in UTC)
 
 ### Database
 
@@ -87,10 +94,11 @@ docker compose up -d # Start local PostgreSQL
 - **Mercado Pago** — PIX payment for lifetime plan. SDK `mercadopago`, webhook at `/api/webhooks/mercadopago`
 - **Telegram Bot** — Notifies owner on PIX payment received (via bot API, no SDK)
 - **Evolution API** — WhatsApp integration for transaction registration. Instance on VPS (212.56.33.113:8080), webhook sends messages to `/api/webhooks/evolution`
+- **Vercel Cron** — `vercel.json` defines daily cron at `0 12 * * *` (9h BRT). Requires `CRON_SECRET` env var.
 - Subscription state managed via Clerk metadata (`publicMetadata.subscriptionPlan`, `privateMetadata.lifetimePurchase`)
 
 ### Pricing
 
-- **Free**: 15 transactions/month, dashboard, credit cards, budgets
-- **Premium (R$14,99/mês)**: Unlimited transactions, AI reports, account sharing, custom categories
+- **Free**: 15 transactions/month, dashboard, credit cards, budgets, recurring expenses
+- **Premium (R$14,99/mês)**: Unlimited transactions, AI reports, account sharing, custom categories, WhatsApp transactions, WhatsApp reminders
 - **Lifetime (R$14,99 único)**: Same as premium, one-time payment via Stripe (card) or Mercado Pago (PIX)
