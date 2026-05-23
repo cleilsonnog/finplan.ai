@@ -61,9 +61,9 @@ const Navbar = () => {
           <UserButton showName />
         </div>
         <div className="flex items-center gap-3 md:hidden">
-          {user?.firstName && (
-            <span className="text-sm font-medium">{user.firstName}</span>
-          )}
+          <span className="text-sm font-medium" suppressHydrationWarning>
+            {user?.firstName ?? ""}
+          </span>
           <UserButton />
           <button
             className="text-muted-foreground"

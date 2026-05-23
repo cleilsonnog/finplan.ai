@@ -40,10 +40,14 @@ const SharedAccountBadge = ({ role, partnerName }: SharedAccountBadgeProps) => {
     }
   };
 
+  const firstName = partnerName?.split(" ")[0] ?? null;
+
+  const partnerDisplay = firstName ?? (role === "owner" ? "membro" : "proprietário");
+
   const label =
     role === "owner"
-      ? `Compartilhando com ${partnerName ?? "membro"}`
-      : `Conta de ${partnerName ?? "proprietário"}`;
+      ? `Conta com ${partnerDisplay}`
+      : `Conta de ${partnerDisplay}`;
 
   if (role === "member") {
     return (
