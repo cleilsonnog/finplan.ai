@@ -1,0 +1,78 @@
+import { db } from "@/app/_lib/prisma";
+import { getEffectiveUserId } from "@/app/_lib/get-effective-user-id";
+
+export interface MonthlyOverviewItem {
+  month: string;
+  monthLabel: string;
+  deposits: number;
+  expenses: number;
+  investments: number;
+  recurring: number;
+}
+
+const MONTH_LABELS = [
+  "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
+  "Jul", "Ago", "Set", "Out", "Nov", "Dez",
+];
+
+export const getMonthlyOverview = async (
+  currentMonth: string,
+): Promise<MonthlyOverviewItem[]> => {
+  const result = await getEffectiveUserId();
+  if (!result) throw new Error("Unauthorized");
+  const userId = result.effectiveUserId;
+  const year = new Date().getFullYear();
+  const current = Number(currentMonth);
+
+  const months: number[] = [];
+  for (let i = 5; i >= 0; i--) {
+    let m = current - i;
+    if (m <= 0) m += 12;
+    months.push(m);
+  }
+
+  const overview: MonthlyOverviewItem[] = await Promise.all(
+    months.map(async (m) => {
+      const monthStr = String(m).padStart(2, "0");
+      const start = new Date(`${year}-${monthStr}-01`);
+      const nextMonth = m === 12 ? 1 : m + 1;
+      const nextYear = m === 12 ? year + 1 : year;
+      const end = new Date(
+        `${nextYear}-${String(nextMonth).padStart(2, "0")}-01`,
+      );
+
+      const where = { userId, date: { gte: start, lt: end } };
+
+      const [depositsAgg, expensesAgg, investmentsAgg, recurringAgg] =
+        await Promise.all([
+          db.transaction.aggregate({
+            where: { ...where, type: "DEPOSIT" },
+            _sum: { amount: true },
+          }),
+          db.transaction.aggregate({
+            where: { ...where, type: "EXPENSE", recurringExpenseId: null },
+            _sum: { amount: true },
+          }),
+          db.transaction.aggregate({
+            where: { ...where, type: "INVESTMENT" },
+            _sum: { amount: true },
+          }),
+          db.transaction.aggregate({
+            where: { ...where, type: "EXPENSE", recurringExpenseId: { not: null } },
+            _sum: { amount: true },
+          }),
+        ]);
+
+      return {
+        month: monthStr,
+        monthLabel: MONTH_LABELS[m - 1],
+        deposits: Number(depositsAgg._sum.amount ?? 0),
+        expenses: Number(expensesAgg._sum.amount ?? 0),
+        investments: Number(investmentsAgg._sum.amount ?? 0),
+        recurring: Number(recurringAgg._sum.amount ?? 0),
+      };
+    }),
+  );
+
+  return overview;
+};

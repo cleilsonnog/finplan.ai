@@ -19,6 +19,8 @@ import SharedAccountBadge from "../_components/shared-account-badge";
 import LandingPage from "./_components/landing-page";
 import UpcomingRecurring from "./_components/upcoming-recurring";
 import { getUpcomingRecurring } from "../_data/get-recurring-expenses";
+import MonthlyBarChart from "./_components/monthly-bar-chart";
+import { getMonthlyOverview } from "../_data/get-monthly-overview";
 
 interface HomeProps {
   searchParams: Promise<{
@@ -38,7 +40,7 @@ const Home = async ({ searchParams }: HomeProps) => {
     redirect(`?month=${new Date().getMonth() + 1}`);
   }
   const hasPremiumPlan = await hasPremiumAccess();
-  const [dashboard, creditCardsRaw, canAddTransaction, customCategories, shareStatus, pendingInvites, upcomingRecurring] =
+  const [dashboard, creditCardsRaw, canAddTransaction, customCategories, shareStatus, pendingInvites, upcomingRecurring, monthlyOverview] =
     await Promise.all([
       getDashboard(month),
       db.creditCard.findMany({ where: { userId: effectiveUserId } }),
@@ -51,6 +53,7 @@ const Home = async ({ searchParams }: HomeProps) => {
       getShareStatus(),
       getPendingInvitesForUser(),
       getUpcomingRecurring(),
+      getMonthlyOverview(month),
     ]);
   const creditCards = creditCardsRaw.map((c) => ({
     ...c,
@@ -81,22 +84,21 @@ const Home = async ({ searchParams }: HomeProps) => {
             <TimeSelect />
           </div>
         </div>
-        <div className="grid grid-cols-1 gap-6 lg:min-h-[600px] lg:grid-cols-[2fr,1fr]">
-          <div className="flex flex-col gap-6">
-            <SummaryCards
-              month={month}
-              {...dashboard}
-              creditCards={creditCards}
-              canUserAddTransaction={canAddTransaction}
-              customCategories={customCategories}
-            />
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-3 md:grid-rows-1">
-              <TransactionsPieChart {...dashboard} />
-              <ExpensesPerCategory
-                expensesPerCategory={dashboard.totalExpensePerCategory}
-              />
-            </div>
-          </div>
+        <SummaryCards
+          month={month}
+          {...dashboard}
+          creditCards={creditCards}
+          canUserAddTransaction={canAddTransaction}
+          customCategories={customCategories}
+        />
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[3fr,1fr]">
+          <MonthlyBarChart data={monthlyOverview} />
+          <TransactionsPieChart {...dashboard} />
+        </div>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <ExpensesPerCategory
+            expensesPerCategory={dashboard.totalExpensePerCategory}
+          />
           <LastTransactions lastTransactions={dashboard.lastTransactions} />
         </div>
       </div>
