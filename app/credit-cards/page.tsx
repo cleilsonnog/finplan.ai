@@ -12,14 +12,20 @@ import CreditCardInstallments from "./_components/credit-card-installments";
 import CreditCardBills from "./_components/credit-card-bills";
 import { getCreditCardBills } from "../_data/get-credit-card-bills";
 import { getEffectiveUserId } from "../_lib/get-effective-user-id";
+import TimeSelect from "../(home)/_components/time-select";
 
-const CreditCardsPage = async () => {
+interface CreditCardsPageProps {
+  searchParams: Promise<{ month?: string }>;
+}
+
+const CreditCardsPage = async ({ searchParams }: CreditCardsPageProps) => {
   const result = await getEffectiveUserId();
   if (!result) {
     redirect("/login");
   }
   const userId = result.effectiveUserId;
-  const currentMonth = String(new Date().getMonth() + 1);
+  const { month: monthParam } = await searchParams;
+  const currentMonth = monthParam ?? String(new Date().getMonth() + 1);
   const [creditCards, creditCardSummary, creditCardBills, ccTransactions, installmentTransactions] =
     await Promise.all([
       db.creditCard.findMany({ where: { userId } }),
@@ -127,7 +133,10 @@ const CreditCardsPage = async () => {
       <div className="flex flex-1 flex-col space-y-6 overflow-auto scroll-smooth scrollbar-thin p-4 md:p-6">
         <div className="flex w-full items-center justify-between">
           <h1 className="text-2xl font-bold">Cartões de Crédito</h1>
-          <AddCreditCardButton />
+          <div className="flex items-center gap-3">
+            <TimeSelect />
+            <AddCreditCardButton />
+          </div>
         </div>
 
         <CreditCardsSummary creditCardSummary={creditCardSummary} />
