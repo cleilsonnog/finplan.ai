@@ -131,9 +131,9 @@ const CreditCardsPage = async ({ searchParams }: CreditCardsPageProps) => {
     <div className="flex h-full flex-col overflow-hidden">
       <Navbar />
       <div className="flex flex-1 flex-col space-y-6 overflow-auto scroll-smooth scrollbar-thin p-4 md:p-6">
-        <div className="flex w-full items-center justify-between">
-          <h1 className="text-2xl font-bold">Cartões de Crédito</h1>
-          <div className="flex items-center gap-3">
+        <div className="flex w-full flex-wrap items-center justify-between gap-2">
+          <h1 className="text-lg font-bold sm:text-2xl">Cartões de Crédito</h1>
+          <div className="flex items-center gap-2">
             <TimeSelect />
             <AddCreditCardButton />
           </div>
