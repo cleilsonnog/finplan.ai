@@ -28,14 +28,15 @@ const TimeSelect = () => {
   const { push } = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const month = searchParams.get("month");
+  const currentMonth = String(new Date().getMonth() + 1).padStart(2, "0");
+  const month = searchParams.get("month") ?? currentMonth;
   const handleMonthChange = (month: string) => {
     push(`${pathname}?month=${month}`);
   };
   return (
     <Select
       onValueChange={(value) => handleMonthChange(value)}
-      defaultValue={month ?? ""}
+      defaultValue={month}
     >
       <SelectTrigger className="w-[150px] rounded-full">
         <SelectValue placeholder="Mês" />

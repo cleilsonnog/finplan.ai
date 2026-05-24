@@ -39,9 +39,9 @@ const Home = async ({ searchParams }: HomeProps) => {
   }
   const { month } = await searchParams;
   const { effectiveUserId } = result;
-  const monthIsInvalid = !month || !isMatch(month, "MM");
+  const monthIsInvalid = !month || !isMatch(month.padStart(2, "0"), "MM");
   if (monthIsInvalid) {
-    redirect(`?month=${new Date().getMonth() + 1}`);
+    redirect(`?month=${String(new Date().getMonth() + 1).padStart(2, "0")}`);
   }
   const hasPremiumPlan = await hasPremiumAccess();
   const [
