@@ -132,7 +132,7 @@ const CreditCardsPage = async () => {
 
         <CreditCardsSummary creditCardSummary={creditCardSummary} />
 
-        <DashboardCreditCards cards={creditCardSummary.cards} />
+        <DashboardCreditCards cards={creditCardSummary.cards} editable />
 
         <CreditCardBills
           bills={creditCardBills}

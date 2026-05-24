@@ -7,11 +7,15 @@ export interface CreditCardSummaryItem {
     name: string;
     lastFourDigits: string;
     brand: string;
+    bank: string;
+    color: string;
     limit: number;
     closingDay: number;
     dueDay: number;
   };
   invoiceTotal: number;
+  cashTotal: number;
+  installmentTotal: number;
   availableLimit: number;
   usagePercent: number;
 }
@@ -19,6 +23,8 @@ export interface CreditCardSummaryItem {
 export interface CreditCardSummary {
   cards: CreditCardSummaryItem[];
   totalInvoice: number;
+  totalCash: number;
+  totalInstallment: number;
   totalLimit: number;
   totalAvailable: number;
   totalUsagePercent: number;
@@ -39,6 +45,8 @@ export const getCreditCardSummary = async (
     return {
       cards: [],
       totalInvoice: 0,
+      totalCash: 0,
+      totalInstallment: 0,
       totalLimit: 0,
       totalAvailable: 0,
       totalUsagePercent: 0,
@@ -66,18 +74,25 @@ export const getCreditCardSummary = async (
       const cycleStart = new Date(prevYear, prevMonth - 1, clampedStartDay);
       const cycleEnd = new Date(year, monthNum - 1, clampedClosingDay, 23, 59, 59, 999);
 
-      const result = await db.transaction.aggregate({
-        where: {
-          creditCardId: cc.id,
-          date: {
-            gte: cycleStart,
-            lte: cycleEnd,
-          },
-        },
-        _sum: { amount: true },
-      });
+      const dateFilter = {
+        creditCardId: cc.id,
+        date: { gte: cycleStart, lte: cycleEnd },
+      };
 
-      const invoiceTotal = Number(result._sum.amount ?? 0);
+      const [cashResult, installmentResult] = await Promise.all([
+        db.transaction.aggregate({
+          where: { ...dateFilter, installments: 1 },
+          _sum: { amount: true },
+        }),
+        db.transaction.aggregate({
+          where: { ...dateFilter, installments: { gt: 1 } },
+          _sum: { amount: true },
+        }),
+      ]);
+
+      const cashTotal = Number(cashResult._sum.amount ?? 0);
+      const installmentTotal = Number(installmentResult._sum.amount ?? 0);
+      const invoiceTotal = cashTotal + installmentTotal;
       const limit = Number(cc.limit);
 
       return {
@@ -86,11 +101,15 @@ export const getCreditCardSummary = async (
           name: cc.name,
           lastFourDigits: cc.lastFourDigits,
           brand: cc.brand,
+          bank: cc.bank,
+          color: cc.color,
           limit,
           closingDay: cc.closingDay,
           dueDay: cc.dueDay,
         },
         invoiceTotal,
+        cashTotal,
+        installmentTotal,
         availableLimit: limit - invoiceTotal,
         usagePercent: limit > 0 ? Math.round((invoiceTotal / limit) * 100) : 0,
       };
@@ -98,6 +117,8 @@ export const getCreditCardSummary = async (
   );
 
   const totalInvoice = cards.reduce((sum, c) => sum + c.invoiceTotal, 0);
+  const totalCash = cards.reduce((sum, c) => sum + c.cashTotal, 0);
+  const totalInstallment = cards.reduce((sum, c) => sum + c.installmentTotal, 0);
   const totalLimit = cards.reduce((sum, c) => sum + c.card.limit, 0);
   const totalAvailable = totalLimit - totalInvoice;
   const totalUsagePercent =
@@ -106,6 +127,8 @@ export const getCreditCardSummary = async (
   return {
     cards,
     totalInvoice,
+    totalCash,
+    totalInstallment,
     totalLimit,
     totalAvailable,
     totalUsagePercent,

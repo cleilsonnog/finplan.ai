@@ -15,6 +15,7 @@ interface UpsertCreditCardParams {
   limit: number;
   closingDay: number;
   dueDay: number;
+  color: string;
 }
 
 export const upsertCreditCard = async (params: UpsertCreditCardParams) => {

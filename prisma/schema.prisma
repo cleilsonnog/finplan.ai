@@ -133,6 +133,7 @@ model CreditCard {
   limit          Decimal       @db.Decimal(10, 2)
   closingDay     Int
   dueDay         Int
+  color          String        @default("blue")
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
   transactions   Transaction[]

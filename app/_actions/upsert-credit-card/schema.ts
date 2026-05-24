@@ -1,5 +1,8 @@
 import { CardBrand } from "@prisma/client";
 import { z } from "zod";
+import { CARD_COLORS } from "@/app/_constants/credit-cards";
+
+const colorValues = CARD_COLORS.map((c) => c.value) as [string, ...string[]];
 
 export const upsertCreditCardSchema = z.object({
   name: z.string().trim().min(1, {
@@ -37,4 +40,7 @@ export const upsertCreditCardSchema = z.object({
     .int()
     .min(1, { message: "Mínimo 1." })
     .max(31, { message: "Máximo 31." }),
+  color: z.enum(colorValues, {
+    required_error: "A cor é obrigatória.",
+  }),
 });

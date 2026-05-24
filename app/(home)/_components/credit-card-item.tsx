@@ -1,36 +1,34 @@
 "use client";
 
+import { useState } from "react";
+import Link from "next/link";
 import { Progress } from "@/app/_components/ui/progress";
-import { CARD_BRAND_LABELS } from "@/app/_constants/credit-cards";
+import { Button } from "@/app/_components/ui/button";
+import UpsertCreditCardDialog from "@/app/_components/upsert-credit-card-dialog";
+import { CARD_BRAND_LABELS, CARD_COLOR_GRADIENTS } from "@/app/_constants/credit-cards";
 import { CreditCardSummaryItem } from "@/app/_data/get-credit-card-summary";
 import { CardBrand } from "@prisma/client";
-
-const BRAND_GRADIENTS: Record<string, string> = {
-  VISA: "from-blue-900/80 to-blue-700/40",
-  MASTERCARD: "from-red-900/80 to-orange-800/40",
-  ELO: "from-yellow-900/80 to-yellow-700/40",
-  AMEX: "from-cyan-900/80 to-cyan-700/40",
-  HIPERCARD: "from-red-800/80 to-red-600/40",
-  OTHER: "from-zinc-800/80 to-zinc-600/40",
-};
+import { PencilIcon } from "lucide-react";
 
 interface CreditCardItemProps {
   data: CreditCardSummaryItem;
+  editable?: boolean;
 }
 
-const CreditCardItem = ({ data }: CreditCardItemProps) => {
-  const { card, invoiceTotal, availableLimit, usagePercent } = data;
+const CreditCardItem = ({ data, editable = false }: CreditCardItemProps) => {
+  const { card, invoiceTotal, cashTotal, installmentTotal, availableLimit, usagePercent } = data;
+  const [dialogIsOpen, setDialogIsOpen] = useState(false);
   const formatCurrency = (value: number) =>
     Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
     }).format(value);
 
-  const gradient = BRAND_GRADIENTS[card.brand] ?? BRAND_GRADIENTS.OTHER;
+  const gradient = CARD_COLOR_GRADIENTS[card.color] ?? CARD_COLOR_GRADIENTS.blue;
 
-  return (
+  const content = (
     <div
-      className={`rounded-xl bg-gradient-to-br ${gradient} border border-white/10 p-4 space-y-3`}
+      className={`rounded-xl bg-gradient-to-br ${gradient} border border-white/10 p-4 space-y-3 ${!editable ? "transition-opacity hover:opacity-90" : ""}`}
     >
       <div className="flex items-center justify-between">
         <div>
@@ -40,6 +38,16 @@ const CreditCardItem = ({ data }: CreditCardItemProps) => {
             {CARD_BRAND_LABELS[card.brand as CardBrand]}
           </p>
         </div>
+        {editable && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-white/60 hover:text-white hover:bg-white/10"
+            onClick={() => setDialogIsOpen(true)}
+          >
+            <PencilIcon size={14} />
+          </Button>
+        )}
       </div>
 
       <div className="space-y-1">
@@ -49,7 +57,19 @@ const CreditCardItem = ({ data }: CreditCardItemProps) => {
             {formatCurrency(invoiceTotal)}
           </span>
         </div>
-        <div className="flex justify-between text-sm">
+        <div className="flex justify-between text-xs">
+          <span className="text-white/50">À vista</span>
+          <span className="text-white/70">
+            {formatCurrency(cashTotal)}
+          </span>
+        </div>
+        <div className="flex justify-between text-xs">
+          <span className="text-white/50">Parcelado</span>
+          <span className="text-white/70">
+            {formatCurrency(installmentTotal)}
+          </span>
+        </div>
+        <div className="flex justify-between text-sm pt-1">
           <span className="text-white/60">Disponível</span>
           <span className="font-medium text-white">
             {formatCurrency(availableLimit)}
@@ -67,6 +87,35 @@ const CreditCardItem = ({ data }: CreditCardItemProps) => {
         <span>Vence dia {card.dueDay}</span>
       </div>
     </div>
+  );
+
+  if (editable) {
+    return (
+      <>
+        {content}
+        <UpsertCreditCardDialog
+          isOpen={dialogIsOpen}
+          setIsOpen={setDialogIsOpen}
+          creditCardId={card.id}
+          defaultValues={{
+            name: card.name,
+            lastFourDigits: card.lastFourDigits,
+            brand: card.brand as CardBrand,
+            bank: card.bank,
+            limit: card.limit,
+            closingDay: card.closingDay,
+            dueDay: card.dueDay,
+            color: card.color,
+          }}
+        />
+      </>
+    );
+  }
+
+  return (
+    <Link href="/credit-cards">
+      {content}
+    </Link>
   );
 };
 

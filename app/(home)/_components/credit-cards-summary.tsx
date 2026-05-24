@@ -10,8 +10,15 @@ interface CreditCardsSummaryProps {
 }
 
 const CreditCardsSummary = ({ creditCardSummary }: CreditCardsSummaryProps) => {
-  const { cards, totalInvoice, totalLimit, totalAvailable, totalUsagePercent } =
-    creditCardSummary;
+  const {
+    cards,
+    totalInvoice,
+    totalCash,
+    totalInstallment,
+    totalLimit,
+    totalAvailable,
+    totalUsagePercent,
+  } = creditCardSummary;
 
   if (cards.length === 0) {
     return null;
@@ -34,6 +41,16 @@ const CreditCardsSummary = ({ creditCardSummary }: CreditCardsSummaryProps) => {
           <div>
             <p className="text-muted-foreground">Total Faturas</p>
             <p className="text-lg font-bold">{formatCurrency(totalInvoice)}</p>
+            <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+              <div className="flex justify-between">
+                <span>À vista</span>
+                <span>{formatCurrency(totalCash)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Parcelado</span>
+                <span>{formatCurrency(totalInstallment)}</span>
+              </div>
+            </div>
           </div>
           <div>
             <p className="text-muted-foreground">Limite Total</p>

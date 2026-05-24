@@ -27,12 +27,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { CARD_BRAND_OPTIONS } from "../_constants/credit-cards";
+import { CARD_BRAND_OPTIONS, CARD_COLORS } from "../_constants/credit-cards";
 import { z } from "zod";
 import { CardBrand } from "@prisma/client";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { upsertCreditCard } from "../_actions/upsert-credit-card";
+import { cn } from "../_lib/utils";
 
 interface UpsertCreditCardDialogProps {
   isOpen: boolean;
@@ -40,6 +41,8 @@ interface UpsertCreditCardDialogProps {
   creditCardId?: string;
   setIsOpen: (isOpen: boolean) => void;
 }
+
+const colorValues = CARD_COLORS.map((c) => c.value) as [string, ...string[]];
 
 const formSchema = z.object({
   name: z.string().trim().min(1, {
@@ -75,6 +78,9 @@ const formSchema = z.object({
     .int()
     .min(1, { message: "Mínimo 1." })
     .max(31, { message: "Máximo 31." }),
+  color: z.enum(colorValues, {
+    required_error: "A cor é obrigatória.",
+  }),
 });
 
 type FormSchema = z.infer<typeof formSchema>;
@@ -95,6 +101,7 @@ const UpsertCreditCardDialog = ({
       limit: 1000,
       closingDay: 1,
       dueDay: 10,
+      color: "blue",
     },
   });
 
@@ -129,77 +136,81 @@ const UpsertCreditCardDialog = ({
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: Nubank Gold" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="lastFourDigits"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Últimos 4 dígitos</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="0000"
-                      maxLength={4}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="brand"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Bandeira</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome</FormLabel>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione a bandeira..." />
-                      </SelectTrigger>
+                      <Input placeholder="Ex: Nubank Gold" {...field} />
                     </FormControl>
-                    <SelectContent>
-                      {CARD_BRAND_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="bank"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Banco</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: Nubank" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="lastFourDigits"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Últimos 4 dígitos</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="0000"
+                        maxLength={4}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <FormField
+                control={form.control}
+                name="brand"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Bandeira</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione..." />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {CARD_BRAND_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="bank"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Banco</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: Nubank" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <FormField
               control={form.control}
               name="limit"
@@ -221,7 +232,7 @@ const UpsertCreditCardDialog = ({
                 </FormItem>
               )}
             />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <FormField
                 control={form.control}
                 name="closingDay"
@@ -263,6 +274,35 @@ const UpsertCreditCardDialog = ({
                 )}
               />
             </div>
+            <FormField
+              control={form.control}
+              name="color"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Cor do cartão</FormLabel>
+                  <FormControl>
+                    <div className="flex gap-2">
+                      {CARD_COLORS.map((color) => (
+                        <button
+                          key={color.value}
+                          type="button"
+                          title={color.label}
+                          onClick={() => field.onChange(color.value)}
+                          className={cn(
+                            "h-6 w-6 rounded-full transition-all",
+                            color.swatch,
+                            field.value === color.value
+                              ? "ring-2 ring-white ring-offset-2 ring-offset-background scale-110"
+                              : "opacity-60 hover:opacity-100",
+                          )}
+                        />
+                      ))}
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <DialogFooter>
               <DialogClose asChild>
                 <Button type="button" variant="outline">

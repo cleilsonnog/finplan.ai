@@ -6,9 +6,10 @@ import AddCreditCardPlaceholder from "./add-credit-card-placeholder";
 
 interface DashboardCreditCardsProps {
   cards: CreditCardSummaryItem[];
+  editable?: boolean;
 }
 
-const DashboardCreditCards = ({ cards }: DashboardCreditCardsProps) => {
+const DashboardCreditCards = ({ cards, editable = false }: DashboardCreditCardsProps) => {
   // Fill remaining grid slots with placeholders so the grid never has empty space
   const cols = 3;
   const remainder = cards.length % cols;
@@ -17,7 +18,7 @@ const DashboardCreditCards = ({ cards }: DashboardCreditCardsProps) => {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {cards.map((item) => (
-        <CreditCardItem key={item.card.id} data={item} />
+        <CreditCardItem key={item.card.id} data={item} editable={editable} />
       ))}
       {Array.from({ length: placeholders }).map((_, i) => (
         <AddCreditCardPlaceholder key={`placeholder-${i}`} />
