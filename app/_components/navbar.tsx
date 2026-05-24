@@ -55,6 +55,9 @@ const Navbar = () => {
             <Link href="/settings" className={linkClass("/settings")}>
               Config
             </Link>
+            <Link href="/tutorial" className={linkClass("/tutorial")}>
+              Ajuda
+            </Link>
           </div>
         </div>
         <div className="hidden md:block">
@@ -131,6 +134,13 @@ const Navbar = () => {
             onClick={() => setMenuOpen(false)}
           >
             Config
+          </Link>
+          <Link
+            href="/tutorial"
+            className={linkClass("/tutorial")}
+            onClick={() => setMenuOpen(false)}
+          >
+            Ajuda
           </Link>
         </div>
       )}
