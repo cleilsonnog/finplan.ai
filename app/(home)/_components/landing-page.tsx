@@ -246,7 +246,7 @@ const LandingPage = () => {
               </p>
             </div>
             <div
-              className="flex items-center justify-center gap-4 sm:gap-6"
+              className="flex w-full items-center justify-center gap-2 px-2 sm:gap-6 sm:px-0"
               onMouseLeave={() => setActiveMobile(null)}
             >
               {[
@@ -277,10 +277,10 @@ const LandingPage = () => {
                       setActiveMobile(null);
                     }
                   }}
-                  className={`overflow-hidden rounded-2xl border-2 shadow-xl transition-all duration-300 ${
+                  className={`shrink overflow-hidden rounded-2xl border-2 shadow-xl transition-all duration-300 ${
                     activeMobile === index
-                      ? "z-10 w-[180px] border-primary shadow-2xl shadow-primary/20 sm:w-[220px] lg:w-[260px]"
-                      : "w-[110px] border-white/10 sm:w-[140px] lg:w-[170px]"
+                      ? "z-10 basis-[35%] border-primary shadow-2xl shadow-primary/20 sm:basis-[220px] lg:basis-[260px]"
+                      : "basis-[22%] border-white/10 sm:basis-[140px] lg:basis-[170px]"
                   }`}
                 >
                   <Image
