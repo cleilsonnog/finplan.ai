@@ -1,4 +1,5 @@
 import { db } from "@/app/_lib/prisma";
+import { sendPushToUser } from "@/app/_lib/send-push-notification";
 import { NextResponse } from "next/server";
 
 const EVOLUTION_API_URL =
@@ -89,13 +90,10 @@ export const GET = async (request: Request) => {
     byUser.set(expense.userId, list);
   }
 
-  let sent = 0;
+  let whatsappSent = 0;
+  let pushSent = 0;
 
   for (const [userId, userExpenses] of byUser) {
-    // Find user's WhatsApp link
-    const link = await db.whatsAppLink.findUnique({ where: { userId } });
-    if (!link) continue;
-
     const lines = userExpenses.map(
       (e) =>
         `- *${e.name}*: R$ ${Number(e.amount).toFixed(2).replace(".", ",")}`,
@@ -107,9 +105,30 @@ export const GET = async (request: Request) => {
       lines.join("\n") +
       `\n\nAcesse o app para marcar como pago.`;
 
-    await sendWhatsApp(link.phone, message);
-    sent++;
+    // Send WhatsApp if linked
+    const link = await db.whatsAppLink.findUnique({ where: { userId } });
+    if (link) {
+      await sendWhatsApp(link.phone, message);
+      whatsappSent++;
+    }
+
+    // Send push notification
+    try {
+      const pushBody =
+        userExpenses.length === 1
+          ? `${userExpenses[0].name}: R$ ${Number(userExpenses[0].amount).toFixed(2).replace(".", ",")}`
+          : `Voce tem ${userExpenses.length} contas vencendo hoje`;
+
+      const count = await sendPushToUser(userId, {
+        title: "Lembrete de vencimento",
+        body: pushBody,
+        url: "/recurring",
+      });
+      if (count > 0) pushSent++;
+    } catch {
+      // Push failed, continue
+    }
   }
 
-  return NextResponse.json({ sent });
+  return NextResponse.json({ whatsappSent, pushSent });
 };

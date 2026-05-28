@@ -1,4 +1,4 @@
-const CACHE_NAME = "finplan-shell-v1";
+const CACHE_NAME = "finplan-shell-v2";
 const OFFLINE_URL = "/offline";
 
 const SHELL_ASSETS = [
@@ -60,4 +60,35 @@ self.addEventListener("fetch", (event) => {
     );
     return;
   }
+});
+
+// Push notifications
+self.addEventListener("push", (event) => {
+  if (!event.data) return;
+
+  const data = event.data.json();
+  const title = data.title || "FinPlan.ai";
+  const options = {
+    body: data.body || "",
+    icon: "/icon-192x192.png",
+    badge: "/icon-192x192.png",
+    data: { url: data.url || "/" },
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || "/";
+  event.waitUntil(
+    self.clients.matchAll({ type: "window" }).then((clients) => {
+      for (const client of clients) {
+        if (client.url.includes(url) && "focus" in client) {
+          return client.focus();
+        }
+      }
+      return self.clients.openWindow(url);
+    })
+  );
 });
