@@ -1,4 +1,4 @@
-const CACHE_NAME = "finplan-shell-v3";
+const CACHE_NAME = "finplan-shell-v4";
 const OFFLINE_URL = "/offline";
 
 const SHELL_ASSETS = [
@@ -81,16 +81,20 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const path = event.notification.data?.url || "/";
+  const fullUrl = new URL(path, self.registration.scope).href;
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
-      // Try to reuse any existing PWA window
+      // Reuse any existing PWA window to keep the auth session
       for (const client of clients) {
+        if ("navigate" in client) {
+          return client.navigate(fullUrl).then(() => client.focus());
+        }
         if ("focus" in client) {
-          client.navigate(path);
           return client.focus();
         }
       }
-      return self.clients.openWindow(path);
+      // No existing window — open with full URL to stay in PWA scope
+      return self.clients.openWindow(fullUrl);
     })
   );
 });
