@@ -1,28 +1,26 @@
 const CACHE_NAME = "finplan-shell-v4";
 const OFFLINE_URL = "/offline";
 
-const SHELL_ASSETS = [
-  "/offline",
-  "/icon-192x192.png",
-  "/icon-512x512.png",
-];
+const SHELL_ASSETS = ["/offline", "/icon-192x192.png", "/icon-512x512.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL_ASSETS))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL_ASSETS)),
   );
   self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((key) => key !== CACHE_NAME)
-          .map((key) => caches.delete(key))
-      )
-    )
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(
+          keys
+            .filter((key) => key !== CACHE_NAME)
+            .map((key) => caches.delete(key)),
+        ),
+      ),
   );
   self.clients.claim();
 });
@@ -47,17 +45,15 @@ self.addEventListener("fetch", (event) => {
             return response;
           });
           return cached || fetched;
-        })
-      )
+        }),
+      ),
     );
     return;
   }
 
   // Navigation requests: network first, fallback to offline page
   if (request.mode === "navigate") {
-    event.respondWith(
-      fetch(request).catch(() => caches.match(OFFLINE_URL))
-    );
+    event.respondWith(fetch(request).catch(() => caches.match(OFFLINE_URL)));
     return;
   }
 });
@@ -83,18 +79,20 @@ self.addEventListener("notificationclick", (event) => {
   const path = event.notification.data?.url || "/";
   const fullUrl = new URL(path, self.registration.scope).href;
   event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
-      // Reuse any existing PWA window to keep the auth session
-      for (const client of clients) {
-        if ("navigate" in client) {
-          return client.navigate(fullUrl).then(() => client.focus());
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clients) => {
+        // Reuse any existing PWA window to keep the auth session
+        for (const client of clients) {
+          if ("navigate" in client) {
+            return client.navigate(fullUrl).then(() => client.focus());
+          }
+          if ("focus" in client) {
+            return client.focus();
+          }
         }
-        if ("focus" in client) {
-          return client.focus();
-        }
-      }
-      // No existing window — open with full URL to stay in PWA scope
-      return self.clients.openWindow(fullUrl);
-    })
+        // No existing window — open with full URL to stay in PWA scope
+        return self.clients.openWindow(fullUrl);
+      }),
   );
 });

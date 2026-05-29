@@ -130,7 +130,7 @@ const LandingPage = () => {
             />
             <span className="text-lg font-bold">FinPlan.ai</span>
           </div>
-          <SignInButton mode="modal" forceRedirectUrl="/">
+          <SignInButton forceRedirectUrl="/">
             <Button size="sm">Entrar</Button>
           </SignInButton>
         </div>
@@ -150,7 +150,7 @@ const LandingPage = () => {
           recorrentes e receba lembretes pelo WhatsApp.
         </p>
         <div className="flex flex-col gap-4 sm:flex-row">
-          <SignInButton mode="modal" forceRedirectUrl="/">
+          <SignInButton forceRedirectUrl="/">
             <Button size="lg" className="text-base font-semibold">
               Começar grátis
               <ArrowRightIcon className="ml-2 h-5 w-5" />
@@ -389,7 +389,7 @@ const LandingPage = () => {
                     pagamento unico
                   </span>
                 </div>
-                <SignInButton mode="modal" forceRedirectUrl="/">
+                <SignInButton forceRedirectUrl="/">
                   <Button
                     size="lg"
                     className="rounded-full bg-green-600 px-8 text-base font-bold hover:bg-green-700"
@@ -447,7 +447,7 @@ const LandingPage = () => {
                   Gastos recorrentes
                 </li>
               </ul>
-              <SignInButton mode="modal" forceRedirectUrl="/">
+              <SignInButton forceRedirectUrl="/">
                 <Button variant="outline" className="w-full">
                   Começar grátis
                 </Button>
@@ -496,7 +496,7 @@ const LandingPage = () => {
                   Tudo do plano grátis
                 </li>
               </ul>
-              <SignInButton mode="modal" forceRedirectUrl="/">
+              <SignInButton forceRedirectUrl="/">
                 <Button className="w-full">Assinar Premium</Button>
               </SignInButton>
             </div>
@@ -515,7 +515,7 @@ const LandingPage = () => {
             Comece agora, é grátis.
           </p>
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-            <SignInButton mode="modal" forceRedirectUrl="/">
+            <SignInButton forceRedirectUrl="/">
               <Button size="lg" className="text-base font-semibold">
                 Criar conta grátis
                 <ArrowRightIcon className="ml-2 h-5 w-5" />
