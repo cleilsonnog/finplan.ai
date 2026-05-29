@@ -1,4 +1,4 @@
-const CACHE_NAME = "finplan-shell-v2";
+const CACHE_NAME = "finplan-shell-v3";
 const OFFLINE_URL = "/offline";
 
 const SHELL_ASSETS = [
@@ -80,15 +80,17 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = event.notification.data?.url || "/";
+  const path = event.notification.data?.url || "/";
   event.waitUntil(
-    self.clients.matchAll({ type: "window" }).then((clients) => {
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      // Try to reuse any existing PWA window
       for (const client of clients) {
-        if (client.url.includes(url) && "focus" in client) {
+        if ("focus" in client) {
+          client.navigate(path);
           return client.focus();
         }
       }
-      return self.clients.openWindow(url);
+      return self.clients.openWindow(path);
     })
   );
 });
