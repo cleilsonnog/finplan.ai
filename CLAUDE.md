@@ -35,7 +35,8 @@ docker compose up -d # Start local PostgreSQL
 - `app/subscription/` — Plans page (free vs premium)
 - `app/settings/` — Settings page (WhatsApp link)
 - `app/api/cron/recurring-reminders/` — Daily WhatsApp reminders for due expenses
-- `middleware.ts` — Clerk auth middleware
+- `middleware.ts` — Clerk auth middleware with route protection (`auth.protect()`)
+- `public/sw.js` — Service Worker (push notifications only, NO fetch handler)
 - `prisma/schema.prisma` — Database models and enums
 
 ### Database Models
@@ -59,11 +60,12 @@ docker compose up -d # Start local PostgreSQL
 - **Account Sharing** — Share financial data with a partner via invite system
 - **PIX Payment** — Mercado Pago integration for lifetime plan. QR code modal on subscription page, webhook with HMAC validation, Telegram notification on payment received.
 - **Recurring Expenses** — Fixed monthly bills (rent, utilities, internet). CRUD with category, due day, active/inactive toggle. "Pay" button creates a real Transaction linked via `recurringExpenseId`. Badge shows Paid/Pending per month. Dashboard widget shows upcoming due dates (next 7 days, excludes paid).
-- **Recurring Reminders** — Vercel Cron (`/api/cron/recurring-reminders`) runs daily at 9h BRT. Sends WhatsApp message to users with unpaid expenses due today. Protected with `CRON_SECRET`.
+- **Recurring Reminders** — VPS Cron (`0 9 * * *` BRT on 212.56.33.113) calls `/api/cron/recurring-reminders`. Sends WhatsApp + push notification to users with unpaid expenses due today. Protected with `CRON_SECRET`.
+- **Push Notifications** — VAPID web push via `web-push` package. Auto-resubscribes on PWA reinstall. Model `PushSubscription` in Prisma.
 - **WhatsApp Transactions** — Register transactions via WhatsApp using Evolution API. Webhook at `/api/webhooks/evolution`. Supports credit card selection, installments, multi-step conversation. Settings page at `/settings` to link/unlink phone number.
 - **WhatsApp Float Button** — Floating contact button on landing and subscription pages
 - **PDF Export** — Credit card installments and transactions exportable as PDF (jspdf + jspdf-autotable). Respects card filter.
-- **PWA** — Installable as mobile app
+- **PWA** — Installable as mobile app. SW handles only push notifications (no fetch interception — breaks Clerk auth). `SignInButton mode="modal"` for login without leaving PWA.
 - **OG Image** — 1200x630 dashboard preview for link sharing
 
 ### Patterns
@@ -86,6 +88,11 @@ docker compose up -d # Start local PostgreSQL
 
 - Clerk handles all authentication
 - `userId` is obtained via `getEffectiveUserId()` which supports account sharing
+- Middleware uses `createRouteMatcher` + `auth.protect()` for route protection
+- Public routes: `/`, `/login`, `/manifest.json`, `/sw.js`, `/__clerk(.*)`, webhooks, cron
+- **IMPORTANT**: `/__clerk(.*)` and `/manifest.json` MUST be public — Clerk needs internal routes for session management, manifest is required for PWA install
+- **IMPORTANT**: Do NOT add fetch handlers to the service worker — intercepting navigation/requests breaks Clerk session detection in PWA
+- All protected pages redirect to `/` (not `/login`) when unauthenticated
 - Environment vars: `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`
 
 ### Payments
@@ -94,7 +101,7 @@ docker compose up -d # Start local PostgreSQL
 - **Mercado Pago** — PIX payment for lifetime plan. SDK `mercadopago`, webhook at `/api/webhooks/mercadopago`
 - **Telegram Bot** — Notifies owner on PIX payment received (via bot API, no SDK)
 - **Evolution API** — WhatsApp integration for transaction registration. Instance on VPS (212.56.33.113:8080), webhook sends messages to `/api/webhooks/evolution`
-- **Vercel Cron** — `vercel.json` defines daily cron at `0 12 * * *` (9h BRT). Requires `CRON_SECRET` env var.
+- **VPS Cron** — Crontab on VPS (212.56.33.113, timezone America/Sao_Paulo) runs `0 9 * * *` (9h BRT). Requires `CRON_SECRET` env var.
 - Subscription state managed via Clerk metadata (`publicMetadata.subscriptionPlan`, `privateMetadata.lifetimePurchase`)
 
 ### Pricing
