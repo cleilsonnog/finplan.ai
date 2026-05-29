@@ -242,7 +242,8 @@ const LandingPage = () => {
                 Disponível como PWA
               </div>
               <p className="mx-auto max-w-xl text-sm text-muted-foreground">
-                Instale no celular e controle suas finanças de qualquer lugar.
+                Instale no celular, receba notificações de vencimento e controle
+                suas finanças de qualquer lugar. Funciona no Android e iOS.
               </p>
             </div>
             <div
@@ -253,6 +254,10 @@ const LandingPage = () => {
                 {
                   src: "/screenshots/mobile-dashboard.jpeg",
                   alt: "Dashboard no celular",
+                },
+                {
+                  src: "/screenshots/mobile-notificacao.jpeg",
+                  alt: "Notificação push de vencimento",
                 },
                 {
                   src: "/screenshots/mobile-whatsapp.jpeg",
@@ -279,8 +284,8 @@ const LandingPage = () => {
                   }}
                   className={`shrink overflow-hidden rounded-2xl border-2 shadow-xl transition-all duration-300 ${
                     activeMobile === index
-                      ? "z-10 basis-[35%] border-primary shadow-2xl shadow-primary/20 sm:basis-[220px] lg:basis-[260px]"
-                      : "basis-[22%] border-white/10 sm:basis-[140px] lg:basis-[170px]"
+                      ? "z-10 basis-[30%] border-primary shadow-2xl shadow-primary/20 sm:basis-[200px] lg:basis-[220px]"
+                      : "basis-[17%] border-white/10 sm:basis-[120px] lg:basis-[150px]"
                   }`}
                 >
                   <Image
