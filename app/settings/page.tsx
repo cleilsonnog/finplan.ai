@@ -6,7 +6,7 @@ import WhatsAppLinkCard from "./_components/whatsapp-link-card";
 
 export default async function SettingsPage() {
   const { userId } = await auth();
-  if (!userId) redirect("/login");
+  if (!userId) redirect("/");
 
   const whatsappLink = await db.whatsAppLink.findUnique({
     where: { userId },

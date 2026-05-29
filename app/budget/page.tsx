@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 const BudgetPage = async () => {
   const result = await getEffectiveUserId();
   if (!result) {
-    redirect("/login");
+    redirect("/");
   }
   const userId = result.effectiveUserId;
 

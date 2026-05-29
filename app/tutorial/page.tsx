@@ -48,7 +48,7 @@ const steps = [
 const TutorialPage = async () => {
   const result = await getEffectiveUserId();
   if (!result) {
-    redirect("/login");
+    redirect("/");
   }
 
   return (

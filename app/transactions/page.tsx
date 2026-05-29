@@ -10,7 +10,7 @@ import { getEffectiveUserId } from "../_lib/get-effective-user-id";
 const TransactionsPage = async () => {
   const result = await getEffectiveUserId();
   if (!result) {
-    redirect("/login");
+    redirect("/");
   }
   const userId = result.effectiveUserId;
   const [transactions, creditCards, canAddTransaction, customCategories] =

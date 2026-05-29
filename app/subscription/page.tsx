@@ -15,7 +15,7 @@ import WhatsAppFloatButton from "../_components/whatsapp-float-button";
 const SubscriptionPage = async () => {
   const { userId } = await auth();
   if (!userId) {
-    redirect("/login");
+    redirect("/");
   }
   const currentMonthTransactions = await getCurrentMonthTransactions();
   const hasPremiumPlan = await hasPremiumAccess();

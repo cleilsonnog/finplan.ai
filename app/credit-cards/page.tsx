@@ -21,7 +21,7 @@ interface CreditCardsPageProps {
 const CreditCardsPage = async ({ searchParams }: CreditCardsPageProps) => {
   const result = await getEffectiveUserId();
   if (!result) {
-    redirect("/login");
+    redirect("/");
   }
   const userId = result.effectiveUserId;
   const { month: monthParam } = await searchParams;

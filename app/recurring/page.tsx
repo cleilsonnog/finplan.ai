@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 const RecurringPage = async () => {
   const result = await getEffectiveUserId();
   if (!result) {
-    redirect("/login");
+    redirect("/");
   }
   const userId = result.effectiveUserId;
 
