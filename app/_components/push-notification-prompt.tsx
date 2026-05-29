@@ -26,12 +26,30 @@ const PushNotificationPrompt = () => {
     // Don't show if already subscribed or permission denied
     if (Notification.permission === "denied") return;
     if (Notification.permission === "granted") {
-      // Check if already subscribed
-      navigator.serviceWorker.ready.then((reg) => {
-        reg.pushManager.getSubscription().then((sub) => {
-          if (sub) return; // Already subscribed
+      // Auto-resubscribe if permission granted but no active subscription
+      navigator.serviceWorker.ready.then(async (reg) => {
+        const sub = await reg.pushManager.getSubscription();
+        if (sub) return; // Already subscribed
+        try {
+          const newSub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(
+              process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "",
+            ),
+          });
+          const json = newSub.toJSON();
+          await fetch("/api/push/subscribe", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              endpoint: json.endpoint,
+              keys: json.keys,
+            }),
+          });
+        } catch {
+          // Failed to resubscribe, show banner
           setShowBanner(true);
-        });
+        }
       });
       return;
     }
