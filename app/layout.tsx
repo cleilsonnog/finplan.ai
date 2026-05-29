@@ -87,7 +87,11 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className="h-full">
       <body className={`${mulish.className} dark antialiased h-full`}>
-        <ClerkProvider appearance={{ baseTheme: dark }}>
+        <ClerkProvider
+          appearance={{ baseTheme: dark }}
+          signInFallbackRedirectUrl="/"
+          signUpFallbackRedirectUrl="/"
+        >
           {children}
           <PwaInstallPrompt />
           <PushNotificationPrompt />

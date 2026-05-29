@@ -27,7 +27,7 @@ const LoginPage = async () => {
           monitorar suas movimentações, e oferecer insights personalizados,
           facilitando o controle do seu orçamento.
         </p>
-        <SignInButton>
+        <SignInButton mode="modal" forceRedirectUrl="/">
           <Button variant="outline">
             <LogInIcon className="mr-2" />
             Fazer login ou criar conta
