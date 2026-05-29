@@ -60,9 +60,9 @@ const FEATURES = [
   },
   {
     icon: BellRingIcon,
-    title: "Lembretes via WhatsApp",
+    title: "Lembretes e Notificações",
     description:
-      "Receba lembretes de vencimento e registre transações diretamente pelo WhatsApp, sem abrir o app.",
+      "Receba lembretes de vencimento por WhatsApp e notificações push no celular (Android e iOS). Registre transações direto pelo WhatsApp.",
   },
   {
     icon: UsersIcon,
@@ -80,8 +80,8 @@ const HIGHLIGHTS = [
   },
   {
     icon: SmartphoneIcon,
-    title: "PWA + WhatsApp",
-    description: "Use no celular como app ou direto pelo WhatsApp",
+    title: "PWA + Notificações",
+    description: "Instale como app e receba notificações push de vencimentos",
   },
   {
     icon: BrainCircuitIcon,
@@ -147,7 +147,7 @@ const LandingPage = () => {
         <p className="mb-10 max-w-2xl text-lg text-muted-foreground sm:text-xl">
           Organize suas finanças pessoais com inteligência artificial.
           Controle transações, orçamentos, cartões de crédito, gastos
-          recorrentes e receba lembretes pelo WhatsApp.
+          recorrentes e receba notificações de vencimento no celular.
         </p>
         <div className="flex flex-col gap-4 sm:flex-row">
           <SignInButton mode="modal">
@@ -485,7 +485,7 @@ const LandingPage = () => {
                 </li>
                 <li className="flex items-center gap-2">
                   <ShieldCheckIcon className="h-4 w-4 text-primary" />
-                  Lembretes de vencimento
+                  Lembretes via WhatsApp e push
                 </li>
                 <li className="flex items-center gap-2">
                   <ShieldCheckIcon className="h-4 w-4 text-primary" />
