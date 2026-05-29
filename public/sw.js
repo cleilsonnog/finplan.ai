@@ -37,13 +37,13 @@ self.addEventListener("notificationclick", (event) => {
     self.clients
       .matchAll({ type: "window", includeUncontrolled: true })
       .then((clients) => {
-        for (const client of clients) {
-          if ("navigate" in client) {
-            return client.navigate(fullUrl).then(() => client.focus());
-          }
-          if ("focus" in client) {
-            return client.focus();
-          }
+        if (clients.length > 0) {
+          const client = clients[0];
+          return client.focus().then(() => {
+            if ("navigate" in client) {
+              return client.navigate(fullUrl);
+            }
+          });
         }
         return self.clients.openWindow(fullUrl);
       })
