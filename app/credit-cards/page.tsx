@@ -76,8 +76,11 @@ const CreditCardsPage = async ({ searchParams }: CreditCardsPageProps) => {
     lastFourDigits: c.lastFourDigits,
   }));
 
-  // Group installment transactions by name + creditCardId
-  const now = new Date();
+  // Group installment transactions by name + creditCardId + createdAt
+  // Using createdAt ensures separate purchases with the same name are not merged
+  const monthNum = Number(currentMonth);
+  const selectedYear = new Date().getFullYear();
+  const endOfSelectedMonth = new Date(selectedYear, monthNum, 0, 23, 59, 59, 999);
   const installmentGroupsMap = new Map<
     string,
     {
@@ -94,9 +97,9 @@ const CreditCardsPage = async ({ searchParams }: CreditCardsPageProps) => {
   >();
 
   for (const t of installmentTransactions) {
-    const key = `${t.name}::${t.creditCardId}::${t.installments}`;
+    const key = `${t.name}::${t.creditCardId}::${t.installments}::${t.createdAt.getTime()}`;
     const existing = installmentGroupsMap.get(key);
-    const isPaid = new Date(t.date) <= now;
+    const isPaid = new Date(t.date) <= endOfSelectedMonth;
 
     if (!existing) {
       installmentGroupsMap.set(key, {
