@@ -30,7 +30,7 @@ docker compose up -d # Start local PostgreSQL
 - `app/transactions/` — Transactions page with `_columns/` and `_components/`
 - `app/credit-cards/` — Credit cards, bills, installments management
 - `app/budget/` — Monthly budget by category
-- `app/recurring/` — Recurring expenses management (CRUD, pay, toggle)
+- `app/recurring/` — Recurring expenses and incomes management (CRUD, pay, toggle, receive)
 - `app/categories/` — Custom categories management
 - `app/subscription/` — Plans page (free vs premium)
 - `app/settings/` — Settings page (WhatsApp link)
@@ -48,6 +48,7 @@ docker compose up -d # Start local PostgreSQL
 - **CustomCategory** — User-defined categories
 - **AccountShare / AccountShareInvite** — Account sharing between users
 - **RecurringExpense** — Fixed monthly expenses (rent, utilities) with due day, active/inactive, linked transactions for payment tracking
+- **RecurringIncome** — Fixed monthly incomes (salary, freelance) with receive day, active/inactive, linked DEPOSIT transactions
 - **WhatsAppLink** — Links a user's phone number to their account for WhatsApp transactions
 - **WhatsAppSession** — Tracks multi-step conversation state and message dedup locks
 
@@ -60,6 +61,9 @@ docker compose up -d # Start local PostgreSQL
 - **Account Sharing** — Share financial data with a partner via invite system
 - **PIX Payment** — Mercado Pago integration for lifetime plan. QR code modal on subscription page, webhook with HMAC validation, Telegram notification on payment received.
 - **Recurring Expenses** — Fixed monthly bills (rent, utilities, internet). CRUD with category, due day, active/inactive toggle. "Pay" button creates a real Transaction linked via `recurringExpenseId`. Badge shows Paid/Pending per month. Dashboard widget shows upcoming due dates (next 7 days, excludes paid).
+- **Recurring Income** — Fixed monthly incomes (salary, freelance). CRUD at `/recurring` alongside expenses. "Receive" creates DEPOSIT transaction with SALARY category. Expected income shown as reference line in monthly bar chart.
+- **Credit Card Dashboard** — "Cartão no mês" shows current cycle spending (closingDay-based). "Comprometido" shows future installments grouped by card and month with amber/red badges. Data from `app/_data/get-credit-card-commitment.ts`.
+- **Transactions Month Filter** — Month selector on `/transactions` page via searchParams.
 - **Recurring Reminders** — VPS Cron (`0 9 * * *` BRT on 212.56.33.113) calls `/api/cron/recurring-reminders`. Sends WhatsApp + push notification to users with unpaid expenses due today. Protected with `CRON_SECRET`.
 - **Push Notifications** — VAPID web push via `web-push` package. Auto-resubscribes on PWA reinstall. Model `PushSubscription` in Prisma.
 - **WhatsApp Transactions** — Register transactions via WhatsApp using Evolution API. Webhook at `/api/webhooks/evolution`. Supports credit card selection, installments, multi-step conversation. Settings page at `/settings` to link/unlink phone number.
@@ -76,6 +80,7 @@ docker compose up -d # Start local PostgreSQL
 - **UI components** — Based on shadcn/ui (Radix + CVA + Tailwind). Dark theme only
 - **Path alias** — `@/*` maps to project root
 - **Brazil timezone** — All date calculations for recurring expenses use `America/Sao_Paulo` (Vercel runs in UTC)
+- **Credit card architecture** — CC purchases are EXPENSE transactions at time of purchase (not at bill payment). Bill payment is a separate action that doesn't create duplicate expenses. Stacked bar chart shows expenses split: cash (red) + credit card (purple).
 
 ### Database
 
