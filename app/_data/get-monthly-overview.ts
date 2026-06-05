@@ -31,6 +31,13 @@ export const getMonthlyOverview = async (
     months.push(m);
   }
 
+  // Sum of all active recurring expenses (projected monthly cost)
+  const activeRecurringAgg = await db.recurringExpense.aggregate({
+    where: { userId, active: true },
+    _sum: { amount: true },
+  });
+  const activeRecurringTotal = Number(activeRecurringAgg._sum?.amount ?? 0);
+
   const overview: MonthlyOverviewItem[] = await Promise.all(
     months.map(async (m) => {
       const monthStr = String(m).padStart(2, "0");
@@ -63,13 +70,17 @@ export const getMonthlyOverview = async (
           }),
         ]);
 
+      // Show the greater of: paid recurring or projected active recurring
+      const paidRecurring = Number(recurringAgg._sum.amount ?? 0);
+      const recurring = Math.max(paidRecurring, activeRecurringTotal);
+
       return {
         month: monthStr,
         monthLabel: MONTH_LABELS[m - 1],
         deposits: Number(depositsAgg._sum.amount ?? 0),
         expenses: Number(expensesAgg._sum.amount ?? 0),
         investments: Number(investmentsAgg._sum.amount ?? 0),
-        recurring: Number(recurringAgg._sum.amount ?? 0),
+        recurring,
       };
     }),
   );
