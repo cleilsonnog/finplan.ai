@@ -42,48 +42,50 @@ export const getCreditCardCommitment = async (
   }
 
   let currentMonthBill = 0;
-  const cycleEnds: { cardId: string; cycleEnd: Date }[] = [];
 
-  // Next month's billing cycle = where current month's CC purchases land
+  // Two separate cycle calculations:
+  // 1. Bill cycle (month+1) for "Cartão no mês" (current spending → next bill)
+  // 2. Current cycle (month) for future commitment cutoff
   const billMonth = monthNum === 12 ? 1 : monthNum + 1;
   const billYear = monthNum === 12 ? year + 1 : year;
 
+  const currentCycleEnds: { cardId: string; cycleEnd: Date }[] = [];
+
   for (const cc of creditCards) {
-    // Cycle for next month's bill: closingDay+1 of current month → closingDay of next month
-    const startDay = cc.closingDay + 1;
+    // Bill cycle (month+1): what I'm spending now
+    const billStartDay = cc.closingDay + 1;
     const daysInCurrentMonth = new Date(year, monthNum, 0).getDate();
-    const clampedStartDay = Math.min(startDay, daysInCurrentMonth);
-
+    const clampedBillStartDay = Math.min(billStartDay, daysInCurrentMonth);
     const daysInBillMonth = new Date(billYear, billMonth, 0).getDate();
-    const clampedClosingDay = Math.min(cc.closingDay, daysInBillMonth);
+    const clampedBillClosingDay = Math.min(cc.closingDay, daysInBillMonth);
 
-    const cycleStart = new Date(year, monthNum - 1, clampedStartDay);
-    const cycleEnd = new Date(
-      billYear,
-      billMonth - 1,
-      clampedClosingDay,
-      23,
-      59,
-      59,
-      999,
-    );
-
-    cycleEnds.push({ cardId: cc.id, cycleEnd });
+    const billCycleStart = new Date(year, monthNum - 1, clampedBillStartDay);
+    const billCycleEnd = new Date(billYear, billMonth - 1, clampedBillClosingDay, 23, 59, 59, 999);
 
     const currentAgg = await db.transaction.aggregate({
       where: {
         creditCardId: cc.id,
-        date: { gte: cycleStart, lte: cycleEnd },
+        date: { gte: billCycleStart, lte: billCycleEnd },
       },
       _sum: { amount: true },
     });
-
     currentMonthBill += Number(currentAgg._sum?.amount ?? 0);
+
+    // Current cycle (month): cutoff for future commitment
+    const prevMonth = monthNum === 1 ? 12 : monthNum - 1;
+    const prevYear = monthNum === 1 ? year - 1 : year;
+    const startDay = cc.closingDay + 1;
+    const daysInPrevMonth = new Date(prevYear, prevMonth, 0).getDate();
+    const clampedStartDay = Math.min(startDay, daysInPrevMonth);
+    const clampedClosingDay = Math.min(cc.closingDay, daysInCurrentMonth);
+
+    const currentCycleEnd = new Date(year, monthNum - 1, clampedClosingDay, 23, 59, 59, 999);
+    currentCycleEnds.push({ cardId: cc.id, cycleEnd: currentCycleEnd });
   }
 
-  const earliestCycleEnd = cycleEnds.reduce(
+  const earliestCycleEnd = currentCycleEnds.reduce(
     (min, c) => (c.cycleEnd < min ? c.cycleEnd : min),
-    cycleEnds[0].cycleEnd,
+    currentCycleEnds[0].cycleEnd,
   );
 
   const futureTransactions = await db.transaction.findMany({
@@ -105,7 +107,7 @@ export const getCreditCardCommitment = async (
   const cardMap = new Map<string, Map<string, MonthlyCommitment>>();
 
   for (const tx of futureTransactions) {
-    const cardCycleEnd = cycleEnds.find(
+    const cardCycleEnd = currentCycleEnds.find(
       (c) => c.cardId === tx.creditCardId,
     )?.cycleEnd;
     if (cardCycleEnd && tx.date <= cardCycleEnd) continue;
