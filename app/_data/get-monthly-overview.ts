@@ -6,6 +6,7 @@ export interface MonthlyOverviewItem {
   monthLabel: string;
   deposits: number;
   expenses: number;
+  creditCard: number;
   investments: number;
   recurring: number;
 }
@@ -50,7 +51,7 @@ export const getMonthlyOverview = async (
 
       const where = { userId, date: { gte: start, lt: end } };
 
-      const [depositsAgg, expensesAgg, investmentsAgg, recurringAgg] =
+      const [depositsAgg, expensesAgg, creditCardAgg, investmentsAgg, recurringAgg] =
         await Promise.all([
           db.transaction.aggregate({
             where: { ...where, type: "DEPOSIT" },
@@ -58,6 +59,10 @@ export const getMonthlyOverview = async (
           }),
           db.transaction.aggregate({
             where: { ...where, type: "EXPENSE", recurringExpenseId: null },
+            _sum: { amount: true },
+          }),
+          db.transaction.aggregate({
+            where: { ...where, type: "EXPENSE", creditCardId: { not: null } },
             _sum: { amount: true },
           }),
           db.transaction.aggregate({
@@ -79,6 +84,7 @@ export const getMonthlyOverview = async (
         monthLabel: MONTH_LABELS[m - 1],
         deposits: Number(depositsAgg._sum.amount ?? 0),
         expenses: Number(expensesAgg._sum.amount ?? 0),
+        creditCard: Number(creditCardAgg._sum.amount ?? 0),
         investments: Number(investmentsAgg._sum.amount ?? 0),
         recurring,
       };

@@ -1,6 +1,6 @@
 import { db } from "@/app/_lib/prisma";
 import { TransactionType } from "@prisma/client";
-import { TotalExpensePerCategory, TransactionPercentagePerType } from "./types";
+import { TotalExpensePerCategory } from "./types";
 import { getEffectiveUserId } from "@/app/_lib/get-effective-user-id";
 import { getCreditCardSummary } from "../get-credit-card-summary";
 
@@ -40,26 +40,16 @@ export const getDashboard = async (month: string) => {
       })
     )?._sum?.amount,
   );
-  const balance = depositsTotal - investmentsTotal - expensesTotal;
-  const transactionsTotal = Number(
+  const creditCardTotal = Number(
     (
       await db.transaction.aggregate({
-        where,
+        where: { ...where, type: "EXPENSE", creditCardId: { not: null } },
         _sum: { amount: true },
       })
-    )._sum.amount,
+    )?._sum?.amount,
   );
-  const typesPercentage: TransactionPercentagePerType = {
-    [TransactionType.DEPOSIT]: Math.round(
-      (Number(depositsTotal || 0) / Number(transactionsTotal)) * 100,
-    ),
-    [TransactionType.EXPENSE]: Math.round(
-      (Number(expensesTotal || 0) / Number(transactionsTotal)) * 100,
-    ),
-    [TransactionType.INVESTMENT]: Math.round(
-      (Number(investmentsTotal || 0) / Number(transactionsTotal)) * 100,
-    ),
-  };
+  const expensesWithoutCC = expensesTotal - creditCardTotal;
+  const balance = depositsTotal - investmentsTotal - expensesTotal;
   const groupedExpenses = await db.transaction.groupBy({
     by: ["category", "customCategoryId"],
     where: {
@@ -111,7 +101,8 @@ export const getDashboard = async (month: string) => {
     depositsTotal,
     investmentsTotal,
     expensesTotal,
-    typesPercentage,
+    creditCardTotal,
+    expensesWithoutCC,
     totalExpensePerCategory,
     lastTransactions,
     creditCardSummary,

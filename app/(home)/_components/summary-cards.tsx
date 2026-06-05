@@ -17,24 +17,32 @@ interface SummaryCardsProps {
   depositsTotal: number;
   investmentsTotal: number;
   expensesTotal: number;
+  creditCardTotal: number;
+  expensesWithoutCC: number;
   creditCards?: SerializedCreditCard[];
   canUserAddTransaction: boolean;
   customCategories?: CustomCategoryOption[];
   creditCardCommitment: CreditCardCommitment;
 }
 
+const fmt = (v: number) =>
+  Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(v);
+
 const SummaryCards = async ({
   balance,
   depositsTotal,
   expensesTotal,
   investmentsTotal,
+  creditCardTotal,
+  expensesWithoutCC,
   creditCards = [],
   canUserAddTransaction,
   customCategories = [],
   creditCardCommitment,
 }: SummaryCardsProps) => {
-  const availableThisMonth =
-    depositsTotal - expensesTotal - investmentsTotal;
 
   return (
     <div className="space-y-6">
@@ -45,6 +53,7 @@ const SummaryCards = async ({
         title="Saldo"
         amount={balance}
         size="large"
+        subtitle={`${fmt(depositsTotal)} receita − ${fmt(expensesWithoutCC)} despesas − ${fmt(creditCardTotal)} cartão − ${fmt(investmentsTotal)} investido`}
         creditCards={creditCards}
         canUserAddTransaction={canUserAddTransaction}
         customCategories={customCategories}
@@ -69,13 +78,9 @@ const SummaryCards = async ({
         />
         <SummaryCard
           icon={<CreditCardIcon size={16} className="text-violet-500" />}
-          title="Fatura do mês"
+          title="Cartão no mês"
           amount={creditCardCommitment.currentMonthBill}
-          subtitle={
-            availableThisMonth > 0
-              ? `Disponível: ${Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(availableThisMonth - creditCardCommitment.currentMonthBill)}`
-              : undefined
-          }
+          subtitle="Próxima fatura"
         />
       </div>
 

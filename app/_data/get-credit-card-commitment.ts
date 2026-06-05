@@ -44,21 +44,23 @@ export const getCreditCardCommitment = async (
   let currentMonthBill = 0;
   const cycleEnds: { cardId: string; cycleEnd: Date }[] = [];
 
+  // Next month's billing cycle = where current month's CC purchases land
+  const billMonth = monthNum === 12 ? 1 : monthNum + 1;
+  const billYear = monthNum === 12 ? year + 1 : year;
+
   for (const cc of creditCards) {
-    const prevMonth = monthNum === 1 ? 12 : monthNum - 1;
-    const prevYear = monthNum === 1 ? year - 1 : year;
-
+    // Cycle for next month's bill: closingDay+1 of current month → closingDay of next month
     const startDay = cc.closingDay + 1;
-    const daysInPrevMonth = new Date(prevYear, prevMonth, 0).getDate();
-    const clampedStartDay = Math.min(startDay, daysInPrevMonth);
-
     const daysInCurrentMonth = new Date(year, monthNum, 0).getDate();
-    const clampedClosingDay = Math.min(cc.closingDay, daysInCurrentMonth);
+    const clampedStartDay = Math.min(startDay, daysInCurrentMonth);
 
-    const cycleStart = new Date(prevYear, prevMonth - 1, clampedStartDay);
+    const daysInBillMonth = new Date(billYear, billMonth, 0).getDate();
+    const clampedClosingDay = Math.min(cc.closingDay, daysInBillMonth);
+
+    const cycleStart = new Date(year, monthNum - 1, clampedStartDay);
     const cycleEnd = new Date(
-      year,
-      monthNum - 1,
+      billYear,
+      billMonth - 1,
       clampedClosingDay,
       23,
       59,

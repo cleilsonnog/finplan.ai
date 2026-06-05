@@ -79,11 +79,13 @@ const CreditCardBills = ({ bills, creditCards }: CreditCardBillsProps) => {
       currency: "BRL",
     }).format(value);
 
-  const handlePayBill = async (billId: string) => {
+  const handlePayBill = async (bill: SerializedBill) => {
     try {
-      setLoadingBillId(billId);
-      await payCreditCardBill(billId);
-      toast.success("Fatura marcada como paga!");
+      setLoadingBillId(bill.id);
+      await payCreditCardBill(bill.id);
+      toast.success("Fatura paga!", {
+        description: `${bill.creditCardName} — ${MONTH_NAMES[bill.month - 1]}/${bill.year}. As despesas já foram contabilizadas nas suas compras.`,
+      });
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Erro ao pagar fatura",
@@ -125,7 +127,13 @@ const CreditCardBills = ({ bills, creditCards }: CreditCardBillsProps) => {
               return (
                 <div
                   key={bill.id}
-                  className="rounded-lg border border-white/10 bg-white/5 p-4 space-y-3"
+                  className={`rounded-lg border p-4 space-y-3 ${
+                    bill.status === "PAID"
+                      ? "border-green-500/20 bg-green-500/5"
+                      : bill.status === "OVERDUE"
+                        ? "border-red-500/20 bg-red-500/5"
+                        : "border-white/10 bg-white/5"
+                  }`}
                 >
                   <div className="flex items-center justify-between">
                     <div>
@@ -163,10 +171,13 @@ const CreditCardBills = ({ bills, creditCards }: CreditCardBillsProps) => {
                   </div>
 
                   {bill.paidAt && (
-                    <p className="text-xs text-green-400">
-                      Pago em{" "}
-                      {new Date(bill.paidAt).toLocaleDateString("pt-BR")}
-                    </p>
+                    <div className="flex items-center gap-2 rounded-md bg-green-500/10 px-3 py-2">
+                      <CheckCircle2Icon size={14} className="text-green-400" />
+                      <p className="text-xs font-medium text-green-400">
+                        Pago em{" "}
+                        {new Date(bill.paidAt).toLocaleDateString("pt-BR")}
+                      </p>
+                    </div>
                   )}
 
                   {canPay && (
@@ -187,21 +198,37 @@ const CreditCardBills = ({ bills, creditCards }: CreditCardBillsProps) => {
                       <AlertDialogContent>
                         <AlertDialogHeader>
                           <AlertDialogTitle>Confirmar pagamento</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Deseja marcar a fatura de{" "}
-                            <strong>
-                              {MONTH_NAMES[bill.month - 1]}/{bill.year}
-                            </strong>{" "}
-                            do cartão <strong>{bill.creditCardName}</strong> no
-                            valor de{" "}
-                            <strong>{formatCurrency(bill.totalAmount)}</strong>{" "}
-                            como paga?
+                          <AlertDialogDescription asChild>
+                            <div className="space-y-3">
+                              <p>
+                                Marcar a fatura de{" "}
+                                <strong>
+                                  {MONTH_NAMES[bill.month - 1]}/{bill.year}
+                                </strong>{" "}
+                                do cartão <strong>{bill.creditCardName}</strong> como
+                                paga?
+                              </p>
+                              <div className="rounded-md border border-white/10 bg-white/5 p-3 text-center">
+                                <p className="text-xs text-muted-foreground">
+                                  Valor da fatura
+                                </p>
+                                <p className="text-lg font-bold text-white">
+                                  {formatCurrency(bill.totalAmount)}
+                                </p>
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                As despesas desta fatura já foram contabilizadas
+                                no seu orçamento quando as compras foram
+                                registradas. O pagamento apenas confirma a
+                                quitação.
+                              </p>
+                            </div>
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancelar</AlertDialogCancel>
                           <AlertDialogAction
-                            onClick={() => handlePayBill(bill.id)}
+                            onClick={() => handlePayBill(bill)}
                           >
                             Confirmar Pagamento
                           </AlertDialogAction>

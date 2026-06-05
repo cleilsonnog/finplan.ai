@@ -37,6 +37,12 @@ const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?:
 };
 
 const MonthlyBarChart = ({ data }: MonthlyBarChartProps) => {
+  const chartData = data.map((item) => ({
+    ...item,
+    expensesCash: item.expenses - item.creditCard,
+    expensesCreditCard: item.creditCard,
+  }));
+
   return (
     <Card className="flex flex-col">
       <CardHeader>
@@ -44,7 +50,7 @@ const MonthlyBarChart = ({ data }: MonthlyBarChartProps) => {
       </CardHeader>
       <CardContent className="flex-1 pb-4">
         <ResponsiveContainer width="100%" height={280}>
-          <BarChart data={data} barGap={2} barCategoryGap="20%">
+          <BarChart data={chartData} barGap={2} barCategoryGap="20%">
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted-foreground) / 0.15)" vertical={false} />
             <XAxis
               dataKey="monthLabel"
@@ -66,7 +72,8 @@ const MonthlyBarChart = ({ data }: MonthlyBarChartProps) => {
               wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
             />
             <Bar dataKey="deposits" name="Receita" fill="#55B02E" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="expenses" name="Despesas" fill="#E93030" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="expensesCash" name="Despesas" stackId="expenses" fill="#E93030" />
+            <Bar dataKey="expensesCreditCard" name="Cartão" stackId="expenses" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
             <Bar dataKey="recurring" name="Recorrentes" fill="#F59E0B" radius={[4, 4, 0, 0]} />
             <Bar dataKey="investments" name="Investido" fill="#FFFFFF" radius={[4, 4, 0, 0]} />
           </BarChart>
