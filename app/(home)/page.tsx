@@ -24,7 +24,7 @@ import UpcomingRecurring from "./_components/upcoming-recurring";
 import { getUpcomingRecurring } from "../_data/get-recurring-expenses";
 import MonthlyBarChart from "./_components/monthly-bar-chart";
 import { getMonthlyOverview } from "../_data/get-monthly-overview";
-import DashboardCreditCards from "./_components/dashboard-credit-cards";
+import { getCreditCardCommitment } from "../_data/get-credit-card-commitment";
 
 interface HomeProps {
   searchParams: Promise<{
@@ -53,6 +53,7 @@ const Home = async ({ searchParams }: HomeProps) => {
     pendingInvites,
     upcomingRecurring,
     monthlyOverview,
+    creditCardCommitment,
   ] = await Promise.all([
     getDashboard(month),
     db.creditCard.findMany({ where: { userId: effectiveUserId } }),
@@ -66,6 +67,7 @@ const Home = async ({ searchParams }: HomeProps) => {
     getPendingInvitesForUser(),
     getUpcomingRecurring(),
     getMonthlyOverview(month),
+    getCreditCardCommitment(month),
   ]);
   const creditCards = creditCardsRaw.map((c) => ({
     ...c,
@@ -106,6 +108,7 @@ const Home = async ({ searchParams }: HomeProps) => {
           creditCards={creditCards}
           canUserAddTransaction={canAddTransaction}
           customCategories={customCategories}
+          creditCardCommitment={creditCardCommitment}
         />
 
         {/* Charts: Bar + Donut */}
@@ -113,11 +116,6 @@ const Home = async ({ searchParams }: HomeProps) => {
           <MonthlyBarChart data={monthlyOverview} />
           <TransactionsPieChart {...dashboard} />
         </div>
-
-        {/* Credit Cards */}
-        {dashboard.creditCardSummary.cards.length > 0 && (
-          <DashboardCreditCards cards={dashboard.creditCardSummary.cards} />
-        )}
 
         {/* Categories + Last Transactions */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
