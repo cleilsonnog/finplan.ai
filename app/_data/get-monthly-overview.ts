@@ -9,6 +9,7 @@ export interface MonthlyOverviewItem {
   creditCard: number;
   investments: number;
   recurring: number;
+  expectedIncome: number;
 }
 
 const MONTH_LABELS = [
@@ -33,11 +34,18 @@ export const getMonthlyOverview = async (
   }
 
   // Sum of all active recurring expenses (projected monthly cost)
-  const activeRecurringAgg = await db.recurringExpense.aggregate({
-    where: { userId, active: true },
-    _sum: { amount: true },
-  });
+  const [activeRecurringAgg, activeIncomeAgg] = await Promise.all([
+    db.recurringExpense.aggregate({
+      where: { userId, active: true },
+      _sum: { amount: true },
+    }),
+    db.recurringIncome.aggregate({
+      where: { userId, active: true },
+      _sum: { amount: true },
+    }),
+  ]);
   const activeRecurringTotal = Number(activeRecurringAgg._sum?.amount ?? 0);
+  const activeIncomeTotal = Number(activeIncomeAgg._sum?.amount ?? 0);
 
   const overview: MonthlyOverviewItem[] = await Promise.all(
     months.map(async (m) => {
@@ -87,6 +95,7 @@ export const getMonthlyOverview = async (
         creditCard: Number(creditCardAgg._sum.amount ?? 0),
         investments: Number(investmentsAgg._sum.amount ?? 0),
         recurring,
+        expectedIncome: activeIncomeTotal,
       };
     }),
   );

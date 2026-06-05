@@ -43,7 +43,6 @@ const SummaryCards = async ({
   customCategories = [],
   creditCardCommitment,
 }: SummaryCardsProps) => {
-
   return (
     <div className="space-y-6">
       {/* PRIMEIRO CARD */}
@@ -75,12 +74,13 @@ const SummaryCards = async ({
           icon={<TrendingDownIcon size={16} className="text-red-500" />}
           title="Despesas"
           amount={expensesTotal}
+          subtitle="Inclui cartão, à vista, parcelado e outros"
         />
         <SummaryCard
           icon={<CreditCardIcon size={16} className="text-violet-500" />}
           title="Cartão no mês"
           amount={creditCardCommitment.currentMonthBill}
-          subtitle="Próxima fatura"
+          subtitle="Próxima fatura, total comprometido e avista"
         />
       </div>
 

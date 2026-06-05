@@ -1,6 +1,6 @@
 "use client";
 
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Legend, ResponsiveContainer, Tooltip } from "recharts";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Legend, ResponsiveContainer, Tooltip, ReferenceLine } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/_components/ui/card";
 import type { MonthlyOverviewItem } from "@/app/_data/get-monthly-overview";
 
@@ -71,6 +71,20 @@ const MonthlyBarChart = ({ data }: MonthlyBarChartProps) => {
               iconSize={8}
               wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
             />
+            {chartData[0]?.expectedIncome > 0 && (
+              <ReferenceLine
+                y={chartData[0].expectedIncome}
+                stroke="#55B02E"
+                strokeDasharray="6 4"
+                strokeWidth={1.5}
+                label={{
+                  value: `Receita esperada: ${formatCurrency(chartData[0].expectedIncome)}`,
+                  position: "insideTopRight",
+                  fill: "#55B02E",
+                  fontSize: 11,
+                }}
+              />
+            )}
             <Bar dataKey="deposits" name="Receita" fill="#55B02E" radius={[4, 4, 0, 0]} />
             <Bar dataKey="expensesCash" name="Despesas" stackId="expenses" fill="#E93030" />
             <Bar dataKey="expensesCreditCard" name="Cartão" stackId="expenses" fill="#8B5CF6" radius={[4, 4, 0, 0]} />

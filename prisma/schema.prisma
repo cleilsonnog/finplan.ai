@@ -44,6 +44,8 @@ model Transaction {
   customCategory     CustomCategory?          @relation(fields: [customCategoryId], references: [id], onDelete: SetNull)
   recurringExpenseId String?
   recurringExpense   RecurringExpense?        @relation(fields: [recurringExpenseId], references: [id], onDelete: SetNull)
+  recurringIncomeId  String?
+  recurringIncome    RecurringIncome?         @relation(fields: [recurringIncomeId], references: [id], onDelete: SetNull)
 }
 
 enum TransactionType {
@@ -182,6 +184,20 @@ model RecurringExpense {
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
   transactions     Transaction[]
+
+  @@index([userId])
+}
+
+model RecurringIncome {
+  id           String              @id @default(uuid())
+  userId       String
+  name         String
+  amount       Decimal             @db.Decimal(10, 2)
+  receiveDay   Int
+  active       Boolean             @default(true)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  transactions Transaction[]
 
   @@index([userId])
 }
