@@ -838,6 +838,22 @@ async function createTransaction(
           `Data: ${new Date().toLocaleDateString("pt-BR")}`,
       );
     } else {
+      let transactionDate = new Date();
+
+      // Credit card purchases: adjust date to the correct bill month
+      if (paymentMethod === "CREDIT_CARD" && creditCardId) {
+        let monthOffset = 1;
+        const card = await db.creditCard.findUnique({
+          where: { id: creditCardId },
+          select: { closingDay: true },
+        });
+        if (card && transactionDate.getDate() > card.closingDay) {
+          monthOffset = 2;
+        }
+        transactionDate = new Date(transactionDate);
+        transactionDate.setMonth(transactionDate.getMonth() + monthOffset);
+      }
+
       await db.transaction.create({
         data: {
           name,
@@ -845,7 +861,7 @@ async function createTransaction(
           amount,
           category,
           paymentMethod,
-          date: new Date(),
+          date: transactionDate,
           userId,
           creditCardId: creditCardId || null,
           customCategoryId: customCategoryId || null,
