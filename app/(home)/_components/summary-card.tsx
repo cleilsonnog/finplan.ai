@@ -39,7 +39,7 @@ const SummaryCard = ({
       <CardHeader className="flex-row items-center gap-4">
         {icon}
         <p
-          className={`${size === "small" ? "text-muted-foreground" : "text-white opacity-70"}`}
+          className={`${size === "small" ? "text-muted-foreground" : "text-foreground opacity-70"}`}
         >
           {title}
         </p>

@@ -28,7 +28,7 @@ const CreditCardItem = ({ data, editable = false }: CreditCardItemProps) => {
 
   const content = (
     <div
-      className={`rounded-xl bg-gradient-to-br ${gradient} border border-white/10 p-4 space-y-3 ${!editable ? "transition-opacity hover:opacity-90" : ""}`}
+      className={`rounded-xl bg-gradient-to-br ${gradient} border border-black/10 dark:border-white/10 p-4 space-y-3 ${!editable ? "transition-opacity hover:opacity-90" : ""}`}
     >
       <div className="flex items-center justify-between">
         <div>

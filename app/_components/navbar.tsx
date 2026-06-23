@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import ThemeToggle from "./theme-toggle";
 
 const Navbar = () => {
   const pathname = usePathname();
@@ -60,10 +61,12 @@ const Navbar = () => {
             </Link>
           </div>
         </div>
-        <div className="hidden md:block">
+        <div className="hidden md:flex items-center gap-3">
+          <ThemeToggle />
           <UserButton showName />
         </div>
         <div className="flex items-center gap-3 md:hidden">
+          <ThemeToggle />
           <span className="text-sm font-medium" suppressHydrationWarning>
             {user?.firstName ?? ""}
           </span>

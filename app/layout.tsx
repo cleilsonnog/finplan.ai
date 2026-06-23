@@ -1,11 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Mulish } from "next/font/google";
 import "./globals.css";
-import { ClerkProvider } from "@clerk/nextjs";
-import { dark } from "@clerk/themes";
-import PwaInstallPrompt from "./_components/pwa-install-prompt";
-import PushNotificationPrompt from "./_components/push-notification-prompt";
-import { Toaster } from "sonner";
+import ThemeProvider from "./_components/theme-provider";
+import Providers from "./_components/providers";
 
 const mulish = Mulish({
   subsets: ["latin-ext"],
@@ -85,18 +82,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className="h-full">
-      <body className={`${mulish.className} dark antialiased h-full`}>
-        <ClerkProvider
-          appearance={{ baseTheme: dark }}
-          signInFallbackRedirectUrl="/"
-          signUpFallbackRedirectUrl="/"
+    <html lang="pt-BR" className="h-full" suppressHydrationWarning>
+      <body className={`${mulish.className} antialiased h-full`}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem={false}
+          disableTransitionOnChange
         >
-          {children}
-          <PwaInstallPrompt />
-          <PushNotificationPrompt />
-          <Toaster theme="dark" />
-        </ClerkProvider>
+          <Providers>{children}</Providers>
+        </ThemeProvider>
       </body>
     </html>
   );

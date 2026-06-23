@@ -44,7 +44,7 @@ const LastTransactions = ({ lastTransactions }: LastTransactionsProps) => {
     if (transaction.type === TransactionType.DEPOSIT) {
       return "text-primary";
     }
-    return "text-white";
+    return "text-foreground";
   };
   const getAmountPrefix = (transaction: SerializedTransaction) => {
     if (transaction.type === TransactionType.DEPOSIT) {
@@ -67,7 +67,7 @@ const LastTransactions = ({ lastTransactions }: LastTransactionsProps) => {
             className="flex items-center justify-between"
           >
             <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-white bg-opacity-[3%] p-3 text-white">
+              <div className="rounded-lg bg-muted p-3 text-foreground">
                 {(() => {
                   const iconName = TRANSACTION_PAYMENT_METHOD_ICONS[transaction.paymentMethod];
                   const Icon = PAYMENT_METHOD_ICON_MAP[iconName];

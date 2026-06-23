@@ -119,7 +119,7 @@ const LandingPage = () => {
   return (
     <div className="flex min-h-full flex-col">
       {/* NAVBAR */}
-      <header className="border-b border-white/10">
+      <header className="border-b border-border">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-8">
           <div className="flex items-center gap-2">
             <Image
@@ -172,7 +172,7 @@ const LandingPage = () => {
           {HIGHLIGHTS.map((item) => (
             <div
               key={item.title}
-              className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-5 py-3"
+              className="flex items-center gap-3 rounded-lg border border-border bg-muted/50 px-5 py-3"
             >
               <item.icon className="h-5 w-5 shrink-0 text-primary" />
               <div className="text-left">
@@ -187,7 +187,7 @@ const LandingPage = () => {
       </section>
 
       {/* SCREENSHOTS */}
-      <section className="border-t border-white/10 bg-white/[0.02]">
+      <section className="border-t border-border bg-muted/30">
         <div className="mx-auto max-w-6xl px-4 py-16 sm:px-8 sm:py-24">
           <div className="mb-10 text-center">
             <h2 className="mb-4 text-3xl font-bold sm:text-4xl">
@@ -200,7 +200,7 @@ const LandingPage = () => {
           </div>
 
           {/* Desktop: imagem principal + miniaturas */}
-          <div className="overflow-hidden rounded-xl border border-white/10">
+          <div className="overflow-hidden rounded-xl border border-border">
             <Image
               src={DESKTOP_SCREENSHOTS[activeScreenshot].src}
               alt={DESKTOP_SCREENSHOTS[activeScreenshot].alt}
@@ -217,7 +217,7 @@ const LandingPage = () => {
                 className={`overflow-hidden rounded-lg border-2 transition-all ${
                   activeScreenshot === index
                     ? "border-primary shadow-lg shadow-primary/20"
-                    : "border-white/10 opacity-60 hover:opacity-100"
+                    : "border-border opacity-60 hover:opacity-100"
                 }`}
               >
                 <Image
@@ -285,7 +285,7 @@ const LandingPage = () => {
                   className={`shrink overflow-hidden rounded-2xl border-2 shadow-xl transition-all duration-300 ${
                     activeMobile === index
                       ? "z-10 basis-[30%] border-primary shadow-2xl shadow-primary/20 sm:basis-[200px] lg:basis-[220px]"
-                      : "basis-[17%] border-white/10 sm:basis-[120px] lg:basis-[150px]"
+                      : "basis-[17%] border-border sm:basis-[120px] lg:basis-[150px]"
                   }`}
                 >
                   <Image
@@ -305,7 +305,7 @@ const LandingPage = () => {
       {/* FEATURES */}
       <section
         id="funcionalidades"
-        className="border-t border-white/10 bg-white/[0.02]"
+        className="border-t border-border bg-muted/30"
       >
         <div className="mx-auto max-w-6xl px-4 py-16 sm:px-8 sm:py-24">
           <div className="mb-12 text-center">
@@ -322,7 +322,7 @@ const LandingPage = () => {
             {FEATURES.map((feature) => (
               <div
                 key={feature.title}
-                className="group rounded-xl border border-white/10 bg-white/5 p-6 transition-colors hover:border-primary/30 hover:bg-primary/5"
+                className="group rounded-xl border border-border bg-muted/50 p-6 transition-colors hover:border-primary/30 hover:bg-primary/5"
               >
                 <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
                   <feature.icon className="h-6 w-6" />
@@ -338,7 +338,7 @@ const LandingPage = () => {
       </section>
 
       {/* PROMO VITALÍCIO */}
-      <section className="border-t border-white/10 bg-gradient-to-b from-green-950/20 to-transparent">
+      <section className="border-t border-border bg-gradient-to-b from-green-950/20 to-transparent">
         <div className="mx-auto max-w-6xl px-4 py-16 sm:px-8 sm:py-24">
           <div className="relative overflow-hidden rounded-2xl border border-green-600/50 bg-gradient-to-br from-green-950/40 to-background p-8 sm:p-12">
             <div className="absolute right-0 top-0 rounded-bl-xl bg-green-600 px-4 py-1.5 text-sm font-bold text-white">
@@ -409,7 +409,7 @@ const LandingPage = () => {
       </section>
 
       {/* PLANS */}
-      <section className="border-t border-white/10">
+      <section className="border-t border-border">
         <div className="mx-auto max-w-6xl px-4 py-16 sm:px-8 sm:py-24">
           <div className="mb-12 text-center">
             <h2 className="mb-4 text-3xl font-bold sm:text-4xl">Planos</h2>
@@ -419,7 +419,7 @@ const LandingPage = () => {
           </div>
           <div className="mx-auto grid max-w-3xl grid-cols-1 gap-6 sm:grid-cols-2">
             {/* Free */}
-            <div className="flex flex-col rounded-xl border border-white/10 bg-white/5 p-6">
+            <div className="flex flex-col rounded-xl border border-border bg-muted/50 p-6">
               <h3 className="mb-1 text-xl font-bold">Grátis</h3>
               <p className="mb-6 text-sm text-muted-foreground">
                 Para começar a organizar suas finanças
@@ -510,7 +510,7 @@ const LandingPage = () => {
       </section>
 
       {/* CTA FINAL */}
-      <section className="border-t border-white/10 bg-white/[0.02]">
+      <section className="border-t border-border bg-muted/30">
         <div className="mx-auto max-w-6xl px-4 py-16 text-center sm:px-8 sm:py-24">
           <h2 className="mb-4 text-3xl font-bold sm:text-4xl">
             Pronto para assumir o controle das suas finanças?
@@ -544,7 +544,7 @@ const LandingPage = () => {
       </section>
 
       {/* FOOTER */}
-      <footer className="border-t border-white/10">
+      <footer className="border-t border-border">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-6 sm:px-8">
           <div className="flex items-center gap-2">
             <Image

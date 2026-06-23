@@ -77,7 +77,7 @@ const TutorialPage = async () => {
             {steps.map((step) => (
               <div
                 key={step.title}
-                className="rounded-lg border border-white/10 bg-white/5 p-4"
+                className="rounded-lg border border-border bg-muted/50 p-4"
               >
                 <h2 className="text-base font-semibold">{step.title}</h2>
                 <p className="mt-2 whitespace-pre-line text-sm text-muted-foreground leading-relaxed">
@@ -87,23 +87,23 @@ const TutorialPage = async () => {
             ))}
           </div>
 
-          <div className="rounded-lg border border-white/10 bg-white/5 p-4">
+          <div className="rounded-lg border border-border bg-muted/50 p-4">
             <h2 className="text-base font-semibold">
               Formato de mensagem no WhatsApp
             </h2>
             <div className="mt-3 space-y-2 text-sm text-muted-foreground">
-              <p className="font-medium text-white/80">Despesas:</p>
-              <code className="block rounded bg-white/10 px-3 py-2">
+              <p className="font-medium text-foreground/80">Despesas:</p>
+              <code className="block rounded bg-muted px-3 py-2">
                 gastei 50 alimentação pix
               </code>
-              <code className="block rounded bg-white/10 px-3 py-2">
+              <code className="block rounded bg-muted px-3 py-2">
                 gastei 200 roupas crédito
               </code>
-              <p className="mt-3 font-medium text-white/80">Receitas:</p>
-              <code className="block rounded bg-white/10 px-3 py-2">
+              <p className="mt-3 font-medium text-foreground/80">Receitas:</p>
+              <code className="block rounded bg-muted px-3 py-2">
                 recebi 3000 salário transferência
               </code>
-              <p className="mt-3 font-medium text-white/80">
+              <p className="mt-3 font-medium text-foreground/80">
                 Cartão de crédito:
               </p>
               <p>

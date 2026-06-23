@@ -132,7 +132,7 @@ const CreditCardBills = ({ bills, creditCards }: CreditCardBillsProps) => {
                       ? "border-green-500/20 bg-green-500/5"
                       : bill.status === "OVERDUE"
                         ? "border-red-500/20 bg-red-500/5"
-                        : "border-white/10 bg-white/5"
+                        : "border-border"
                   }`}
                 >
                   <div className="flex items-center justify-between">
@@ -208,11 +208,11 @@ const CreditCardBills = ({ bills, creditCards }: CreditCardBillsProps) => {
                                 do cartão <strong>{bill.creditCardName}</strong> como
                                 paga?
                               </p>
-                              <div className="rounded-md border border-white/10 bg-white/5 p-3 text-center">
+                              <div className="rounded-md border border-border p-3 text-center">
                                 <p className="text-xs text-muted-foreground">
                                   Valor da fatura
                                 </p>
-                                <p className="text-lg font-bold text-white">
+                                <p className="text-lg font-bold text-foreground">
                                   {formatCurrency(bill.totalAmount)}
                                 </p>
                               </div>
