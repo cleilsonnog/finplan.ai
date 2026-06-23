@@ -28,6 +28,8 @@ import {
   AlertDialogTrigger,
 } from "@/app/_components/ui/alert-dialog";
 import { CheckCircle2Icon, AlertTriangleIcon, ClockIcon, CreditCardIcon } from "lucide-react";
+import Image from "next/image";
+import { CARD_BRAND_ICONS, getBankIcon } from "@/app/_constants/credit-cards";
 
 interface CreditCardOption {
   id: string;
@@ -136,18 +138,40 @@ const CreditCardBills = ({ bills, creditCards }: CreditCardBillsProps) => {
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold text-sm">
-                        {bill.creditCardName}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        ****{bill.creditCardLastFour}
-                      </p>
+                    <div className="flex items-center gap-2">
+                      {getBankIcon(bill.creditCardBank) && (
+                        <Image
+                          src={getBankIcon(bill.creditCardBank)!}
+                          alt={bill.creditCardBank}
+                          width={28}
+                          height={28}
+                          className="rounded-md"
+                        />
+                      )}
+                      <div>
+                        <p className="font-semibold text-sm">
+                          {bill.creditCardName}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          ****{bill.creditCardLastFour}
+                        </p>
+                      </div>
                     </div>
-                    <Badge className={style.className}>
-                      {style.icon}
-                      {BILL_STATUS_LABELS[bill.status]}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      {CARD_BRAND_ICONS[bill.creditCardBrand] && (
+                        <Image
+                          src={CARD_BRAND_ICONS[bill.creditCardBrand]}
+                          alt={bill.creditCardBrand}
+                          width={32}
+                          height={22}
+                          className="rounded"
+                        />
+                      )}
+                      <Badge className={style.className}>
+                        {style.icon}
+                        {BILL_STATUS_LABELS[bill.status]}
+                      </Badge>
+                    </div>
                   </div>
 
                   <div className="space-y-1">

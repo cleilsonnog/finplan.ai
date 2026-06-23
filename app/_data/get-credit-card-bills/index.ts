@@ -8,6 +8,7 @@ export interface SerializedBill {
   creditCardName: string;
   creditCardLastFour: string;
   creditCardBrand: string;
+  creditCardBank: string;
   month: number;
   year: number;
   closingDate: string;
@@ -130,6 +131,7 @@ export const getCreditCardBills = async (
       creditCardName: cc.name,
       creditCardLastFour: cc.lastFourDigits,
       creditCardBrand: cc.brand,
+      creditCardBank: cc.bank,
       month: bill.month,
       year: bill.year,
       closingDate: bill.closingDate.toISOString(),

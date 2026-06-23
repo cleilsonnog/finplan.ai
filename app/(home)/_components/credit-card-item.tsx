@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { Progress } from "@/app/_components/ui/progress";
 import { Button } from "@/app/_components/ui/button";
 import UpsertCreditCardDialog from "@/app/_components/upsert-credit-card-dialog";
-import { CARD_BRAND_LABELS, CARD_COLOR_GRADIENTS } from "@/app/_constants/credit-cards";
+import { CARD_BRAND_ICONS, CARD_BRAND_LABELS, CARD_COLOR_GRADIENTS, getBankIcon } from "@/app/_constants/credit-cards";
 import { CreditCardSummaryItem } from "@/app/_data/get-credit-card-summary";
 import { CardBrand } from "@prisma/client";
 import { PencilIcon } from "lucide-react";
@@ -25,29 +26,53 @@ const CreditCardItem = ({ data, editable = false }: CreditCardItemProps) => {
     }).format(value);
 
   const gradient = CARD_COLOR_GRADIENTS[card.color] ?? CARD_COLOR_GRADIENTS.blue;
+  const brandIcon = CARD_BRAND_ICONS[card.brand];
+  const bankIcon = getBankIcon(card.bank);
 
   const content = (
     <div
       className={`rounded-xl bg-gradient-to-br ${gradient} border border-black/10 dark:border-white/10 p-4 space-y-3 ${!editable ? "transition-opacity hover:opacity-90" : ""}`}
     >
       <div className="flex items-center justify-between">
-        <div>
-          <p className="font-semibold text-white">{card.name}</p>
-          <p className="text-sm text-white/60">
-            ****{card.lastFourDigits} &middot;{" "}
-            {CARD_BRAND_LABELS[card.brand as CardBrand]}
-          </p>
+        <div className="flex items-center gap-3">
+          {bankIcon && (
+            <Image
+              src={bankIcon}
+              alt={card.bank}
+              width={32}
+              height={32}
+              className="rounded-md"
+            />
+          )}
+          <div>
+            <p className="font-semibold text-white">{card.name}</p>
+            <p className="text-sm text-white/60">
+              ****{card.lastFourDigits} &middot;{" "}
+              {CARD_BRAND_LABELS[card.brand as CardBrand]}
+            </p>
+          </div>
         </div>
-        {editable && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 text-white/60 hover:text-white hover:bg-white/10"
-            onClick={() => setDialogIsOpen(true)}
-          >
-            <PencilIcon size={14} />
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {brandIcon && (
+            <Image
+              src={brandIcon}
+              alt={CARD_BRAND_LABELS[card.brand as CardBrand]}
+              width={40}
+              height={28}
+              className="rounded"
+            />
+          )}
+          {editable && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-white/60 hover:text-white hover:bg-white/10"
+              onClick={() => setDialogIsOpen(true)}
+            >
+              <PencilIcon size={14} />
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="space-y-1">

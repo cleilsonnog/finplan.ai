@@ -30,6 +30,35 @@ export const CARD_BRAND_LABELS = {
   OTHER: "Outra",
 };
 
+export const CARD_BRAND_ICONS: Record<string, string> = {
+  VISA: "/brands/visa.svg",
+  MASTERCARD: "/brands/mastercard.svg",
+  ELO: "/brands/elo.svg",
+  AMEX: "/brands/amex.svg",
+  HIPERCARD: "/brands/hipercard.svg",
+};
+
+export const BANK_ICONS: Record<string, string> = {
+  nubank: "/banks/nubank.svg",
+  santander: "/banks/santander.svg",
+  itau: "/banks/itau.svg",
+  "itaú": "/banks/itau.svg",
+  bradesco: "/banks/bradesco.svg",
+  inter: "/banks/inter.svg",
+  "mercado pago": "/banks/mercadopago.svg",
+  mercadopago: "/banks/mercadopago.svg",
+  "banco do brasil": "/banks/bb.svg",
+  bb: "/banks/bb.svg",
+  caixa: "/banks/caixa.svg",
+  c6: "/banks/c6.svg",
+  "c6 bank": "/banks/c6.svg",
+  pan: "/banks/pan.svg",
+};
+
+export function getBankIcon(bank: string): string | undefined {
+  return BANK_ICONS[bank.toLowerCase().trim()];
+}
+
 export const CARD_BRAND_OPTIONS = [
   {
     value: CardBrand.VISA,
