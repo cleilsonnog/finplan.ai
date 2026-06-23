@@ -292,7 +292,9 @@ export const POST = async (request: Request) => {
     rawText.startsWith("Numero invalido") ||
     rawText.startsWith("Nao entendi. Responda") ||
     rawText.startsWith("Responda com o numero") ||
-    rawText.startsWith("Teste do finplan")
+    rawText.startsWith("Teste do finplan") ||
+    rawText.startsWith("Operacao cancelada") ||
+    rawText.startsWith("*Finplan.ai - Lembrete")
   ) {
     return NextResponse.json({ received: true });
   }
@@ -363,6 +365,19 @@ export const POST = async (request: Request) => {
     }
   }
 
+  // Check for cancel command
+  if (normalizedText === "cancelar" || normalizedText === "cancel") {
+    const activeSession = await db.whatsAppSession.findUnique({ where: { phone } });
+    if (activeSession && !activeSession.step.startsWith("lock:") && !activeSession.step.startsWith("done:")) {
+      await db.whatsAppSession.delete({ where: { phone } }).catch(() => {});
+      await sendWhatsApp(phone, "Operacao cancelada.");
+    } else {
+      await db.whatsAppSession.delete({ where: { phone } }).catch(() => {});
+      await sendWhatsApp(phone, "Nenhuma operacao em andamento.");
+    }
+    return NextResponse.json({ received: true });
+  }
+
   // Check for help command
   if (normalizedText === "ajuda" || normalizedText === "help") {
     const customCatNames = customCategories.map((c) => c.name.toLowerCase()).join(", ");
@@ -384,13 +399,21 @@ export const POST = async (request: Request) => {
 
   // Check if there's an active session (waiting for card selection or installments)
   if (existingSession && !existingSession.step.startsWith("lock:") && !existingSession.step.startsWith("done:")) {
-    // If the message looks like a NEW transaction, abandon the old session and process fresh
-    const maybeNewTransaction = parseMessage(text, customCategories);
-    if (maybeNewTransaction && maybeNewTransaction.type) {
+    // Expire sessions older than 10 minutes
+    const sessionAge = Date.now() - new Date(existingSession.updatedAt).getTime();
+    const SESSION_TIMEOUT_MS = 10 * 60 * 1000;
+    if (sessionAge > SESSION_TIMEOUT_MS) {
       await db.whatsAppSession.delete({ where: { phone } }).catch(() => {});
       // Fall through to parse as new transaction below
     } else {
-      return handleSession(existingSession, normalizedText, phone, userId, messageId, customCategories);
+      // If the message looks like a NEW transaction, abandon the old session and process fresh
+      const maybeNewTransaction = parseMessage(text, customCategories);
+      if (maybeNewTransaction && maybeNewTransaction.type) {
+        await db.whatsAppSession.delete({ where: { phone } }).catch(() => {});
+        // Fall through to parse as new transaction below
+      } else {
+        return handleSession(existingSession, normalizedText, phone, userId, messageId, customCategories);
+      }
     }
   }
 
