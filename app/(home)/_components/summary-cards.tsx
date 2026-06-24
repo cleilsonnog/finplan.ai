@@ -1,4 +1,6 @@
 import {
+  CheckCircle2Icon,
+  ClockIcon,
   CreditCardIcon,
   PiggyBankIcon,
   ShieldAlertIcon,
@@ -23,6 +25,8 @@ interface SummaryCardsProps {
   canUserAddTransaction: boolean;
   customCategories?: CustomCategoryOption[];
   creditCardCommitment: CreditCardCommitment;
+  totalPaid: number;
+  totalPending: number;
 }
 
 const fmt = (v: number) =>
@@ -42,6 +46,8 @@ const SummaryCards = async ({
   canUserAddTransaction,
   customCategories = [],
   creditCardCommitment,
+  totalPaid,
+  totalPending,
 }: SummaryCardsProps) => {
   return (
     <div className="space-y-6">
@@ -59,12 +65,7 @@ const SummaryCards = async ({
       />
 
       {/* OUTROS CARDS */}
-      <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
-        <SummaryCard
-          icon={<PiggyBankIcon size={16} />}
-          title="Investido"
-          amount={investmentsTotal}
-        />
+      <div className="grid grid-cols-2 gap-6 sm:grid-cols-3">
         <SummaryCard
           icon={<TrendingUpIcon size={16} className="text-primary" />}
           title="Receita"
@@ -74,13 +75,30 @@ const SummaryCards = async ({
           icon={<TrendingDownIcon size={16} className="text-red-500" />}
           title="Despesas"
           amount={expensesTotal}
-          subtitle="Inclui cartão, à vista, parcelado e outros"
+          subtitle="Inclui cartão, à vista + total comprometido, além dos gastos diário."
+        />
+        <SummaryCard
+          icon={<PiggyBankIcon size={16} />}
+          title="Investido"
+          amount={investmentsTotal}
+        />
+        <SummaryCard
+          icon={<CheckCircle2Icon size={16} className="text-emerald-500" />}
+          title="Total Pago"
+          amount={totalPaid}
+          subtitle="Contas recorrentes já quitadas"
+        />
+        <SummaryCard
+          icon={<ClockIcon size={16} className="text-amber-500" />}
+          title="Falta Pagar"
+          amount={totalPending}
+          subtitle="Contas recorrentes pendentes no mês"
         />
         <SummaryCard
           icon={<CreditCardIcon size={16} className="text-violet-500" />}
           title="Cartão no mês"
           amount={creditCardCommitment.currentMonthBill}
-          subtitle="Próxima fatura, total comprometido e avista"
+          subtitle="Próxima fatura + total comprometido"
         />
       </div>
 

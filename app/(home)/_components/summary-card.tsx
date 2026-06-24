@@ -47,7 +47,7 @@ const SummaryCard = ({
       <CardContent className="flex flex-wrap items-center justify-between gap-4">
         <div className="w-full">
           <p
-            className={`font-bold ${size === "small" ? "text-2xl" : "text-2xl sm:text-4xl"}`}
+            className={`font-bold ${size === "small" ? "text-lg sm:text-2xl" : "text-2xl sm:text-4xl"}`}
           >
             {formatCurrency(amount)}
           </p>

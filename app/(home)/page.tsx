@@ -25,6 +25,7 @@ import { getUpcomingRecurring } from "../_data/get-recurring-expenses";
 import MonthlyBarChart from "./_components/monthly-bar-chart";
 import { getMonthlyOverview } from "../_data/get-monthly-overview";
 import { getCreditCardCommitment } from "../_data/get-credit-card-commitment";
+import { getPaymentStatus } from "../_data/get-payment-status";
 
 interface HomeProps {
   searchParams: Promise<{
@@ -54,6 +55,7 @@ const Home = async ({ searchParams }: HomeProps) => {
     upcomingRecurring,
     monthlyOverview,
     creditCardCommitment,
+    paymentStatus,
   ] = await Promise.all([
     getDashboard(month),
     db.creditCard.findMany({ where: { userId: effectiveUserId } }),
@@ -68,6 +70,7 @@ const Home = async ({ searchParams }: HomeProps) => {
     getUpcomingRecurring(),
     getMonthlyOverview(month),
     getCreditCardCommitment(month),
+    getPaymentStatus(month),
   ]);
   const creditCards = creditCardsRaw.map((c) => ({
     ...c,
@@ -109,6 +112,8 @@ const Home = async ({ searchParams }: HomeProps) => {
           canUserAddTransaction={canAddTransaction}
           customCategories={customCategories}
           creditCardCommitment={creditCardCommitment}
+          totalPaid={paymentStatus.totalPaid}
+          totalPending={paymentStatus.totalPending}
         />
 
         {/* Charts: Bar + Donut */}
