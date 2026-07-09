@@ -6,12 +6,18 @@ interface CustomCategoryInfo {
   name: string;
 }
 
+export type CategoryLabelOverrides = Record<string, string>;
+
 export function getCategoryLabel(
   category: TransactionCategory,
   customCategory?: CustomCategoryInfo | null,
+  overrides?: CategoryLabelOverrides,
 ): string {
   if (category === "OTHER" && customCategory) {
     return customCategory.name;
+  }
+  if (overrides && overrides[category]) {
+    return overrides[category];
   }
   return TRANSACTION_CATEGORY_LABELS[category];
 }

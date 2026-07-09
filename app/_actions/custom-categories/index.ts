@@ -72,3 +72,38 @@ export const deleteCustomCategory = async (id: string) => {
   revalidatePath("/budget");
   revalidatePath("/");
 };
+
+export const updateCategoryLabel = async (
+  category: string,
+  label: string,
+) => {
+  const result = await getEffectiveUserId();
+  if (!result) throw new Error("Unauthorized");
+  const userId = result.effectiveUserId;
+  const trimmed = label.trim();
+  if (!trimmed || trimmed.length > 50) {
+    throw new Error("Label must be 1-50 characters");
+  }
+  await db.userCategoryLabel.upsert({
+    where: { userId_category: { userId, category: category as never } },
+    create: { userId, category: category as never, label: trimmed },
+    update: { label: trimmed },
+  });
+  revalidatePath("/categories");
+  revalidatePath("/transactions");
+  revalidatePath("/budget");
+  revalidatePath("/");
+};
+
+export const resetCategoryLabel = async (category: string) => {
+  const result = await getEffectiveUserId();
+  if (!result) throw new Error("Unauthorized");
+  const userId = result.effectiveUserId;
+  await db.userCategoryLabel.deleteMany({
+    where: { userId, category: category as never },
+  });
+  revalidatePath("/categories");
+  revalidatePath("/transactions");
+  revalidatePath("/budget");
+  revalidatePath("/");
+};

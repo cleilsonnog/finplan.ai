@@ -2,10 +2,11 @@ import Navbar from "../_components/navbar";
 import { redirect } from "next/navigation";
 import { db } from "../_lib/prisma";
 import { getEffectiveUserId } from "../_lib/get-effective-user-id";
+import { hasPremiumAccess } from "../_lib/has-premium-access";
 import { TransactionCategory } from "@prisma/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import BudgetForm from "./_components/budget-form";
+import CategoryBudgetManager from "./_components/category-budget-manager";
 import BudgetProgress from "./_components/budget-progress";
 import { getCategoryKey, getCategoryLabel } from "../_utils/category";
 
@@ -22,13 +23,22 @@ const BudgetPage = async () => {
   const month = now.getMonth() + 1;
   const year = now.getFullYear();
 
-  const [customCategories] = await Promise.all([
+  const [customCategories, hasPremium, userLabels] = await Promise.all([
     db.customCategory.findMany({
       where: { userId },
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),
+    hasPremiumAccess(),
+    db.userCategoryLabel.findMany({
+      where: { userId },
+    }),
   ]);
+
+  const categoryLabels: Record<string, string> = {};
+  for (const ul of userLabels) {
+    categoryLabels[ul.category] = ul.label;
+  }
 
   let budgets = await db.budget.findMany({
     where: { userId, month, year },
@@ -92,7 +102,7 @@ const BudgetPage = async () => {
       return {
         category: b.category as TransactionCategory,
         customCategoryId: b.customCategoryId,
-        label: getCategoryLabel(b.category, b.customCategory),
+        label: getCategoryLabel(b.category, b.customCategory, categoryLabels),
         budgeted: Number(b.amount),
         spent: spentByCategory[key] ?? 0,
       };
@@ -115,15 +125,17 @@ const BudgetPage = async () => {
       <Navbar />
       <div className="flex-1 space-y-6 overflow-auto p-4 md:p-6">
         <h1 className="text-2xl font-bold">
-          Orçamento Mensal — {capitalizedMonth}
+          Categorias & Orçamento — {capitalizedMonth}
         </h1>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <BudgetForm
+          <CategoryBudgetManager
             month={month}
             year={year}
             existingBudgets={existingBudgets}
             initialEditing={!hasBudgets}
             customCategories={customCategories}
+            categoryLabels={categoryLabels}
+            hasPremium={hasPremium}
           />
           <BudgetProgress
             categories={categories}

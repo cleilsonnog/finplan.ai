@@ -29,9 +29,9 @@ docker compose up -d # Start local PostgreSQL
 - `app/(home)/` — Dashboard (logged in) or Landing Page (visitors)
 - `app/transactions/` — Transactions page with `_columns/` and `_components/`
 - `app/credit-cards/` — Credit cards, bills, installments management
-- `app/budget/` — Monthly budget by category
+- `app/budget/` — Unified categories & budget management (rename defaults, custom categories, budget limits)
 - `app/recurring/` — Recurring expenses and incomes management (CRUD, pay, toggle, receive)
-- `app/categories/` — Custom categories management
+- `app/categories/` — Redirects to `/budget`
 - `app/subscription/` — Plans page (free vs premium)
 - `app/settings/` — Settings page (WhatsApp link)
 - `app/api/cron/recurring-reminders/` — Daily WhatsApp reminders for due expenses
@@ -46,6 +46,7 @@ docker compose up -d # Start local PostgreSQL
 - **CreditCardBill** — Monthly bills per card with status (OPEN/CLOSED/PAID/OVERDUE), auto-computed from dates
 - **Budget** — Monthly budget limits per category
 - **CustomCategory** — User-defined categories
+- **UserCategoryLabel** — User overrides for built-in category names
 - **AccountShare / AccountShareInvite** — Account sharing between users
 - **RecurringExpense** — Fixed monthly expenses (rent, utilities) with due day, active/inactive, linked transactions for payment tracking
 - **RecurringIncome** — Fixed monthly incomes (salary, freelance) with receive day, active/inactive, linked DEPOSIT transactions
@@ -66,18 +67,22 @@ docker compose up -d # Start local PostgreSQL
 - **Transactions Month Filter** — Month selector on `/transactions` page via searchParams.
 - **Recurring Reminders** — VPS Cron (`0 9 * * *` BRT on 212.56.33.113) calls `/api/cron/recurring-reminders`. Sends WhatsApp + push notification to users with unpaid expenses due today. Protected with `CRON_SECRET`.
 - **Push Notifications** — VAPID web push via `web-push` package. Auto-resubscribes on PWA reinstall. Model `PushSubscription` in Prisma.
-- **WhatsApp Transactions** — Register transactions via WhatsApp using Evolution API. Webhook at `/api/webhooks/evolution`. Supports credit card selection, installments, multi-step conversation. Settings page at `/settings` to link/unlink phone number.
+- **WhatsApp Transactions** — Register transactions via WhatsApp using Evolution API. Webhook at `/api/webhooks/evolution`. Supports credit card selection, installments, multi-step conversation. Settings page at `/settings` to link/unlink phone number. Sessions timeout after 10 min. User can send "cancelar" to abort a flow. Bot messages must be in the `rawText.startsWith(...)` filter array to prevent reprocessing.
 - **WhatsApp Float Button** — Floating contact button on landing and subscription pages
 - **PDF Export** — Credit card installments and transactions exportable as PDF (jspdf + jspdf-autotable). Respects card filter.
 - **PWA** — Installable as mobile app. SW handles only push notifications (no fetch interception — breaks Clerk auth). `SignInButton mode="modal"` for login without leaving PWA.
 - **OG Image** — 1200x630 dashboard preview for link sharing
+- **Theme Toggle** — Dark/light mode via `next-themes`. Toggle in navbar. Clerk and Toaster react dynamically. Default: dark. Preference saved in localStorage.
+- **Card Logos** — Brand logos (Visa, Mastercard, Elo, Amex, Hipercard) in `public/brands/`. Bank logos (Nubank, Santander, Itaú, etc.) in `public/banks/`. Mapped via `CARD_BRAND_ICONS` and `getBankIcon()` in `_constants/credit-cards.ts`.
+- **Payment Status** — "Total Pago" and "Falta Pagar" dashboard cards. Only counts recurring expenses (not CC bills — those have their own cards). Data from `app/_data/get-payment-status`.
 
 ### Patterns
 
 - **Server Components by default** — pages fetch data directly with `db`
 - **Decimal serialization** — Prisma returns `Decimal` objects. Convert to `number` before passing to Client Components
 - **Server Actions** — Validated with Zod schemas, authenticated via `getEffectiveUserId()`, call `revalidatePath` after mutations
-- **UI components** — Based on shadcn/ui (Radix + CVA + Tailwind). Dark theme only
+- **UI components** — Based on shadcn/ui (Radix + CVA + Tailwind). Dark/light theme via next-themes
+- **Theme colors** — Use CSS variables (`text-foreground`, `bg-muted`, `border-border`) not hardcoded colors (`text-white`, `bg-white/10`). Exception: credit-card-item uses `text-white` over colored gradients
 - **Path alias** — `@/*` maps to project root
 - **Brazil timezone** — All date calculations for recurring expenses use `America/Sao_Paulo` (Vercel runs in UTC)
 - **Credit card architecture** — CC purchases are EXPENSE transactions at time of purchase (not at bill payment). Bill payment is a separate action that doesn't create duplicate expenses. Stacked bar chart shows expenses split: cash (red) + credit card (purple).

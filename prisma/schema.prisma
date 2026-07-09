@@ -211,6 +211,15 @@ model WhatsAppSession {
   updatedAt       DateTime @updatedAt
 }
 
+model UserCategoryLabel {
+  id       String              @id @default(uuid())
+  userId   String
+  category TransactionCategory
+  label    String
+
+  @@unique([userId, category])
+}
+
 model PushSubscription {
   id        String   @id @default(uuid())
   userId    String

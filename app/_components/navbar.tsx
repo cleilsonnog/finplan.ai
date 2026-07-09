@@ -47,9 +47,6 @@ const Navbar = () => {
             <Link href="/recurring" className={linkClass("/recurring")}>
               Recorrentes
             </Link>
-            <Link href="/categories" className={linkClass("/categories")}>
-              Categorias
-            </Link>
             <Link href="/subscription" className={linkClass("/subscription")}>
               Assinatura
             </Link>
@@ -116,13 +113,6 @@ const Navbar = () => {
             onClick={() => setMenuOpen(false)}
           >
             Recorrentes
-          </Link>
-          <Link
-            href="/categories"
-            className={linkClass("/categories")}
-            onClick={() => setMenuOpen(false)}
-          >
-            Categorias
           </Link>
           <Link
             href="/subscription"
