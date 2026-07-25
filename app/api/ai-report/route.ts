@@ -400,6 +400,7 @@ ${historyText}`;
 
   const stream = await openAi.chat.completions.create({
     model: "gpt-4o",
+    temperature: 0,
     stream: true,
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
