@@ -12,8 +12,7 @@ import {
   DialogTrigger,
 } from "@/app/_components/ui/dialog";
 import { BotIcon, Loader2Icon, PrinterIcon } from "lucide-react";
-import { generateAiReport } from "../_actions/generate-ai-report";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ScrollArea } from "@/app/_components/ui/scroll-area";
 import Markdown from "react-markdown";
 import Link from "next/link";
@@ -26,6 +25,7 @@ interface AiReportButtonProps {
 const AiReportButton = ({ month, hasPremiumPlan }: AiReportButtonProps) => {
   const [report, setReport] = useState<string | null>(null);
   const [reportIsLoading, setReportIsLoading] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const handlePrint = () => {
     const printWindow = window.open("", "_blank");
@@ -59,23 +59,52 @@ const AiReportButton = ({ month, hasPremiumPlan }: AiReportButtonProps) => {
   const handleGenerateReportClick = async () => {
     try {
       setReportIsLoading(true);
-      const aiReport = await generateAiReport({ month });
-      console.log({ aiReport });
-      setReport(aiReport);
+      setReport("");
+
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
+      const response = await fetch("/api/ai-report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ month }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro ao gerar relatório: ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("Stream não disponível");
+
+      const decoder = new TextDecoder();
+      let accumulated = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        accumulated += decoder.decode(value, { stream: true });
+        setReport(accumulated);
+      }
     } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
       console.error(error);
     } finally {
       setReportIsLoading(false);
+      abortControllerRef.current = null;
     }
   };
+
+  const handleDialogChange = (open: boolean) => {
+    if (!open) {
+      abortControllerRef.current?.abort();
+      setReport(null);
+    }
+  };
+
   return (
-    <Dialog
-      onOpenChange={(open) => {
-        if (!open) {
-          setReport(null);
-        }
-      }}
-    >
+    <Dialog onOpenChange={handleDialogChange}>
       <DialogTrigger asChild>
         <Button variant="ghost">
           Relatório IA
@@ -101,7 +130,7 @@ const AiReportButton = ({ month, hasPremiumPlan }: AiReportButtonProps) => {
               <DialogClose asChild>
                 <Button variant="ghost">Cancelar</Button>
               </DialogClose>
-              {report && (
+              {report && !reportIsLoading && (
                 <Button variant="outline" onClick={handlePrint}>
                   <PrinterIcon />
                   Imprimir
