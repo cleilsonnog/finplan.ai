@@ -58,7 +58,7 @@ docker compose up -d # Start local PostgreSQL
 - **Landing Page** — Route `/` shows landing page for unauthenticated visitors, dashboard for logged users
 - **Credit Card Bills** — Auto-created per card/month, status transitions: OPEN → CLOSED → PAID/OVERDUE based on closing/due dates. No duplicate transactions on bill payment.
 - **Installments** — Up to 48x, creates N transactions with divided amounts spread monthly
-- **AI Reports** — OpenAI-powered financial analysis with transactions, budgets, credit cards, bills data. Structured prompt with scoring.
+- **AI Reports** — OpenAI (gpt-4o) financial analysis with transactions, budgets, credit cards, bills data. Includes 3-month history for trend analysis. Motor de análise: saúde financeira, categorias com tendência, reclassificação inteligente, orçamento vs realidade, anomalias, plano de ação priorizado. Structured prompt with scoring.
 - **Account Sharing** — Share financial data with a partner via invite system
 - **PIX Payment** — Mercado Pago integration for lifetime plan. QR code modal on subscription page, webhook with HMAC validation, Telegram notification on payment received.
 - **Recurring Expenses** — Fixed monthly bills (rent, utilities, internet). CRUD with category, due day, active/inactive toggle. "Pay" button creates a real Transaction linked via `recurringExpenseId`. Badge shows Paid/Pending per month. Dashboard widget shows upcoming due dates (next 7 days, excludes paid).
