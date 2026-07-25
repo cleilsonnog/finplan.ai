@@ -28,35 +28,51 @@ export const generateAiReport = async ({ month }: GenerateAiReportSchema) => {
   const startDate = new Date(year, monthNum - 1, 1);
   const endDate = new Date(year, monthNum, 1);
 
+  // Calcular período histórico (3 meses anteriores ao mês selecionado)
+  const historyStartDate = new Date(year, monthNum - 4, 1);
+
   // Buscar dados em paralelo
   const openAi = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
   });
 
-  const [transactions, budgets, creditCards, bills] = await Promise.all([
-    db.transaction.findMany({
-      where: {
-        userId,
-        date: { gte: startDate, lt: endDate },
-      },
-      include: {
-        customCategory: { select: { name: true } },
-        creditCard: { select: { name: true, lastFourDigits: true } },
-      },
-      orderBy: { date: "asc" },
-    }),
-    db.budget.findMany({
-      where: { userId, month: monthNum, year },
-      include: { customCategory: { select: { name: true } } },
-    }),
-    db.creditCard.findMany({
-      where: { userId },
-    }),
-    db.creditCardBill.findMany({
-      where: { userId, month: monthNum, year },
-      include: { creditCard: { select: { name: true, lastFourDigits: true } } },
-    }),
-  ]);
+  const [transactions, historyTransactions, budgets, creditCards, bills] =
+    await Promise.all([
+      db.transaction.findMany({
+        where: {
+          userId,
+          date: { gte: startDate, lt: endDate },
+        },
+        include: {
+          customCategory: { select: { name: true } },
+          creditCard: { select: { name: true, lastFourDigits: true } },
+        },
+        orderBy: { date: "asc" },
+      }),
+      db.transaction.findMany({
+        where: {
+          userId,
+          date: { gte: historyStartDate, lt: startDate },
+        },
+        include: {
+          customCategory: { select: { name: true } },
+        },
+        orderBy: { date: "asc" },
+      }),
+      db.budget.findMany({
+        where: { userId, month: monthNum, year },
+        include: { customCategory: { select: { name: true } } },
+      }),
+      db.creditCard.findMany({
+        where: { userId },
+      }),
+      db.creditCardBill.findMany({
+        where: { userId, month: monthNum, year },
+        include: {
+          creditCard: { select: { name: true, lastFourDigits: true } },
+        },
+      }),
+    ]);
 
   // Formatar transações
   const transactionsText = transactions
@@ -104,6 +120,70 @@ export const generateAiReport = async ({ month }: GenerateAiReportSchema) => {
           .join("\n")
       : "Nenhum cartão cadastrado";
 
+  const monthNames = [
+    "Janeiro",
+    "Fevereiro",
+    "Março",
+    "Abril",
+    "Maio",
+    "Junho",
+    "Julho",
+    "Agosto",
+    "Setembro",
+    "Outubro",
+    "Novembro",
+    "Dezembro",
+  ];
+
+  // Formatar histórico dos 3 meses anteriores (resumo por mês e categoria)
+  const historyByMonth = new Map<
+    string,
+    { deposits: number; expenses: number; investments: number; categories: Map<string, number> }
+  >();
+
+  for (const t of historyTransactions) {
+    const m = t.date.getMonth() + 1;
+    const y = t.date.getFullYear();
+    const key = `${y}-${String(m).padStart(2, "0")}`;
+    if (!historyByMonth.has(key)) {
+      historyByMonth.set(key, {
+        deposits: 0,
+        expenses: 0,
+        investments: 0,
+        categories: new Map(),
+      });
+    }
+    const entry = historyByMonth.get(key)!;
+    const amount = Number(t.amount);
+    if (t.type === "DEPOSIT") entry.deposits += amount;
+    else if (t.type === "EXPENSE") entry.expenses += amount;
+    else if (t.type === "INVESTMENT") entry.investments += amount;
+
+    if (t.type === "EXPENSE") {
+      const catName =
+        t.category === "OTHER" && t.customCategory
+          ? t.customCategory.name
+          : t.category;
+      entry.categories.set(catName, (entry.categories.get(catName) || 0) + amount);
+    }
+  }
+
+  const historyText =
+    historyByMonth.size > 0
+      ? [...historyByMonth.entries()]
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([key, data]) => {
+            const [y, m] = key.split("-");
+            const monthName = monthNames[Number(m) - 1];
+            const catRanking = [...data.categories.entries()]
+              .sort((a, b) => b[1] - a[1])
+              .map(([cat, val]) => `  - ${cat}: R$${val.toFixed(2)}`)
+              .join("\n");
+            return `### ${monthName}/${y}\n- Receitas: R$${data.deposits.toFixed(2)}\n- Despesas: R$${data.expenses.toFixed(2)}\n- Investimentos: R$${data.investments.toFixed(2)}\n- Saldo: R$${(data.deposits - data.expenses - data.investments).toFixed(2)}\n- Gastos por categoria:\n${catRanking}`;
+          })
+          .join("\n\n")
+      : "Sem dados históricos disponíveis";
+
   // Calcular resumo
   const totalDeposits = transactions
     .filter((t) => t.type === "DEPOSIT")
@@ -115,11 +195,6 @@ export const generateAiReport = async ({ month }: GenerateAiReportSchema) => {
     .filter((t) => t.type === "INVESTMENT")
     .reduce((sum, t) => sum + Number(t.amount), 0);
   const balance = totalDeposits - totalExpenses - totalInvestments;
-
-  const monthNames = [
-    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
-  ];
 
   const userContent = `Analise meus dados financeiros de ${monthNames[monthNum - 1]}/${year} e gere um relatório completo.
 
@@ -137,14 +212,18 @@ ${transactionsText || "Nenhuma transação no período"}
 ${budgetsText}
 
 ## CARTÕES DE CRÉDITO
-${creditCardsText}`;
+${creditCardsText}
+
+## HISTÓRICO DOS 3 MESES ANTERIORES
+${historyText}`;
 
   const completion = await openAi.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: "gpt-4o",
     messages: [
       {
         role: "system",
-        content: `Você é o FinPlan AI, um consultor financeiro pessoal inteligente e experiente. Seu papel é analisar os dados financeiros do usuário e gerar relatórios detalhados, personalizados e acionáveis.
+        content: `Você é o FinPlan AI, um consultor financeiro especializado em análise financeira, planejamento orçamentário e identificação de oportunidades de economia.
+                  Sua função é interpretar os dados financeiros do usuário, detectar padrões, identificar riscos e fornecer recomendações práticas baseadas exclusivamente nos dados fornecidos.
 
 ## DIRETRIZES
 - Responda sempre em português brasileiro
@@ -170,7 +249,147 @@ ${creditCardsText}`;
 - Se há faturas atrasadas (OVERDUE), destaque como prioridade máxima
 - Se não há orçamento definido, recomende criar um
 - Parcelas comprometem renda futura — sempre mencione o impacto
-- Compare o padrão de gastos com boas práticas (ex: moradia até 30% da renda, alimentação até 15%)`,
+- Compare o padrão de gastos com boas práticas (ex: moradia até 30% da renda, alimentação até 15%)
+
+## MOTOR DE ANÁLISE
+
+Antes de gerar o relatório execute internamente as seguintes análises:
+
+### Saúde Financeira
+
+Calcule:
+
+- Receita Total
+- Despesa Total
+- Saldo
+- Taxa de poupança
+- Percentual da renda comprometida
+
+Classifique:
+
+🟢 Saudável
+🟡 Atenção
+🔴 Crítico
+
+---
+
+### Categorias
+
+Para cada categoria calcule:
+
+- Valor gasto
+- Percentual da despesa total
+- Média histórica (use os dados dos 3 meses anteriores fornecidos)
+- Crescimento em relação aos meses anteriores
+- Tendência (crescente, estável, decrescente)
+
+Considere uma categoria em alerta quando:
+
+- crescer mais de 20% em relação à média;
+- representar mais de 35% das despesas;
+- ultrapassar o orçamento;
+- apresentar gastos atípicos.
+
+---
+
+### Reclassificação Inteligente
+
+Sempre analise a consistência das categorias.
+
+Quando identificar possível classificação incorreta:
+
+- informe categoria atual;
+- categoria sugerida;
+- motivo;
+- confiança.
+
+Nunca altere automaticamente com confiança inferior a 80%.
+
+---
+
+### Orçamento
+
+Para cada categoria:
+
+- Planejado
+- Realizado
+- Saldo
+- Percentual utilizado
+- Projeção até o fim do mês
+
+Status:
+
+🟢 Até 80%
+
+🟡 Entre 80% e 100%
+
+🔴 Acima de 100%
+
+Explique as causas do desvio.
+
+---
+
+### Cartões
+
+Calcule:
+
+- utilização do limite;
+- utilização consolidada;
+- comprometimento da renda;
+- faturas futuras;
+- risco de endividamento.
+
+Alerta:
+
+acima de 30%
+
+acima de 50%
+
+acima de 80%
+
+---
+
+### Parcelamentos
+
+Calcule:
+
+- quantidade;
+- saldo restante;
+- parcelas futuras;
+- impacto mensal;
+- término previsto.
+
+---
+
+### Anomalias
+
+Detecte:
+
+- gastos duplicados;
+- pagamentos recorrentes inesperados;
+- valores muito acima da média;
+- compras incomuns;
+- aumento repentino de categorias.
+
+## Plano de Ação
+
+Classifique todas as recomendações por prioridade.
+
+🔴 Alta
+Problemas que exigem ação imediata.
+
+🟡 Média
+Melhorias importantes.
+
+🟢 Baixa
+Oportunidades de otimização.
+
+Para cada ação informe:
+
+- Motivo
+- Impacto esperado
+- Dificuldade
+- Economia estimada (quando possível)`,
       },
       {
         role: "user",
