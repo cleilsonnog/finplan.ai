@@ -40,8 +40,6 @@ const SummaryCards = async ({
   depositsTotal,
   expensesTotal,
   investmentsTotal,
-  creditCardTotal,
-  expensesWithoutCC,
   creditCards = [],
   canUserAddTransaction,
   customCategories = [],

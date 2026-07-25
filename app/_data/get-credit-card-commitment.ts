@@ -72,11 +72,6 @@ export const getCreditCardCommitment = async (
     currentMonthBill += Number(currentAgg._sum?.amount ?? 0);
 
     // Current cycle (month): cutoff for future commitment
-    const prevMonth = monthNum === 1 ? 12 : monthNum - 1;
-    const prevYear = monthNum === 1 ? year - 1 : year;
-    const startDay = cc.closingDay + 1;
-    const daysInPrevMonth = new Date(prevYear, prevMonth, 0).getDate();
-    const clampedStartDay = Math.min(startDay, daysInPrevMonth);
     const clampedClosingDay = Math.min(cc.closingDay, daysInCurrentMonth);
 
     const currentCycleEnd = new Date(year, monthNum - 1, clampedClosingDay, 23, 59, 59, 999);

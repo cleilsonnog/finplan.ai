@@ -73,6 +73,7 @@ const PixPaymentModal = () => {
           ) : pixData ? (
             <div className="flex flex-col items-center gap-4">
               <div className="rounded-lg bg-white p-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={`data:image/png;base64,${pixData.qrCodeBase64}`}
                   alt="QR Code PIX"

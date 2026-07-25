@@ -78,6 +78,7 @@ const UpsertRecurringIncomeDialog = ({
         form.reset({ name: "", amount: 0, receiveDay: 1 });
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, defaultValues]);
 
   const onSubmit = async (data: FormData) => {

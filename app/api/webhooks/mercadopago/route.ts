@@ -23,10 +23,7 @@ async function notifyTelegram(message: string) {
   }
 }
 
-function verifyWebhookSignature(
-  request: Request,
-  body: string,
-): boolean {
+function verifyWebhookSignature(request: Request): boolean {
   const secret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
   if (!secret) return false;
 
@@ -61,7 +58,7 @@ export const POST = async (request: Request) => {
 
   const body = await request.text();
 
-  if (!verifyWebhookSignature(request, body)) {
+  if (!verifyWebhookSignature(request)) {
     console.error("Mercado Pago webhook: invalid signature");
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
