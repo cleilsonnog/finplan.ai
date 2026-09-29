@@ -3,6 +3,7 @@ import { Mulish } from "next/font/google";
 import "./globals.css";
 import ThemeProvider from "./_components/theme-provider";
 import Providers from "./_components/providers";
+import Footer from "./_components/footer";
 
 const mulish = Mulish({
   subsets: ["latin-ext"],
@@ -83,14 +84,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" className="h-full" suppressHydrationWarning>
-      <body className={`${mulish.className} antialiased h-full`}>
+      <body className={`${mulish.className} antialiased h-full flex flex-col`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
           enableSystem={false}
           disableTransitionOnChange
         >
-          <Providers>{children}</Providers>
+          <Providers>
+            <div className="flex-1">{children}</div>
+            <Footer />
+          </Providers>
         </ThemeProvider>
       </body>
     </html>
