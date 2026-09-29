@@ -2,7 +2,6 @@ import { db } from "@/app/_lib/prisma";
 import { TransactionType } from "@prisma/client";
 import { TotalExpensePerCategory } from "./types";
 import { getEffectiveUserId } from "@/app/_lib/get-effective-user-id";
-import { getCreditCardSummary } from "../get-credit-card-summary";
 
 export const getDashboard = async (month: string) => {
   const result = await getEffectiveUserId();
@@ -16,7 +15,7 @@ export const getDashboard = async (month: string) => {
       lt: new Date(`${year}-${Number(month) + 1}-01`),
     },
   };
-  const [depositsAgg, investmentsAgg, expensesAgg, creditCardAgg] =
+  const [depositsAgg, investmentsAgg, expensesAgg, creditCardAgg, groupedExpenses, lastTransactionsRaw] =
     await Promise.all([
       db.transaction.aggregate({
         where: { ...where, type: "DEPOSIT" },
@@ -34,6 +33,27 @@ export const getDashboard = async (month: string) => {
         where: { ...where, type: "EXPENSE", creditCardId: { not: null } },
         _sum: { amount: true },
       }),
+      db.transaction.groupBy({
+        by: ["category", "customCategoryId"],
+        where: { ...where, type: TransactionType.EXPENSE },
+        _sum: { amount: true },
+      }),
+      db.transaction.findMany({
+        where,
+        orderBy: { date: "desc" },
+        take: 10,
+        select: {
+          id: true,
+          name: true,
+          type: true,
+          amount: true,
+          category: true,
+          paymentMethod: true,
+          date: true,
+          creditCardId: true,
+          customCategoryId: true,
+        },
+      }),
     ]);
   const depositsTotal = Number(depositsAgg._sum?.amount ?? 0);
   const investmentsTotal = Number(investmentsAgg._sum?.amount ?? 0);
@@ -41,16 +61,6 @@ export const getDashboard = async (month: string) => {
   const creditCardTotal = Number(creditCardAgg._sum?.amount ?? 0);
   const expensesWithoutCC = expensesTotal - creditCardTotal;
   const balance = depositsTotal - investmentsTotal - expensesTotal;
-  const groupedExpenses = await db.transaction.groupBy({
-    by: ["category", "customCategoryId"],
-    where: {
-      ...where,
-      type: TransactionType.EXPENSE,
-    },
-    _sum: {
-      amount: true,
-    },
-  });
   const customCategoryIds = groupedExpenses
     .map((g) => g.customCategoryId)
     .filter((id): id is string => !!id);
@@ -77,16 +87,10 @@ export const getDashboard = async (month: string) => {
         : null,
     }),
   );
-  const lastTransactionsRaw = await db.transaction.findMany({
-    where,
-    orderBy: { date: "desc" },
-    take: 10,
-  });
   const lastTransactions = lastTransactionsRaw.map((t) => ({
     ...t,
     amount: Number(t.amount),
   }));
-  const creditCardSummary = await getCreditCardSummary(month);
   return {
     balance,
     depositsTotal,
@@ -96,6 +100,5 @@ export const getDashboard = async (month: string) => {
     expensesWithoutCC,
     totalExpensePerCategory,
     lastTransactions,
-    creditCardSummary,
   };
 };

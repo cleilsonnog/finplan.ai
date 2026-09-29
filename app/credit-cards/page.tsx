@@ -42,6 +42,7 @@ const CreditCardsPage = async ({ searchParams }: CreditCardsPageProps) => {
           customCategory: { select: { id: true, name: true } },
         },
         orderBy: { date: "desc" },
+        take: 500,
       }),
       db.transaction.findMany({
         where: {
@@ -54,6 +55,7 @@ const CreditCardsPage = async ({ searchParams }: CreditCardsPageProps) => {
           creditCard: { select: { name: true } },
         },
         orderBy: [{ name: "asc" }, { installmentNumber: "asc" }],
+        take: 500,
       }),
     ]);
   const serializedCreditCards = creditCards.map((c) => ({

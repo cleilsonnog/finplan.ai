@@ -56,65 +56,77 @@ export const getCreditCardSummary = async (
   const year = new Date().getFullYear();
   const monthNum = Number(month);
 
-  const cards: CreditCardSummaryItem[] = await Promise.all(
-    creditCards.map(async (cc) => {
-      const closingDay = cc.closingDay;
+  // Pre-compute cycle dates for all cards
+  const cardCycles = creditCards.map((cc) => {
+    const prevMonth = monthNum === 1 ? 12 : monthNum - 1;
+    const prevYear = monthNum === 1 ? year - 1 : year;
+    const startDay = cc.closingDay + 1;
+    const daysInPrevMonth = new Date(prevYear, prevMonth, 0).getDate();
+    const clampedStartDay = Math.min(startDay, daysInPrevMonth);
+    const daysInCurrentMonth = new Date(year, monthNum, 0).getDate();
+    const clampedClosingDay = Math.min(cc.closingDay, daysInCurrentMonth);
+    const cycleStart = new Date(prevYear, prevMonth - 1, clampedStartDay);
+    const cycleEnd = new Date(year, monthNum - 1, clampedClosingDay, 23, 59, 59, 999);
+    return { cc, cycleStart, cycleEnd };
+  });
 
-      // Cycle: from (closingDay + 1) of previous month to closingDay of current month
-      const prevMonth = monthNum === 1 ? 12 : monthNum - 1;
-      const prevYear = monthNum === 1 ? year - 1 : year;
-
-      const startDay = closingDay + 1;
-      const daysInPrevMonth = new Date(prevYear, prevMonth, 0).getDate();
-      const clampedStartDay = Math.min(startDay, daysInPrevMonth);
-
-      const daysInCurrentMonth = new Date(year, monthNum, 0).getDate();
-      const clampedClosingDay = Math.min(closingDay, daysInCurrentMonth);
-
-      const cycleStart = new Date(prevYear, prevMonth - 1, clampedStartDay);
-      const cycleEnd = new Date(year, monthNum - 1, clampedClosingDay, 23, 59, 59, 999);
-
-      const dateFilter = {
-        creditCardId: cc.id,
-        date: { gte: cycleStart, lte: cycleEnd },
-      };
-
-      const [cashResult, installmentResult] = await Promise.all([
-        db.transaction.aggregate({
-          where: { ...dateFilter, installments: 1 },
-          _sum: { amount: true },
-        }),
-        db.transaction.aggregate({
-          where: { ...dateFilter, installments: { gt: 1 } },
-          _sum: { amount: true },
-        }),
-      ]);
-
-      const cashTotal = Number(cashResult._sum.amount ?? 0);
-      const installmentTotal = Number(installmentResult._sum.amount ?? 0);
-      const invoiceTotal = cashTotal + installmentTotal;
-      const limit = Number(cc.limit);
-
-      return {
-        card: {
-          id: cc.id,
-          name: cc.name,
-          lastFourDigits: cc.lastFourDigits,
-          brand: cc.brand,
-          bank: cc.bank,
-          color: cc.color,
-          limit,
-          closingDay: cc.closingDay,
-          dueDay: cc.dueDay,
-        },
-        invoiceTotal,
-        cashTotal,
-        installmentTotal,
-        availableLimit: limit - invoiceTotal,
-        usagePercent: limit > 0 ? Math.round((invoiceTotal / limit) * 100) : 0,
-      };
-    }),
+  // Find global min/max dates across all cards for a single query
+  const globalStart = cardCycles.reduce(
+    (min, c) => (c.cycleStart < min ? c.cycleStart : min),
+    cardCycles[0].cycleStart,
   );
+  const globalEnd = cardCycles.reduce(
+    (max, c) => (c.cycleEnd > max ? c.cycleEnd : max),
+    cardCycles[0].cycleEnd,
+  );
+
+  // Single query: fetch all CC transactions in the global date range
+  const allTransactions = await db.transaction.findMany({
+    where: {
+      creditCardId: { in: creditCards.map((cc) => cc.id) },
+      date: { gte: globalStart, lte: globalEnd },
+    },
+    select: { creditCardId: true, amount: true, installments: true, date: true },
+  });
+
+  // Aggregate in memory per card (filtering by each card's specific cycle)
+  const cards: CreditCardSummaryItem[] = cardCycles.map(({ cc, cycleStart, cycleEnd }) => {
+    let cashTotal = 0;
+    let installmentTotal = 0;
+
+    for (const tx of allTransactions) {
+      if (tx.creditCardId !== cc.id) continue;
+      if (tx.date < cycleStart || tx.date > cycleEnd) continue;
+      const amount = Number(tx.amount);
+      if (tx.installments > 1) {
+        installmentTotal += amount;
+      } else {
+        cashTotal += amount;
+      }
+    }
+
+    const invoiceTotal = cashTotal + installmentTotal;
+    const limit = Number(cc.limit);
+
+    return {
+      card: {
+        id: cc.id,
+        name: cc.name,
+        lastFourDigits: cc.lastFourDigits,
+        brand: cc.brand,
+        bank: cc.bank,
+        color: cc.color,
+        limit,
+        closingDay: cc.closingDay,
+        dueDay: cc.dueDay,
+      },
+      invoiceTotal,
+      cashTotal,
+      installmentTotal,
+      availableLimit: limit - invoiceTotal,
+      usagePercent: limit > 0 ? Math.round((invoiceTotal / limit) * 100) : 0,
+    };
+  });
 
   const totalInvoice = cards.reduce((sum, c) => sum + c.invoiceTotal, 0);
   const totalCash = cards.reduce((sum, c) => sum + c.cashTotal, 0);

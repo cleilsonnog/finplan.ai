@@ -6,12 +6,13 @@ export const getCurrentMonthTransactions = async () => {
   const result = await getEffectiveUserId();
   if (!result) throw new Error("Unauthorized");
   const userId = result.effectiveUserId;
+  const now = new Date();
   return db.transaction.count({
     where: {
       userId,
-      createdAt: {
-        gte: startOfMonth(new Date()),
-        lt: endOfMonth(new Date()),
+      date: {
+        gte: startOfMonth(now),
+        lte: endOfMonth(now),
       },
       installmentNumber: 1,
     },

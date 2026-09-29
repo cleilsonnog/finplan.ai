@@ -111,6 +111,7 @@ model CreditCardBill {
   userId       String
 
   @@unique([creditCardId, month, year])
+  @@index([userId, month, year])
 }
 
 model Budget {
@@ -126,7 +127,7 @@ model Budget {
   customCategory   CustomCategory?     @relation(fields: [customCategoryId], references: [id], onDelete: SetNull)
 
   @@unique([userId, category, customCategoryId, month, year])
-  @@index([userId])
+  @@index([userId, month, year])
 }
 
 model CreditCard {
@@ -168,6 +169,8 @@ model AccountShareInvite {
   status       InviteStatus @default(PENDING)
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
+
+  @@index([invitedEmail, status])
 }
 
 model WhatsAppLink {

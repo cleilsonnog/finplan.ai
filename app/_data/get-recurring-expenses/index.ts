@@ -20,11 +20,14 @@ export const getRecurringExpenses = async () => {
     where: { userId },
     include: {
       customCategory: { select: { name: true } },
-      transactions: {
-        where: {
-          date: { gte: monthStart, lte: monthEnd },
+      _count: {
+        select: {
+          transactions: {
+            where: {
+              date: { gte: monthStart, lte: monthEnd },
+            },
+          },
         },
-        select: { id: true },
       },
     },
     orderBy: { dueDay: "asc" },
@@ -39,7 +42,7 @@ export const getRecurringExpenses = async () => {
     customCategory: e.customCategory,
     dueDay: e.dueDay,
     active: e.active,
-    paidThisMonth: e.transactions.length > 0,
+    paidThisMonth: e._count.transactions > 0,
   }));
 };
 
@@ -58,18 +61,21 @@ export const getUpcomingRecurring = async () => {
     where: { userId, active: true },
     include: {
       customCategory: { select: { name: true } },
-      transactions: {
-        where: {
-          date: { gte: monthStart, lte: monthEnd },
+      _count: {
+        select: {
+          transactions: {
+            where: {
+              date: { gte: monthStart, lte: monthEnd },
+            },
+          },
         },
-        select: { id: true },
       },
     },
     orderBy: { dueDay: "asc" },
   });
 
   return expenses
-    .filter((e) => e.transactions.length === 0)
+    .filter((e) => e._count.transactions === 0)
     .map((e) => {
       const effectiveDueDay = Math.min(e.dueDay, daysInMonth);
       let daysUntil = effectiveDueDay - currentDay;

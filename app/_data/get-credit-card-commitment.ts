@@ -75,31 +75,28 @@ export const getCreditCardCommitment = async (
     currentCycleEnds.push({ cardId: cc.id, cycleEnd: currentCycleEnd });
   }
 
-  const billResults = await Promise.all(billQueries);
-  let currentMonthBill = 0;
-  for (const result of billResults) {
-    currentMonthBill += Number((result as { _sum: { amount: number | null } })._sum?.amount ?? 0);
-  }
-
   const earliestCycleEnd = currentCycleEnds.reduce(
     (min, c) => (c.cycleEnd < min ? c.cycleEnd : min),
     currentCycleEnds[0].cycleEnd,
   );
 
-  const futureTransactions = await db.transaction.findMany({
-    where: {
-      creditCardId: {
-        in: creditCards.map((cc) => cc.id),
+  // Run bill aggregates and future transactions query in parallel
+  const [billResults, futureTransactions] = await Promise.all([
+    Promise.all(billQueries),
+    db.transaction.findMany({
+      where: {
+        creditCardId: { in: creditCards.map((cc) => cc.id) },
+        installments: { gt: 1 },
+        date: { gt: earliestCycleEnd },
       },
-      installments: { gt: 1 },
-      date: { gt: earliestCycleEnd },
-    },
-    select: {
-      amount: true,
-      date: true,
-      creditCardId: true,
-    },
-  });
+      select: { amount: true, date: true, creditCardId: true },
+    }),
+  ]);
+
+  let currentMonthBill = 0;
+  for (const result of billResults) {
+    currentMonthBill += Number((result as { _sum: { amount: number | null } })._sum?.amount ?? 0);
+  }
 
   // Group by card → month
   const cardMap = new Map<string, Map<string, MonthlyCommitment>>();

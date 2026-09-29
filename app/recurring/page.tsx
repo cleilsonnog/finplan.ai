@@ -7,7 +7,7 @@ import { getRecurringIncomes } from "../_data/get-recurring-incomes";
 import RecurringList from "./_components/recurring-list";
 import RecurringIncomeList from "./_components/recurring-income-list";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 const RecurringPage = async () => {
   const result = await getEffectiveUserId();

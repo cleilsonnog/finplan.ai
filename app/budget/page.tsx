@@ -10,7 +10,7 @@ import CategoryBudgetManager from "./_components/category-budget-manager";
 import BudgetProgress from "./_components/budget-progress";
 import { getCategoryKey, getCategoryLabel } from "../_utils/category";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 const BudgetPage = async () => {
   const result = await getEffectiveUserId();

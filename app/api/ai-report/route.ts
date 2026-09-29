@@ -248,11 +248,13 @@ export async function POST(req: Request) {
           creditCard: { select: { name: true, lastFourDigits: true } },
         },
         orderBy: { date: "asc" },
+        take: 1000,
       }),
       db.transaction.findMany({
         where: { userId, date: { gte: historyStartDate, lt: startDate } },
         include: { customCategory: { select: { name: true } } },
         orderBy: { date: "asc" },
+        take: 1000,
       }),
       db.budget.findMany({
         where: { userId, month: monthNum, year },
