@@ -16,38 +16,29 @@ export const getDashboard = async (month: string) => {
       lt: new Date(`${year}-${Number(month) + 1}-01`),
     },
   };
-  const depositsTotal = Number(
-    (
-      await db.transaction.aggregate({
+  const [depositsAgg, investmentsAgg, expensesAgg, creditCardAgg] =
+    await Promise.all([
+      db.transaction.aggregate({
         where: { ...where, type: "DEPOSIT" },
         _sum: { amount: true },
-      })
-    )?._sum?.amount,
-  );
-  const investmentsTotal = Number(
-    (
-      await db.transaction.aggregate({
+      }),
+      db.transaction.aggregate({
         where: { ...where, type: "INVESTMENT" },
         _sum: { amount: true },
-      })
-    )?._sum?.amount,
-  );
-  const expensesTotal = Number(
-    (
-      await db.transaction.aggregate({
+      }),
+      db.transaction.aggregate({
         where: { ...where, type: "EXPENSE" },
         _sum: { amount: true },
-      })
-    )?._sum?.amount,
-  );
-  const creditCardTotal = Number(
-    (
-      await db.transaction.aggregate({
+      }),
+      db.transaction.aggregate({
         where: { ...where, type: "EXPENSE", creditCardId: { not: null } },
         _sum: { amount: true },
-      })
-    )?._sum?.amount,
-  );
+      }),
+    ]);
+  const depositsTotal = Number(depositsAgg._sum?.amount ?? 0);
+  const investmentsTotal = Number(investmentsAgg._sum?.amount ?? 0);
+  const expensesTotal = Number(expensesAgg._sum?.amount ?? 0);
+  const creditCardTotal = Number(creditCardAgg._sum?.amount ?? 0);
   const expensesWithoutCC = expensesTotal - creditCardTotal;
   const balance = depositsTotal - investmentsTotal - expensesTotal;
   const groupedExpenses = await db.transaction.groupBy({

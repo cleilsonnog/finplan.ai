@@ -41,8 +41,6 @@ export const getCreditCardCommitment = async (
     return { currentMonthBill: 0, futureByCard: [], futureTotal: 0 };
   }
 
-  let currentMonthBill = 0;
-
   // Two separate cycle calculations:
   // 1. Bill cycle (month+1) for "Cartão no mês" (current spending → next bill)
   // 2. Current cycle (month) for future commitment cutoff
@@ -50,9 +48,9 @@ export const getCreditCardCommitment = async (
   const billYear = monthNum === 12 ? year + 1 : year;
 
   const currentCycleEnds: { cardId: string; cycleEnd: Date }[] = [];
+  const billQueries: Promise<{ _sum: { amount: true | null } }>[] = [];
 
   for (const cc of creditCards) {
-    // Bill cycle (month+1): what I'm spending now
     const billStartDay = cc.closingDay + 1;
     const daysInCurrentMonth = new Date(year, monthNum, 0).getDate();
     const clampedBillStartDay = Math.min(billStartDay, daysInCurrentMonth);
@@ -62,20 +60,25 @@ export const getCreditCardCommitment = async (
     const billCycleStart = new Date(year, monthNum - 1, clampedBillStartDay);
     const billCycleEnd = new Date(billYear, billMonth - 1, clampedBillClosingDay, 23, 59, 59, 999);
 
-    const currentAgg = await db.transaction.aggregate({
-      where: {
-        creditCardId: cc.id,
-        date: { gte: billCycleStart, lte: billCycleEnd },
-      },
-      _sum: { amount: true },
-    });
-    currentMonthBill += Number(currentAgg._sum?.amount ?? 0);
+    billQueries.push(
+      db.transaction.aggregate({
+        where: {
+          creditCardId: cc.id,
+          date: { gte: billCycleStart, lte: billCycleEnd },
+        },
+        _sum: { amount: true },
+      }) as never,
+    );
 
-    // Current cycle (month): cutoff for future commitment
     const clampedClosingDay = Math.min(cc.closingDay, daysInCurrentMonth);
-
     const currentCycleEnd = new Date(year, monthNum - 1, clampedClosingDay, 23, 59, 59, 999);
     currentCycleEnds.push({ cardId: cc.id, cycleEnd: currentCycleEnd });
+  }
+
+  const billResults = await Promise.all(billQueries);
+  let currentMonthBill = 0;
+  for (const result of billResults) {
+    currentMonthBill += Number((result as { _sum: { amount: number | null } })._sum?.amount ?? 0);
   }
 
   const earliestCycleEnd = currentCycleEnds.reduce(

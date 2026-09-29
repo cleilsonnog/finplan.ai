@@ -46,6 +46,9 @@ model Transaction {
   recurringExpense   RecurringExpense?        @relation(fields: [recurringExpenseId], references: [id], onDelete: SetNull)
   recurringIncomeId  String?
   recurringIncome    RecurringIncome?         @relation(fields: [recurringIncomeId], references: [id], onDelete: SetNull)
+
+  @@index([userId, date])
+  @@index([creditCardId])
 }
 
 enum TransactionType {
@@ -123,6 +126,7 @@ model Budget {
   customCategory   CustomCategory?     @relation(fields: [customCategoryId], references: [id], onDelete: SetNull)
 
   @@unique([userId, category, customCategoryId, month, year])
+  @@index([userId])
 }
 
 model CreditCard {
@@ -140,6 +144,8 @@ model CreditCard {
   updatedAt      DateTime      @updatedAt
   transactions   Transaction[]
   bills          CreditCardBill[]
+
+  @@index([userId])
 }
 
 enum InviteStatus {

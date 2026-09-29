@@ -33,8 +33,23 @@ export const getMonthlyOverview = async (
     months.push(m);
   }
 
-  // Sum of all active recurring expenses (projected monthly cost)
-  const [activeRecurringAgg, activeIncomeAgg] = await Promise.all([
+  const firstMonth = months[0];
+  const lastMonth = months[months.length - 1];
+  const startDate = new Date(year, firstMonth - 1, 1);
+  const endDate = new Date(year, lastMonth, 1);
+
+  // Single query: fetch all transactions for the 6-month range
+  const [transactions, activeRecurringAgg, activeIncomeAgg] = await Promise.all([
+    db.transaction.findMany({
+      where: { userId, date: { gte: startDate, lt: endDate } },
+      select: {
+        type: true,
+        amount: true,
+        date: true,
+        creditCardId: true,
+        recurringExpenseId: true,
+      },
+    }),
     db.recurringExpense.aggregate({
       where: { userId, active: true },
       _sum: { amount: true },
@@ -44,61 +59,62 @@ export const getMonthlyOverview = async (
       _sum: { amount: true },
     }),
   ]);
+
   const activeRecurringTotal = Number(activeRecurringAgg._sum?.amount ?? 0);
   const activeIncomeTotal = Number(activeIncomeAgg._sum?.amount ?? 0);
 
-  const overview: MonthlyOverviewItem[] = await Promise.all(
-    months.map(async (m) => {
-      const monthStr = String(m).padStart(2, "0");
-      const start = new Date(`${year}-${monthStr}-01`);
-      const nextMonth = m === 12 ? 1 : m + 1;
-      const nextYear = m === 12 ? year + 1 : year;
-      const end = new Date(
-        `${nextYear}-${String(nextMonth).padStart(2, "0")}-01`,
-      );
+  // Aggregate in memory
+  const monthData = new Map<number, {
+    deposits: number;
+    expenses: number;
+    creditCard: number;
+    investments: number;
+    recurring: number;
+  }>();
 
-      const where = { userId, date: { gte: start, lt: end } };
+  for (const m of months) {
+    monthData.set(m, {
+      deposits: 0,
+      expenses: 0,
+      creditCard: 0,
+      investments: 0,
+      recurring: 0,
+    });
+  }
 
-      const [depositsAgg, expensesAgg, creditCardAgg, investmentsAgg, recurringAgg] =
-        await Promise.all([
-          db.transaction.aggregate({
-            where: { ...where, type: "DEPOSIT" },
-            _sum: { amount: true },
-          }),
-          db.transaction.aggregate({
-            where: { ...where, type: "EXPENSE", recurringExpenseId: null },
-            _sum: { amount: true },
-          }),
-          db.transaction.aggregate({
-            where: { ...where, type: "EXPENSE", creditCardId: { not: null } },
-            _sum: { amount: true },
-          }),
-          db.transaction.aggregate({
-            where: { ...where, type: "INVESTMENT" },
-            _sum: { amount: true },
-          }),
-          db.transaction.aggregate({
-            where: { ...where, type: "EXPENSE", recurringExpenseId: { not: null } },
-            _sum: { amount: true },
-          }),
-        ]);
+  for (const tx of transactions) {
+    const m = tx.date.getMonth() + 1;
+    const entry = monthData.get(m);
+    if (!entry) continue;
+    const amount = Number(tx.amount);
 
-      // Show the greater of: paid recurring or projected active recurring
-      const paidRecurring = Number(recurringAgg._sum.amount ?? 0);
-      const recurring = Math.max(paidRecurring, activeRecurringTotal);
+    if (tx.type === "DEPOSIT") {
+      entry.deposits += amount;
+    } else if (tx.type === "INVESTMENT") {
+      entry.investments += amount;
+    } else if (tx.type === "EXPENSE") {
+      if (tx.creditCardId) entry.creditCard += amount;
+      if (tx.recurringExpenseId) {
+        entry.recurring += amount;
+      } else {
+        entry.expenses += amount;
+      }
+    }
+  }
 
-      return {
-        month: monthStr,
-        monthLabel: MONTH_LABELS[m - 1],
-        deposits: Number(depositsAgg._sum.amount ?? 0),
-        expenses: Number(expensesAgg._sum.amount ?? 0),
-        creditCard: Number(creditCardAgg._sum.amount ?? 0),
-        investments: Number(investmentsAgg._sum.amount ?? 0),
-        recurring,
-        expectedIncome: activeIncomeTotal,
-      };
-    }),
-  );
-
-  return overview;
+  return months.map((m) => {
+    const data = monthData.get(m)!;
+    const monthStr = String(m).padStart(2, "0");
+    const paidRecurring = data.recurring;
+    return {
+      month: monthStr,
+      monthLabel: MONTH_LABELS[m - 1],
+      deposits: data.deposits,
+      expenses: data.expenses,
+      creditCard: data.creditCard,
+      investments: data.investments,
+      recurring: Math.max(paidRecurring, activeRecurringTotal),
+      expectedIncome: activeIncomeTotal,
+    };
+  });
 };
