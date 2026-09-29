@@ -6,6 +6,7 @@ import {
 } from "@prisma/client";
 import { type Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
+import { rateLimit } from "@/app/_lib/rate-limit";
 
 const EVOLUTION_API_URL =
   process.env.EVOLUTION_API_URL || "http://localhost:8080";
@@ -235,6 +236,11 @@ export const POST = async (request: Request) => {
   const apiKey = request.headers.get("apikey");
   if (!EVOLUTION_API_KEY || apiKey !== EVOLUTION_API_KEY) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const clientIp = request.headers.get("x-forwarded-for") || "unknown";
+  if (!rateLimit(`evolution:${clientIp}`, { maxRequests: 30, windowMs: 60_000 })) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
   let body;

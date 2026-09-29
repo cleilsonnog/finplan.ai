@@ -1,6 +1,7 @@
 import { db } from "@/app/_lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { hasPremiumAccess } from "@/app/_lib/has-premium-access";
+import { rateLimit } from "@/app/_lib/rate-limit";
 import OpenAI from "openai";
 import { generateAiReportSchema } from "@/app/(home)/_actions/generate-ai-report/schema";
 import {
@@ -25,6 +26,13 @@ const translatePaymentMethod = (method: string) =>
   ] ?? method;
 
 const translateType = (type: string) => TYPE_LABELS[type] ?? type;
+
+const sanitizeForPrompt = (text: string) =>
+  text
+    .replace(/[\n\r]/g, " ")
+    .replace(/[#<>{}[\]|`]/g, "")
+    .trim()
+    .slice(0, 100);
 
 const SYSTEM_PROMPT = `Você é o FinPlan AI, um consultor financeiro especializado em análise financeira, planejamento orçamentário e identificação de oportunidades de economia.
                   Sua função é interpretar os dados financeiros do usuário, detectar padrões, identificar riscos e fornecer recomendações práticas baseadas exclusivamente nos dados fornecidos.
@@ -219,6 +227,9 @@ export async function POST(req: Request) {
   if (!(await hasPremiumAccess())) {
     return new Response("Premium required", { status: 403 });
   }
+  if (!rateLimit(`ai-report:${userId}`, { maxRequests: 5, windowMs: 60_000 })) {
+    return new Response("Too many requests", { status: 429 });
+  }
 
   const body = await req.json();
   const { month } = generateAiReportSchema.parse(body);
@@ -270,7 +281,7 @@ export async function POST(req: Request) {
         t.installments > 1
           ? ` | Parcela ${t.installmentNumber}/${t.installments}`
           : "";
-      return `${t.date.toLocaleDateString("pt-BR")} | ${translateType(t.type)} | R$${Number(t.amount).toFixed(2)} | ${categoryName} | ${translatePaymentMethod(t.paymentMethod)} | "${t.name}"${card}${installment}`;
+      return `${t.date.toLocaleDateString("pt-BR")} | ${translateType(t.type)} | R$${Number(t.amount).toFixed(2)} | ${sanitizeForPrompt(categoryName)} | ${translatePaymentMethod(t.paymentMethod)} | "${sanitizeForPrompt(t.name)}"${card}${installment}`;
     })
     .join("\n");
 
@@ -279,10 +290,11 @@ export async function POST(req: Request) {
     budgets.length > 0
       ? budgets
           .map((b) => {
-            const catName =
+            const catName = sanitizeForPrompt(
               b.category === "OTHER" && b.customCategory
                 ? b.customCategory.name
-                : translateCategory(b.category);
+                : translateCategory(b.category),
+            );
             return `${catName}: R$${Number(b.amount).toFixed(2)}`;
           })
           .join("\n")
@@ -332,10 +344,11 @@ export async function POST(req: Request) {
     else if (t.type === "INVESTMENT") entry.investments += amount;
 
     if (t.type === "EXPENSE") {
-      const catName =
+      const catName = sanitizeForPrompt(
         t.category === "OTHER" && t.customCategory
           ? t.customCategory.name
-          : translateCategory(t.category);
+          : translateCategory(t.category),
+      );
       entry.categories.set(
         catName,
         (entry.categories.get(catName) || 0) + amount,
