@@ -8,6 +8,10 @@ import { type Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { rateLimit } from "@/app/_lib/rate-limit";
 
+const VALID_TYPES = new Set(Object.values(TransactionType));
+const VALID_CATEGORIES = new Set(Object.values(TransactionCategory));
+const VALID_PAYMENT_METHODS = new Set(Object.values(TransactionPaymentMethod));
+
 const EVOLUTION_API_URL =
   process.env.EVOLUTION_API_URL || "http://localhost:8080";
 const EVOLUTION_API_KEY = process.env.EVOLUTION_API_KEY || "";
@@ -305,7 +309,8 @@ export const POST = async (request: Request) => {
     rawText.startsWith("Responda com o numero") ||
     rawText.startsWith("Teste do finplan") ||
     rawText.startsWith("Operacao cancelada") ||
-    rawText.startsWith("*Finplan.ai - Lembrete")
+    rawText.startsWith("*Finplan.ai - Lembrete") ||
+    rawText.startsWith("Erro interno")
   ) {
     return NextResponse.json({ received: true });
   }
@@ -795,6 +800,17 @@ async function createTransaction(
   const creditCardName = data.creditCardName as string | undefined;
   const customCategoryId = data.customCategoryId as string | undefined;
   const description = data.description as string | undefined;
+
+  if (!VALID_TYPES.has(type) || !VALID_CATEGORIES.has(category) || !VALID_PAYMENT_METHODS.has(paymentMethod)) {
+    await sendWhatsApp(phone, "Erro interno: dados inválidos. Tente novamente.");
+    await markDone(phone, "invalid-enum");
+    return;
+  }
+  if (typeof amount !== "number" || amount <= 0) {
+    await sendWhatsApp(phone, "Erro interno: valor inválido. Tente novamente.");
+    await markDone(phone, "invalid-amount");
+    return;
+  }
 
   // Resolve custom category name for display
   let categoryLabel = CATEGORY_LABELS[category] || "Outros";

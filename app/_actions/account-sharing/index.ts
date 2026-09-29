@@ -16,6 +16,11 @@ async function requirePremiumUser() {
 }
 
 export const sendShareInvite = async (email: string) => {
+  const trimmed = email.trim().toLowerCase();
+  if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+    throw new Error("Email inválido.");
+  }
+  email = trimmed;
   const { userId } = await requirePremiumUser();
 
   // Check if owner already has a member
