@@ -12,9 +12,11 @@ import {
   BrainCircuitIcon,
   CreditCardIcon,
   FlameIcon,
+  MicIcon,
   PiggyBankIcon,
   RepeatIcon,
   ShieldCheckIcon,
+  ShoppingCartIcon,
   SmartphoneIcon,
   UsersIcon,
   WalletIcon,
@@ -65,6 +67,18 @@ const FEATURES = [
       "Receba lembretes de vencimento por WhatsApp e notificações push no celular (Android e iOS). Registre transações direto pelo WhatsApp.",
   },
   {
+    icon: ShoppingCartIcon,
+    title: "Lista de Compras",
+    description:
+      "Monte sua lista de compras pelo WhatsApp ou pelo app. Acesse offline no supermercado e marque os itens conforme comprar.",
+  },
+  {
+    icon: MicIcon,
+    title: "Comandos por Voz",
+    description:
+      "Envie áudios pelo WhatsApp para registrar transações, adicionar itens à lista de compras ou qualquer outro comando.",
+  },
+  {
     icon: UsersIcon,
     title: "Conta Compartilhada",
     description:
@@ -74,9 +88,9 @@ const FEATURES = [
 
 const HIGHLIGHTS = [
   {
-    icon: ShieldCheckIcon,
-    title: "Seguro",
-    description: "Seus dados protegidos com autenticação moderna",
+    icon: MicIcon,
+    title: "Texto e Voz",
+    description: "Registre tudo por texto ou áudio no WhatsApp",
   },
   {
     icon: SmartphoneIcon,
@@ -146,8 +160,8 @@ const LandingPage = () => {
         </h1>
         <p className="mb-10 max-w-2xl text-lg text-muted-foreground sm:text-xl">
           Organize suas finanças pessoais com inteligência artificial.
-          Controle transações, orçamentos, cartões de crédito, gastos
-          recorrentes e receba notificações de vencimento no celular.
+          Controle transações, orçamentos, cartões de crédito e registre
+          tudo por texto ou voz no WhatsApp — incluindo lista de compras.
         </p>
         <div className="flex flex-col gap-4 sm:flex-row">
           <SignInButton mode="modal">
@@ -451,6 +465,10 @@ const LandingPage = () => {
                   <ShieldCheckIcon className="h-4 w-4 text-primary" />
                   Gastos recorrentes
                 </li>
+                <li className="flex items-center gap-2">
+                  <ShieldCheckIcon className="h-4 w-4 text-primary" />
+                  Lista de compras
+                </li>
               </ul>
               <SignInButton mode="modal">
                 <Button variant="outline" className="w-full">
@@ -486,7 +504,11 @@ const LandingPage = () => {
                 </li>
                 <li className="flex items-center gap-2">
                   <ShieldCheckIcon className="h-4 w-4 text-primary" />
-                  Transações via WhatsApp
+                  Transações via WhatsApp (texto e voz)
+                </li>
+                <li className="flex items-center gap-2">
+                  <ShieldCheckIcon className="h-4 w-4 text-primary" />
+                  Lista de compras via WhatsApp
                 </li>
                 <li className="flex items-center gap-2">
                   <ShieldCheckIcon className="h-4 w-4 text-primary" />
