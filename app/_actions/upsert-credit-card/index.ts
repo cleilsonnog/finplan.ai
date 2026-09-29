@@ -26,7 +26,7 @@ export const upsertCreditCard = async (params: UpsertCreditCardParams) => {
   const { id, ...data } = params;
   if (id) {
     await db.creditCard.update({
-      where: { id },
+      where: { id, userId },
       data: { ...data, userId },
     });
   } else {

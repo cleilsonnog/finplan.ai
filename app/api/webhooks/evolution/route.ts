@@ -232,6 +232,11 @@ function parseMessage(text: string, customCategories: CustomCat[]): Partial<Pars
 }
 
 export const POST = async (request: Request) => {
+  const apiKey = request.headers.get("apikey");
+  if (!EVOLUTION_API_KEY || apiKey !== EVOLUTION_API_KEY) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   let body;
   try {
     body = await request.json();
