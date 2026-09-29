@@ -55,8 +55,8 @@ export default function WhatsAppLinkCard({
         <h2 className="text-lg font-semibold">WhatsApp</h2>
       </div>
       <p className="text-sm text-muted-foreground">
-        Vincule seu numero para cadastrar transacoes pelo WhatsApp. Envie
-        mensagens como: <strong>gastei 50 alimentacao pix</strong>
+        Vincule seu numero para cadastrar transacoes, gerenciar sua lista de
+        compras e enviar comandos por voz pelo WhatsApp.
       </p>
 
       {currentPhone ? (
@@ -91,11 +91,21 @@ export default function WhatsAppLinkCard({
 
       <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground space-y-1">
         <p>
-          <strong>Comandos:</strong>
+          <strong>Transacoes:</strong>
         </p>
         <p>gastei 50 alimentacao pix</p>
         <p>recebi 3000 salario transferencia</p>
         <p>investi 500 educacao pix</p>
+        <p className="mt-2">
+          <strong>Lista de compras:</strong>
+        </p>
+        <p>comprar arroz, feijao, leite</p>
+        <p>comprei arroz, feijao</p>
+        <p>lista - ver itens pendentes</p>
+        <p className="mt-2">
+          <strong>Voz e outros:</strong>
+        </p>
+        <p>Envie audio com qualquer comando</p>
         <p>ajuda - ver todos os comandos</p>
       </div>
     </div>

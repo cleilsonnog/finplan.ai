@@ -33,6 +33,7 @@ docker compose up -d # Start local PostgreSQL
 - `app/recurring/` — Recurring expenses and incomes management (CRUD, pay, toggle, receive)
 - `app/categories/` — Redirects to `/budget`
 - `app/subscription/` — Plans page (free vs premium)
+- `app/shopping-list/` — Shopping list page (add/remove items, syncs with WhatsApp)
 - `app/settings/` — Settings page (WhatsApp link)
 - `app/api/cron/recurring-reminders/` — Daily WhatsApp reminders for due expenses
 - `middleware.ts` — Clerk auth middleware with route protection (`auth.protect()`)
@@ -52,6 +53,7 @@ docker compose up -d # Start local PostgreSQL
 - **RecurringIncome** — Fixed monthly incomes (salary, freelance) with receive day, active/inactive, linked DEPOSIT transactions
 - **WhatsAppLink** — Links a user's phone number to their account for WhatsApp transactions
 - **WhatsAppSession** — Tracks multi-step conversation state and message dedup locks
+- **ShoppingListItem** — Shopping list items per user (name, createdAt)
 
 ### Key Features
 
@@ -68,6 +70,8 @@ docker compose up -d # Start local PostgreSQL
 - **Recurring Reminders** — VPS Cron (`0 9 * * *` BRT on 212.56.33.113) calls `/api/cron/recurring-reminders`. Sends WhatsApp + push notification to users with unpaid expenses due today. Protected with `CRON_SECRET`.
 - **Push Notifications** — VAPID web push via `web-push` package. Auto-resubscribes on PWA reinstall. Model `PushSubscription` in Prisma.
 - **WhatsApp Transactions** — Register transactions via WhatsApp using Evolution API. Webhook at `/api/webhooks/evolution`. Supports credit card selection, installments, multi-step conversation. Settings page at `/settings` to link/unlink phone number. Sessions timeout after 10 min. User can send "cancelar" to abort a flow. Bot messages must be in the `rawText.startsWith(...)` filter array to prevent reprocessing.
+- **WhatsApp Voice** — Audio messages are transcribed via OpenAI Whisper (whisper-1, language: pt). Audio is downloaded from Evolution API (`getBase64FromMediaMessage`), converted to File, sent to Whisper. Transcribed text is processed as any regular text command (transactions, shopping list, help, etc.).
+- **Shopping List** — Via WhatsApp: "comprar arroz, feijão" adds items, "comprei arroz" removes items and shows remaining, "lista"/"supermercado"/"compras" shows pending items. Via app: page at `/shopping-list` with add (comma-separated), remove, clear all. Free feature. Model `ShoppingListItem` in Prisma. Server actions in `app/_actions/shopping-list/`.
 - **WhatsApp Float Button** — Floating contact button on landing and subscription pages
 - **PDF Export** — Credit card installments and transactions exportable as PDF (jspdf + jspdf-autotable). Respects card filter.
 - **PWA** — Installable as mobile app. SW handles only push notifications (no fetch interception — breaks Clerk auth). `SignInButton mode="modal"` for login without leaving PWA.
@@ -116,6 +120,6 @@ docker compose up -d # Start local PostgreSQL
 
 ### Pricing
 
-- **Free**: 15 transactions/month, dashboard, credit cards, budgets, recurring expenses
+- **Free**: 15 transactions/month, dashboard, credit cards, budgets, recurring expenses, shopping list
 - **Premium (R$14,99/mês)**: Unlimited transactions, AI reports, account sharing, custom categories, WhatsApp transactions, WhatsApp reminders
 - **Lifetime (R$14,99 único)**: Same as premium, one-time payment via Stripe (card) or Mercado Pago (PIX)

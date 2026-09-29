@@ -44,12 +44,17 @@ const steps = [
       "No Dashboard, clique no botão de relatório IA para gerar uma análise completa das suas finanças no mês. O relatório inclui score financeiro, insights e recomendações personalizadas. (Recurso premium)",
   },
   {
-    title: "8. Configurar WhatsApp",
+    title: "8. Lista de compras",
     description:
-      "Em Config, vincule seu número de WhatsApp. Com isso você pode:\n\n• Cadastrar transações enviando mensagens como \"gastei 50 alimentação pix\" ou \"recebi 3000 salário transferência\"\n• Para compras no cartão, o bot pergunta qual cartão e quantas parcelas\n• Receber lembretes diários de contas recorrentes vencendo no dia",
+      "Em Compras, organize sua lista de supermercado. Adicione itens separados por vírgula e remova ao comprar. A lista também funciona pelo WhatsApp:\n\n• \"comprar arroz, feijão, leite\" — adiciona itens\n• \"comprei arroz, feijão\" — remove e mostra o que falta\n• \"lista\" — mostra todos os itens pendentes\n\nA página funciona offline no PWA — ideal para consultar no supermercado sem sinal.",
   },
   {
-    title: "9. Compartilhar conta",
+    title: "9. Configurar WhatsApp",
+    description:
+      "Em Config, vincule seu número de WhatsApp. Com isso você pode:\n\n• Cadastrar transações enviando mensagens como \"gastei 50 alimentação pix\" ou \"recebi 3000 salário transferência\"\n• Para compras no cartão, o bot pergunta qual cartão e quantas parcelas\n• Gerenciar sua lista de compras (comprar, comprei, lista)\n• Enviar mensagens de voz — o bot transcreve o áudio e processa o comando automaticamente\n• Receber lembretes diários de contas recorrentes vencendo no dia\n\nDigite \"ajuda\" no WhatsApp para ver todos os comandos disponíveis.",
+  },
+  {
+    title: "10. Compartilhar conta",
     description:
       "No Dashboard, use o botão de compartilhamento para convidar um parceiro(a) a visualizar e gerenciar as finanças juntos. O convidado acessa os mesmos dados da sua conta. (Recurso premium)",
   },
@@ -109,6 +114,25 @@ const TutorialPage = async () => {
               <p>
                 Ao usar &quot;crédito&quot; como pagamento, o bot pergunta qual
                 cartão e quantas parcelas.
+              </p>
+              <p className="mt-3 font-medium text-foreground/80">
+                Lista de compras:
+              </p>
+              <code className="block rounded bg-muted px-3 py-2">
+                comprar arroz, feijão, leite
+              </code>
+              <code className="block rounded bg-muted px-3 py-2">
+                comprei arroz, feijão
+              </code>
+              <code className="block rounded bg-muted px-3 py-2">
+                lista
+              </code>
+              <p className="mt-3 font-medium text-foreground/80">
+                Mensagem de voz:
+              </p>
+              <p>
+                Envie um áudio com qualquer comando acima — o bot transcreve
+                automaticamente e processa o comando.
               </p>
             </div>
           </div>
