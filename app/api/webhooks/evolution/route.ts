@@ -7,6 +7,7 @@ import {
 import { type Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { rateLimit } from "@/app/_lib/rate-limit";
+import OpenAI from "openai";
 
 const VALID_TYPES = new Set(Object.values(TransactionType));
 const VALID_CATEGORIES = new Set(Object.values(TransactionCategory));
@@ -139,6 +140,119 @@ function normalizeText(text: string): string {
     .replace(/[\u0300-\u036f]/g, "")
     .trim();
 }
+
+async function handleShoppingList(
+  command: string,
+  rawArgs: string,
+  userId: string,
+  phone: string,
+): Promise<boolean> {
+  const normalized = normalizeText(command);
+
+  if (normalized === "comprar" || normalized === "adicionar") {
+    const items = rawArgs
+      .split(/[,\n]+/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0 && s.length <= 100);
+
+    if (items.length === 0) {
+      await sendWhatsApp(phone, "Informe os itens. Ex: *comprar arroz, feijao, leite*");
+      return true;
+    }
+
+    await db.shoppingListItem.createMany({
+      data: items.map((name) => ({
+        userId,
+        name: name.charAt(0).toUpperCase() + name.slice(1),
+      })),
+    });
+
+    const listItems = items
+      .map((i) => `  • ${i.charAt(0).toUpperCase() + i.slice(1)}`)
+      .join("\n");
+    await sendWhatsApp(phone, `*Adicionados a lista:*\n${listItems}`);
+    return true;
+  }
+
+  if (normalized === "comprei" || normalized === "remover") {
+    const toRemove = rawArgs
+      .split(/[,\n]+/)
+      .map((s) => normalizeText(s))
+      .filter((s) => s.length > 0);
+
+    if (toRemove.length === 0) {
+      await sendWhatsApp(phone, "Informe os itens. Ex: *comprei arroz, feijao*");
+      return true;
+    }
+
+    const allItems = await db.shoppingListItem.findMany({
+      where: { userId },
+    });
+
+    const toDelete: string[] = [];
+    const removedNames: string[] = [];
+    for (const keyword of toRemove) {
+      const match = allItems.find(
+        (item) => !toDelete.includes(item.id) && normalizeText(item.name) === keyword,
+      );
+      if (match) {
+        toDelete.push(match.id);
+        removedNames.push(match.name);
+      }
+    }
+
+    if (toDelete.length > 0) {
+      await db.shoppingListItem.deleteMany({
+        where: { id: { in: toDelete } },
+      });
+    }
+
+    const remaining = allItems.filter((i) => !toDelete.includes(i.id));
+
+    let msg = "";
+    if (removedNames.length > 0) {
+      msg += `*Removidos da lista:*\n${removedNames.map((n) => `  • ${n}`).join("\n")}`;
+    }
+    if (toRemove.length > removedNames.length) {
+      const notFound = toRemove.filter(
+        (k) => !removedNames.some((n) => normalizeText(n) === k),
+      );
+      msg += `\n\nNao encontrei: ${notFound.join(", ")}`;
+    }
+    if (remaining.length > 0) {
+      msg += `\n\n*Ainda falta:*\n${remaining.map((i) => `  • ${i.name}`).join("\n")}`;
+    } else if (removedNames.length > 0) {
+      msg += "\n\nLista vazia!";
+    }
+
+    await sendWhatsApp(phone, msg.trim());
+    return true;
+  }
+
+  if (
+    normalized === "lista" ||
+    normalized === "supermercado" ||
+    normalized === "compras"
+  ) {
+    const items = await db.shoppingListItem.findMany({
+      where: { userId },
+      orderBy: { createdAt: "asc" },
+    });
+
+    if (items.length === 0) {
+      await sendWhatsApp(phone, "Sua lista de compras esta vazia.");
+    } else {
+      const list = items
+        .map((i, idx) => `  ${idx + 1}. ${i.name}`)
+        .join("\n");
+      await sendWhatsApp(phone, `*Lista de compras (${items.length}):*\n${list}`);
+    }
+    return true;
+  }
+
+  return false;
+}
+
 
 interface ParsedTransaction {
   type: TransactionType;
@@ -273,12 +387,11 @@ export const POST = async (request: Request) => {
     return NextResponse.json({ received: true });
   }
 
-  // Skip media messages (photos, documents, audio, video, stickers)
+  // Skip media messages (photos, documents, video, stickers) — but allow audio
   const msg = message.message || {};
   if (
     msg.imageMessage ||
     msg.documentMessage ||
-    msg.audioMessage ||
     msg.videoMessage ||
     msg.stickerMessage ||
     msg.contactMessage ||
@@ -287,11 +400,57 @@ export const POST = async (request: Request) => {
     return NextResponse.json({ received: true });
   }
 
-  // Skip bot response messages (they start with bold markdown or contain bot signatures)
-  const rawText =
+  // Handle audio messages — transcribe with Whisper
+  let rawText =
     msg.conversation ||
     msg.extendedTextMessage?.text ||
     "";
+
+  if (msg.audioMessage && !rawText) {
+    const audioUrl = msg.audioMessage.url || msg.audioMessage.directPath;
+    if (!audioUrl) {
+      return NextResponse.json({ received: true });
+    }
+
+    // Build the download URL from Evolution API
+    const mediaUrl = `${EVOLUTION_API_URL}/chat/getBase64FromMediaMessage/${EVOLUTION_INSTANCE}`;
+    try {
+      const mediaRes = await fetch(mediaUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: EVOLUTION_API_KEY,
+        },
+        body: JSON.stringify({ message: { key: message.key, message: msg } }),
+      });
+      if (mediaRes.ok) {
+        const mediaData = await mediaRes.json();
+        const base64 = mediaData.base64;
+        if (base64) {
+          const buffer = Buffer.from(base64, "base64");
+          const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+          const file = new File([buffer], "audio.ogg", { type: "audio/ogg" });
+          const transcription = await openai.audio.transcriptions.create({
+            model: "whisper-1",
+            file,
+            language: "pt",
+          });
+          rawText = transcription.text?.trim() || "";
+        }
+      }
+    } catch (err) {
+      console.error("Audio transcription error:", err);
+    }
+
+    if (!rawText) {
+      await sendWhatsApp(
+        body.sender?.replace("@s.whatsapp.net", "") || "",
+        "Nao consegui entender o audio. Tente novamente ou digite o comando.",
+      );
+      return NextResponse.json({ received: true });
+    }
+  }
+
   if (
     rawText.startsWith("*Transacao registrada") ||
     rawText.startsWith("*Finplan.ai") ||
@@ -310,7 +469,14 @@ export const POST = async (request: Request) => {
     rawText.startsWith("Teste do finplan") ||
     rawText.startsWith("Operacao cancelada") ||
     rawText.startsWith("*Finplan.ai - Lembrete") ||
-    rawText.startsWith("Erro interno")
+    rawText.startsWith("Erro interno") ||
+    rawText.startsWith("*Adicionados a lista") ||
+    rawText.startsWith("*Removidos da lista") ||
+    rawText.startsWith("*Lista de compras") ||
+    rawText.startsWith("Sua lista de compras esta") ||
+    rawText.startsWith("Informe os itens") ||
+    rawText.startsWith("Nao consegui entender o audio") ||
+    rawText.startsWith("Nao encontrei")
   ) {
     return NextResponse.json({ received: true });
   }
@@ -408,9 +574,25 @@ export const POST = async (request: Request) => {
         `*Categorias:* moradia, transporte, alimentacao, entretenimento, saude, utilidades, salario, educacao, outros` +
         (customCatNames ? `\n*Suas categorias:* ${customCatNames}` : "") +
         `\n*Pagamento:* pix, credito, debito, dinheiro, transferencia, boleto\n\n` +
-        `Se pagar com *credito*, vou perguntar qual cartao e quantas parcelas.`,
+        `Se pagar com *credito*, vou perguntar qual cartao e quantas parcelas.\n\n` +
+        `*Lista de compras:*\n` +
+        `comprar arroz, feijao, leite\n` +
+        `comprei arroz, feijao\n` +
+        `lista (ver itens pendentes)\n\n` +
+        `*Audio:* envie mensagem de voz para qualquer comando!`,
     );
     return NextResponse.json({ received: true });
+  }
+
+  // Check for shopping list commands
+  const firstWord = normalizedText.split(/\s+/)[0];
+  if (["comprar", "adicionar", "comprei", "remover", "lista", "supermercado", "compras"].includes(firstWord)) {
+    const args = text.slice(text.indexOf(" ") + 1).trim();
+    const handled = await handleShoppingList(firstWord, firstWord === args ? "" : args, userId, phone);
+    if (handled) {
+      await markDone(phone, messageId);
+      return NextResponse.json({ received: true });
+    }
   }
 
   // Check if there's an active session (waiting for card selection or installments)

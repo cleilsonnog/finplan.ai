@@ -230,3 +230,12 @@ model PushSubscription {
 
   @@index([userId])
 }
+
+model ShoppingListItem {
+  id        String   @id @default(uuid())
+  userId    String
+  name      String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
