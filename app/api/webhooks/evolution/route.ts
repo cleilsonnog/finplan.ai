@@ -351,8 +351,13 @@ function parseMessage(text: string, customCategories: CustomCat[]): Partial<Pars
 }
 
 export const POST = async (request: Request) => {
-  const apiKey = request.headers.get("apikey");
-  if (!EVOLUTION_API_KEY || apiKey !== EVOLUTION_API_KEY) {
+  // Evolution API v1.8.6 does not send auth headers on webhooks.
+  // Validate by checking the source IP of the VPS where Evolution runs.
+  const forwardedFor = request.headers.get("x-forwarded-for") || "";
+  const sourceIp = forwardedFor.split(",")[0].trim();
+  const ALLOWED_IPS = (process.env.EVOLUTION_ALLOWED_IPS || "212.56.33.113").split(",");
+  if (sourceIp && !ALLOWED_IPS.includes(sourceIp)) {
+    console.warn(`Evolution webhook rejected from IP: ${sourceIp}`);
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
