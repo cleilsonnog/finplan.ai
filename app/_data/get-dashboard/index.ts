@@ -6,7 +6,11 @@ import { getEffectiveUserId } from "@/app/_lib/get-effective-user-id";
 export const getDashboard = async (month: string) => {
   const result = await getEffectiveUserId();
   if (!result) throw new Error("Unauthorized");
-  const userId = result.effectiveUserId;
+  return getDashboardForUser(result.effectiveUserId, month);
+};
+
+// Same data for an explicit user (used by token-authenticated integrations, without a Clerk session)
+export const getDashboardForUser = async (userId: string, month: string) => {
   const year = new Date().getFullYear();
   const where = {
     userId,

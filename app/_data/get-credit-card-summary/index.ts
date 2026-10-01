@@ -35,7 +35,14 @@ export const getCreditCardSummary = async (
 ): Promise<CreditCardSummary> => {
   const result = await getEffectiveUserId();
   if (!result) throw new Error("Unauthorized");
-  const userId = result.effectiveUserId;
+  return getCreditCardSummaryForUser(result.effectiveUserId, month);
+};
+
+// Same data for an explicit user (used by token-authenticated integrations, without a Clerk session)
+export const getCreditCardSummaryForUser = async (
+  userId: string,
+  month: string,
+): Promise<CreditCardSummary> => {
 
   const creditCards = await db.creditCard.findMany({
     where: { userId },

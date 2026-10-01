@@ -35,7 +35,16 @@ export const getCreditCardBills = async (
 ): Promise<SerializedBill[]> => {
   const result = await getEffectiveUserId();
   if (!result) throw new Error("Unauthorized");
-  const userId = result.effectiveUserId;
+  return getCreditCardBillsForUser(result.effectiveUserId, month);
+};
+
+// Same data for an explicit user. With persist: false the bills are computed in memory only
+// (no create/update), for read-only integrations.
+export const getCreditCardBillsForUser = async (
+  userId: string,
+  month: string,
+  { persist = true }: { persist?: boolean } = {},
+): Promise<SerializedBill[]> => {
 
   const monthNum = Number(month);
   const year = new Date().getFullYear();
@@ -107,6 +116,19 @@ export const getCreditCardBills = async (
     cardCycles.map(async ({ cc, closingDate, dueDate }, i) => {
       const totalAmount = Number(aggregateResults[i]._sum.amount ?? 0);
       const existing = existingBillMap.get(cc.id);
+
+      if (!persist) {
+        return {
+          id: existing?.id ?? `preview-${cc.id}-${year}-${monthNum}`,
+          month: monthNum,
+          year,
+          closingDate,
+          dueDate,
+          totalAmount,
+          status: computeBillStatus(existing?.status ?? "OPEN", closingDate, dueDate, now),
+          paidAt: existing?.paidAt ?? null,
+        };
+      }
 
       if (!existing) {
         return db.creditCardBill.create({
