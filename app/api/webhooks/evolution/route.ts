@@ -418,6 +418,21 @@ export const POST = async (request: Request) => {
     return NextResponse.json({ received: true });
   }
 
+  // Owner's own messages (self-chat) belong to the owner's number; messages from
+  // other contacts belong to the contact (remoteJid). `body.sender` is the instance
+  // owner in Evolution v1.x, NOT the message author.
+  const phone = message.key?.fromMe ? ownNumber : chatId;
+  if (!phone) {
+    return NextResponse.json({ received: true });
+  }
+
+  // Find linked user before any processing (audio transcription costs money).
+  // Unlinked numbers are regular contacts of the owner's personal WhatsApp — stay silent.
+  const link = await db.whatsAppLink.findUnique({ where: { phone } });
+  if (!link) {
+    return NextResponse.json({ received: true });
+  }
+
   // Skip media messages (photos, documents, video, stickers) — but allow audio
   const msg = message.message || {};
   if (
@@ -475,7 +490,7 @@ export const POST = async (request: Request) => {
 
     if (!rawText) {
       await sendWhatsApp(
-        message.key?.fromMe ? ownNumber : chatId,
+        phone,
         "Nao consegui entender o audio. Tente novamente ou digite o comando.",
       );
       return NextResponse.json({ received: true });
@@ -512,23 +527,9 @@ export const POST = async (request: Request) => {
     return NextResponse.json({ received: true });
   }
 
-  // Owner's own messages (self-chat) belong to the owner's number; messages from
-  // other contacts belong to the contact (remoteJid). `body.sender` is the instance
-  // owner in Evolution v1.x, NOT the message author.
-  const phone = message.key?.fromMe ? ownNumber : chatId;
   const text = rawText;
 
-  if (!phone || !text) {
-    return NextResponse.json({ received: true });
-  }
-
-  // Find linked user
-  const link = await db.whatsAppLink.findUnique({ where: { phone } });
-  if (!link) {
-    await sendWhatsApp(
-      phone,
-      "Seu numero nao esta vinculado ao Finplan.ai. Acesse o app e vincule seu WhatsApp nas configuracoes.",
-    );
+  if (!text) {
     return NextResponse.json({ received: true });
   }
 
