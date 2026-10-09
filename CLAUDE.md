@@ -65,7 +65,7 @@ docker compose up -d # Start local PostgreSQL
 - **PIX Payment** — Mercado Pago integration for lifetime plan. QR code modal on subscription page, webhook with HMAC validation, Telegram notification on payment received.
 - **Recurring Expenses** — Fixed monthly bills (rent, utilities, internet). CRUD with category, due day, active/inactive toggle. "Pay" button creates a real Transaction linked via `recurringExpenseId`. Badge shows Paid/Pending per month. Dashboard widget shows upcoming due dates (next 7 days, excludes paid).
 - **Recurring Income** — Fixed monthly incomes (salary, freelance). CRUD at `/recurring` alongside expenses. "Receive" creates DEPOSIT transaction with SALARY category. Expected income shown as reference line in monthly bar chart.
-- **Credit Card Dashboard** — "Cartão no mês" shows current cycle spending (closingDay-based). "Comprometido" shows future installments grouped by card and month with amber/red badges. Data from `app/_data/get-credit-card-commitment.ts`.
+- **Credit Card Dashboard** — "Cartões de crédito" block: per card, the selected month's bill (status + due date), the open bill (closing/due dates) and limit usage meter; plus a chart of the next 6 bills (all cards, per-card breakdown in tooltip). Data from `app/_data/get-credit-card-outlook.ts` (same bill windows as `get-credit-card-bills`).
 - **Transactions Month Filter** — Month selector on `/transactions` page via searchParams.
 - **Recurring Reminders** — VPS Cron (`0 9 * * *` BRT on 212.56.33.113) calls `/api/cron/recurring-reminders`. Sends WhatsApp + push notification to users with unpaid expenses due today. Protected with `CRON_SECRET`.
 - **Push Notifications** — VAPID web push via `web-push` package. Auto-resubscribes on PWA reinstall. Model `PushSubscription` in Prisma.
@@ -78,7 +78,7 @@ docker compose up -d # Start local PostgreSQL
 - **OG Image** — 1200x630 dashboard preview for link sharing
 - **Theme Toggle** — Dark/light mode via `next-themes`. Toggle in navbar. Clerk and Toaster react dynamically. Default: dark. Preference saved in localStorage.
 - **Card Logos** — Brand logos (Visa, Mastercard, Elo, Amex, Hipercard) in `public/brands/`. Bank logos (Nubank, Santander, Itaú, etc.) in `public/banks/`. Mapped via `CARD_BRAND_ICONS` and `getBankIcon()` in `_constants/credit-cards.ts`.
-- **Payment Status** — "Total Pago" and "Falta Pagar" dashboard cards. Only counts recurring expenses (not CC bills — those have their own cards). Data from `app/_data/get-payment-status`.
+- **Payment Status** — "Contas fixas" dashboard card (paid vs pending progress). Only counts recurring expenses (not CC bills — those have their own cards). Data from `app/_data/get-payment-status`.
 
 ### Patterns
 
@@ -86,6 +86,7 @@ docker compose up -d # Start local PostgreSQL
 - **Decimal serialization** — Prisma returns `Decimal` objects. Convert to `number` before passing to Client Components
 - **Server Actions** — Validated with Zod schemas, authenticated via `getEffectiveUserId()`, call `revalidatePath` after mutations
 - **UI components** — Based on shadcn/ui (Radix + CVA + Tailwind). Dark/light theme via next-themes
+- **Chart colors** — Dashboard series use `--viz-income`, `--viz-expense`, `--viz-card`, `--viz-invest` (plus `--viz-grid`, `--viz-track`) from `globals.css`, with separate light/dark values validated for colorblind separation. Don't hardcode hex in charts
 - **Theme colors** — Use CSS variables (`text-foreground`, `bg-muted`, `border-border`) not hardcoded colors (`text-white`, `bg-white/10`). Exception: credit-card-item uses `text-white` over colored gradients
 - **Path alias** — `@/*` maps to project root
 - **Brazil timezone** — All date calculations for recurring expenses use `America/Sao_Paulo` (Vercel runs in UTC)

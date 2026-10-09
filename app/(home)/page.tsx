@@ -3,7 +3,9 @@ import Navbar from "../_components/navbar";
 import SummaryCards from "./_components/summary-cards";
 import TimeSelect from "./_components/time-select";
 import { isMatch } from "date-fns";
-import TransactionsPieChart from "./_components/transactions-pie-chart";
+import IncomeDistribution from "./_components/income-distribution";
+import CreditCardOverview from "./_components/credit-card-overview";
+import RecurringStatus from "./_components/recurring-status";
 import { getDashboard } from "../_data/get-dashboard";
 import ExpensesPerCategory from "./_components/expenses-per-category";
 import LastTransactions from "./_components/last-transactions";
@@ -24,7 +26,7 @@ import UpcomingRecurring from "./_components/upcoming-recurring";
 import { getUpcomingRecurring } from "../_data/get-recurring-expenses";
 import MonthlyBarChart from "./_components/monthly-bar-chart";
 import { getMonthlyOverview } from "../_data/get-monthly-overview";
-import { getCreditCardCommitment } from "../_data/get-credit-card-commitment";
+import { getCreditCardOutlook } from "../_data/get-credit-card-outlook";
 import { getPaymentStatus } from "../_data/get-payment-status";
 
 interface HomeProps {
@@ -54,7 +56,7 @@ const Home = async ({ searchParams }: HomeProps) => {
     pendingInvites,
     upcomingRecurring,
     monthlyOverview,
-    creditCardCommitment,
+    creditCardOutlook,
     paymentStatus,
   ] = await Promise.all([
     getDashboard(month),
@@ -69,17 +71,26 @@ const Home = async ({ searchParams }: HomeProps) => {
     getPendingInvitesForUser(),
     getUpcomingRecurring(),
     getMonthlyOverview(month),
-    getCreditCardCommitment(month),
+    getCreditCardOutlook(month),
     getPaymentStatus(month),
   ]);
   const creditCards = creditCardsRaw.map((c) => ({
     ...c,
     limit: Number(c.limit),
   }));
+  const previousMonth = monthlyOverview[monthlyOverview.length - 2];
+  const previous = previousMonth && {
+    deposits: previousMonth.deposits,
+    expenses: previousMonth.expenses + previousMonth.recurringPaid,
+    investments: previousMonth.investments,
+  };
+  const monthLabel = new Date(2000, Number(month) - 1, 1).toLocaleDateString("pt-BR", {
+    month: "long",
+  });
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <Navbar />
-      <div className="flex flex-1 flex-col space-y-6 overflow-auto p-4 scrollbar-thin md:p-6">
+      <div className="flex flex-1 flex-col space-y-4 overflow-auto p-4 scrollbar-thin md:p-6">
         <PendingInvitesBanner invites={pendingInvites} />
         <UpcomingRecurring items={upcomingRecurring} />
 
@@ -106,28 +117,36 @@ const Home = async ({ searchParams }: HomeProps) => {
 
         {/* KPIs */}
         <SummaryCards
-          month={month}
           {...dashboard}
+          previous={previous}
           creditCards={creditCards}
           canUserAddTransaction={canAddTransaction}
           customCategories={customCategories}
-          creditCardCommitment={creditCardCommitment}
-          totalPaid={paymentStatus.totalPaid}
-          totalPending={paymentStatus.totalPending}
         />
 
-        {/* Charts: Bar + Donut */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[3fr,1fr]">
-          <MonthlyBarChart data={monthlyOverview} />
-          <TransactionsPieChart {...dashboard} />
+        {/* Monthly trend + where the income went */}
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <MonthlyBarChart data={monthlyOverview} />
+          </div>
+          <IncomeDistribution {...dashboard} />
         </div>
 
-        {/* Categories + Last Transactions */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Credit cards: bills, limit and upcoming commitments */}
+        <CreditCardOverview outlook={creditCardOutlook} monthLabel={monthLabel} />
+
+        {/* Fixed bills + categories + last transactions */}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <RecurringStatus
+            totalPaid={paymentStatus.totalPaid}
+            totalPending={paymentStatus.totalPending}
+          />
           <ExpensesPerCategory
             expensesPerCategory={dashboard.totalExpensePerCategory}
           />
-          <LastTransactions lastTransactions={dashboard.lastTransactions} />
+          <div className="md:col-span-2 xl:col-span-1">
+            <LastTransactions lastTransactions={dashboard.lastTransactions} />
+          </div>
         </div>
       </div>
     </div>

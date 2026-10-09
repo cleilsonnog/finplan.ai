@@ -39,6 +39,13 @@ body {
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+    /* Dashboard series (validated categorical set: income, cash expense, card, invest) */
+    --viz-income: #1baf7a;
+    --viz-expense: #e34948;
+    --viz-card: #4a3aa7;
+    --viz-invest: #eda100;
+    --viz-grid: hsl(240 5.9% 90%);
+    --viz-track: hsl(240 4.8% 93%);
   }
 
   .dark {
@@ -66,6 +73,12 @@ body {
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+    --viz-income: #199e70;
+    --viz-expense: #e66767;
+    --viz-card: #9085e9;
+    --viz-invest: #c98500;
+    --viz-grid: hsl(240 3.7% 15.9%);
+    --viz-track: hsl(0 0% 14%);
   }
 }
 

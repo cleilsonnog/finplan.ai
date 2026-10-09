@@ -9,6 +9,7 @@ export interface MonthlyOverviewItem {
   creditCard: number;
   investments: number;
   recurring: number;
+  recurringPaid: number;
   expectedIncome: number;
 }
 
@@ -33,10 +34,9 @@ export const getMonthlyOverview = async (
     months.push(m);
   }
 
-  const firstMonth = months[0];
-  const lastMonth = months[months.length - 1];
-  const startDate = new Date(year, firstMonth - 1, 1);
-  const endDate = new Date(year, lastMonth, 1);
+  // Month index may go negative (Jan–May looks back into last year) — Date handles the rollover
+  const startDate = new Date(year, current - 6, 1);
+  const endDate = new Date(year, current, 1);
 
   // Single query: fetch all transactions for the 6-month range
   const [transactions, activeRecurringAgg, activeIncomeAgg] = await Promise.all([
@@ -114,6 +114,7 @@ export const getMonthlyOverview = async (
       creditCard: data.creditCard,
       investments: data.investments,
       recurring: Math.max(paidRecurring, activeRecurringTotal),
+      recurringPaid: paidRecurring,
       expectedIncome: activeIncomeTotal,
     };
   });

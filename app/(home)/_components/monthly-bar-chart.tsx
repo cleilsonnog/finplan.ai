@@ -1,6 +1,15 @@
 "use client";
 
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Legend, ResponsiveContainer, Tooltip, ReferenceLine } from "recharts";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/_components/ui/card";
 import type { MonthlyOverviewItem } from "@/app/_data/get-monthly-overview";
 
@@ -8,50 +17,104 @@ interface MonthlyBarChartProps {
   data: MonthlyOverviewItem[];
 }
 
+const SERIES = [
+  { key: "deposits", name: "Receita", color: "var(--viz-income)" },
+  { key: "expensesCash", name: "Despesas à vista", color: "var(--viz-expense)" },
+  { key: "expensesCreditCard", name: "Cartão", color: "var(--viz-card)" },
+  { key: "investments", name: "Investido", color: "var(--viz-invest)" },
+] as const;
+
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
-    minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(value);
 
+const formatAxis = (value: number) =>
+  new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 }).format(value);
+
 interface TooltipEntry {
-  name: string;
+  dataKey: string;
   value: number;
-  color: string;
 }
 
-const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: TooltipEntry[]; label?: string }) => {
-  if (!active || !payload) return null;
+const ChartTooltip = ({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: TooltipEntry[];
+  label?: string;
+}) => {
+  if (!active || !payload?.length) return null;
+  const values = Object.fromEntries(payload.map((p) => [p.dataKey, p.value]));
+  const totalExpenses = (values.expensesCash ?? 0) + (values.expensesCreditCard ?? 0);
+  const balance = (values.deposits ?? 0) - totalExpenses - (values.investments ?? 0);
   return (
-    <div className="rounded-lg border bg-background p-3 shadow-md">
-      <p className="mb-2 text-sm font-bold">{label}</p>
-      {payload.map((entry: TooltipEntry) => (
-        <p key={entry.name} className="text-xs" style={{ color: entry.color }}>
-          {entry.name}: {formatCurrency(entry.value)}
-        </p>
-      ))}
+    <div className="min-w-[200px] rounded-lg border bg-popover p-3 text-popover-foreground shadow-lg">
+      <p className="mb-2 text-sm font-semibold">{label}</p>
+      <div className="space-y-1">
+        {SERIES.map((s) => (
+          <div key={s.key} className="flex items-center justify-between gap-4 text-xs">
+            <span className="flex items-center gap-2 text-muted-foreground">
+              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: s.color }} />
+              {s.name}
+            </span>
+            <span className="font-medium tabular-nums">{formatCurrency(values[s.key] ?? 0)}</span>
+          </div>
+        ))}
+      </div>
+      <div className="mt-2 flex justify-between border-t pt-2 text-xs">
+        <span className="text-muted-foreground">Saldo</span>
+        <span className="font-semibold tabular-nums">{formatCurrency(balance)}</span>
+      </div>
     </div>
   );
 };
 
 const MonthlyBarChart = ({ data }: MonthlyBarChartProps) => {
-  const chartData = data.map((item) => ({
-    ...item,
-    expensesCash: item.expenses - item.creditCard,
-    expensesCreditCard: item.creditCard,
-  }));
+  const chartData = data.map((item) => {
+    // expenses excludes recurring; recurringPaid adds back the bills actually paid
+    const allExpenses = item.expenses + item.recurringPaid;
+    return {
+      monthLabel: item.monthLabel,
+      deposits: item.deposits,
+      expensesCash: Math.max(allExpenses - item.creditCard, 0),
+      expensesCreditCard: item.creditCard,
+      investments: item.investments,
+    };
+  });
+  const expectedIncome = data[0]?.expectedIncome ?? 0;
 
   return (
     <Card className="flex flex-col">
-      <CardHeader>
-        <CardTitle className="text-base font-bold">Visão Mensal</CardTitle>
+      <CardHeader className="flex-row flex-wrap items-start justify-between gap-2 space-y-0 pb-2">
+        <div>
+          <CardTitle className="text-base font-semibold">Visão mensal</CardTitle>
+          <p className="text-xs text-muted-foreground">Últimos 6 meses</p>
+        </div>
+        {/* Legend — identity never relies on color alone */}
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
+          {SERIES.map((s) => (
+            <span key={s.key} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: s.color }} />
+              {s.name}
+            </span>
+          ))}
+          {expectedIncome > 0 && (
+            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span className="h-0 w-3 border-t-2 border-dashed" style={{ borderColor: "var(--viz-income)" }} />
+              Receita esperada
+            </span>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="flex-1 pb-4">
-        <ResponsiveContainer width="100%" height={280}>
-          <BarChart data={chartData} barGap={2} barCategoryGap="20%">
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted-foreground) / 0.15)" vertical={false} />
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={chartData} barGap={2} barCategoryGap="22%" margin={{ top: 12, right: 4, left: 0, bottom: 0 }}>
+            <CartesianGrid stroke="var(--viz-grid)" vertical={false} />
             <XAxis
               dataKey="monthLabel"
               tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
@@ -62,34 +125,39 @@ const MonthlyBarChart = ({ data }: MonthlyBarChartProps) => {
               tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
               axisLine={false}
               tickLine={false}
-              tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
-              width={40}
+              tickFormatter={formatAxis}
+              width={44}
             />
-            <Tooltip content={<CustomTooltip />} cursor={{ fill: "hsl(var(--muted-foreground) / 0.05)" }} />
-            <Legend
-              iconType="circle"
-              iconSize={8}
-              wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
-            />
-            {chartData[0]?.expectedIncome > 0 && (
+            <Tooltip content={<ChartTooltip />} cursor={{ fill: "hsl(var(--muted-foreground) / 0.08)" }} />
+            {expectedIncome > 0 && (
               <ReferenceLine
-                y={chartData[0].expectedIncome}
-                stroke="#55B02E"
+                y={expectedIncome}
+                stroke="var(--viz-income)"
                 strokeDasharray="6 4"
                 strokeWidth={1.5}
-                label={{
-                  value: `Receita esperada: ${formatCurrency(chartData[0].expectedIncome)}`,
-                  position: "insideTopRight",
-                  fill: "#55B02E",
-                  fontSize: 11,
-                }}
               />
             )}
-            <Bar dataKey="deposits" name="Receita" fill="#55B02E" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="expensesCash" name="Despesas" stackId="expenses" fill="#E93030" />
-            <Bar dataKey="expensesCreditCard" name="Cartão" stackId="expenses" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="recurring" name="Recorrentes" fill="#F59E0B" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="investments" name="Investido" fill="#FFFFFF" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="deposits" name="Receita" fill="var(--viz-income)" radius={[4, 4, 0, 0]} maxBarSize={24} />
+            <Bar
+              dataKey="expensesCash"
+              name="Despesas à vista"
+              stackId="expenses"
+              fill="var(--viz-expense)"
+              maxBarSize={24}
+              stroke="hsl(var(--background))"
+              strokeWidth={1}
+            />
+            <Bar
+              dataKey="expensesCreditCard"
+              name="Cartão"
+              stackId="expenses"
+              fill="var(--viz-card)"
+              radius={[4, 4, 0, 0]}
+              maxBarSize={24}
+              stroke="hsl(var(--background))"
+              strokeWidth={1}
+            />
+            <Bar dataKey="investments" name="Investido" fill="var(--viz-invest)" radius={[4, 4, 0, 0]} maxBarSize={24} />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>
