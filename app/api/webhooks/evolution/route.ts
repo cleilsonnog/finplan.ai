@@ -112,6 +112,12 @@ const TYPE_LABELS: Record<string, string> = {
   INVESTMENT: "Investimento",
 };
 
+// "novembro/2026" — month of the bill a credit card purchase was recorded in
+function formatBillMonth(date: Date) {
+  const month = date.toLocaleDateString("pt-BR", { month: "long" });
+  return `${month}/${date.getFullYear()}`;
+}
+
 async function sendWhatsApp(phone: string, message: string) {
   try {
     await fetch(
@@ -1097,7 +1103,8 @@ async function createTransaction(
           `Categoria: ${categoryLabel}\n` +
           `Cartao: ${creditCardName}\n` +
           `Parcelado: *${installments}x de R$ ${installmentAmount2}*\n` +
-          `Data: ${new Date().toLocaleDateString("pt-BR")}`,
+          `Data: ${new Date().toLocaleDateString("pt-BR")}\n` +
+          `1a parcela na fatura de ${formatBillMonth(new Date(now.getFullYear(), now.getMonth() + monthOffset, 1))}`,
       );
     } else {
       let transactionDate = new Date();
@@ -1139,7 +1146,10 @@ async function createTransaction(
           `Categoria: ${categoryLabel}\n` +
           `Pagamento: ${PAYMENT_LABELS[paymentMethod]}` +
           (creditCardName ? `\nCartao: ${creditCardName}` : "") +
-          `\nData: ${new Date().toLocaleDateString("pt-BR")}`,
+          `\nData: ${new Date().toLocaleDateString("pt-BR")}` +
+          (paymentMethod === "CREDIT_CARD" && creditCardId
+            ? ` (fatura de ${formatBillMonth(transactionDate)})`
+            : ""),
       );
     }
   } catch (err) {
