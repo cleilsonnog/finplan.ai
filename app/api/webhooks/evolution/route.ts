@@ -386,9 +386,35 @@ export const POST = async (request: Request) => {
     return NextResponse.json({ received: true });
   }
 
+  // Skip groups, status broadcasts and newsletters — only direct chats are commands
+  const chatJid: string = message.key?.remoteJid || "";
+  if (!chatJid || chatJid.endsWith("@g.us") || chatJid.endsWith("@broadcast") || chatJid.endsWith("@newsletter")) {
+    return NextResponse.json({ received: true });
+  }
+
   // Skip messages sent by the bot (via API) — only process messages from mobile
   const source = message.source || "";
   if (message.key?.fromMe && source !== "android" && source !== "ios") {
+    return NextResponse.json({ received: true });
+  }
+
+  // The bot runs on the owner's personal number. Messages typed by the owner (fromMe)
+  // are only commands when sent in the "message yourself" chat — never in chats with
+  // other contacts. Self-chat may use the owner's number or LID as remoteJid.
+  const ownNumber = (body.sender || "").replace("@s.whatsapp.net", "");
+  const selfLids = (process.env.EVOLUTION_SELF_LIDS || "").split(",").map((s) => s.trim()).filter(Boolean);
+  const chatId = chatJid.replace("@s.whatsapp.net", "").replace("@lid", "");
+  const isSelfChat = chatId === ownNumber || (chatJid.endsWith("@lid") && selfLids.includes(chatId));
+  if (message.key?.fromMe && !isSelfChat) {
+    if (chatJid.endsWith("@lid")) {
+      console.log(`[evolution] ignored fromMe message in LID chat ${chatJid} (add to EVOLUTION_SELF_LIDS if this is your self-chat)`);
+    }
+    return NextResponse.json({ received: true });
+  }
+
+  // Messages from other contacts: the sender is the chat itself. LID chats can't be
+  // mapped to a phone number, so ignore them instead of attributing them to the owner.
+  if (!message.key?.fromMe && !chatJid.endsWith("@s.whatsapp.net")) {
     return NextResponse.json({ received: true });
   }
 
@@ -449,7 +475,7 @@ export const POST = async (request: Request) => {
 
     if (!rawText) {
       await sendWhatsApp(
-        body.sender?.replace("@s.whatsapp.net", "") || "",
+        message.key?.fromMe ? ownNumber : chatId,
         "Nao consegui entender o audio. Tente novamente ou digite o comando.",
       );
       return NextResponse.json({ received: true });
@@ -486,12 +512,10 @@ export const POST = async (request: Request) => {
     return NextResponse.json({ received: true });
   }
 
-  // Extract phone from sender field (top-level) or remoteJid fallback
-  // Evolution API v1.8.6+ uses LID format in remoteJid, but sender has the real number
-  const senderField = body.sender || "";
-  const remoteJid = message.key?.remoteJid || "";
-  const phone = senderField.replace("@s.whatsapp.net", "")
-    || remoteJid.replace("@s.whatsapp.net", "").replace("@lid", "");
+  // Owner's own messages (self-chat) belong to the owner's number; messages from
+  // other contacts belong to the contact (remoteJid). `body.sender` is the instance
+  // owner in Evolution v1.x, NOT the message author.
+  const phone = message.key?.fromMe ? ownNumber : chatId;
   const text = rawText;
 
   if (!phone || !text) {
