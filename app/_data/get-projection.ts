@@ -1,6 +1,6 @@
 import { db } from "@/app/_lib/prisma";
 import { getEffectiveUserId } from "@/app/_lib/get-effective-user-id";
-import { billIndexDueIn, billIndexOf } from "@/app/_utils/credit-card-bill";
+import { loadBillCalendars } from "@/app/_lib/bill-calendar";
 import { formatPeriod, shiftPeriod, toPeriod } from "@/app/_utils/period";
 
 // "Will next months close in the red?" — a cash projection per month:
@@ -91,9 +91,10 @@ export const getProjection = async (month: string): Promise<Projection> => {
   const billTotals = new Map<string, number>(); // period → total
   const billOneOffs = new Map<string, number>(); // period → one-off purchases already on it
   if (cards.length > 0) {
+    const calendars = await loadBillCalendars(cards);
     const firstDue = periods[0];
     const earliestBill = Math.min(
-      ...cards.map((c) => billIndexDueIn(firstDue.year, firstDue.month, c.closingDay, c.dueDay)),
+      ...cards.map((c) => calendars.get(c.id)!.billIndexDueIn(firstDue.year, firstDue.month)),
     );
     const from = new Date(Math.floor((earliestBill - 1) / 12), (earliestBill - 1) % 12, 1);
     const cardTx = await db.transaction.findMany({
@@ -109,9 +110,10 @@ export const getProjection = async (month: string): Promise<Projection> => {
       let total = 0;
       let oneOffs = 0;
       for (const card of cards) {
-        const bill = billIndexDueIn(period.year, period.month, card.closingDay, card.dueDay);
+        const calendar = calendars.get(card.id)!;
+        const bill = calendar.billIndexDueIn(period.year, period.month);
         for (const t of cardTx) {
-          if (t.creditCardId === card.id && billIndexOf(t.date, card.closingDay) === bill) {
+          if (t.creditCardId === card.id && calendar.billIndexOf(t.date) === bill) {
             total += Number(t.amount);
             if (t.installments === 1) oneOffs += Number(t.amount);
           }

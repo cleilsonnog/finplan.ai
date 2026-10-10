@@ -57,7 +57,15 @@ export async function POST(req: Request) {
   try {
     let kind: StatementKind;
     let lines;
-    let bill: { billTotal: number | null; extractedTotal: number; dueDate: string | null } | null = null;
+    let bill: {
+      billTotal: number | null;
+      extractedTotal: number;
+      dueDate: string | null;
+      periodEnd: string | null;
+    } | null = null;
+    let billPeriodEnd: Date | null = null;
+    // Card registered with other days than the bank printed → suggest updating it
+    let cardDrift: { closingDay: number; dueDay: number } | null = null;
     let account: { openingBalance: number | null; closingBalance: number | null; computedClosing: number | null } | null = null;
     let billDueDate: Date | null = null;
     let inspection: Awaited<ReturnType<typeof inspectPdf>> | null = null;
@@ -96,11 +104,20 @@ export async function POST(req: Request) {
       kind = "CREDIT_CARD";
       lines = pdf.lines;
       billDueDate = pdf.dueDate;
+      billPeriodEnd = pdf.periodEnd;
       bill = {
         billTotal: pdf.billTotal,
         extractedTotal: pdf.extractedTotal,
         dueDate: pdf.dueDate?.toISOString() ?? null,
+        periodEnd: pdf.periodEnd?.toISOString() ?? null,
       };
+      if (
+        pdf.periodEnd &&
+        pdf.dueDate &&
+        (pdf.periodEnd.getDate() !== creditCard.closingDay || pdf.dueDate.getDate() !== creditCard.dueDay)
+      ) {
+        cardDrift = { closingDay: pdf.periodEnd.getDate(), dueDay: pdf.dueDate.getDate() };
+      }
     } else {
       return NextResponse.json({ error: "Formato não suportado. Use PDF ou OFX." }, { status: 400 });
     }
@@ -115,6 +132,7 @@ export async function POST(req: Request) {
       lines,
       creditCard: kind === "CREDIT_CARD" ? creditCard : null,
       billDueDate,
+      billPeriodEnd,
     });
 
     return NextResponse.json({
@@ -126,6 +144,7 @@ export async function POST(req: Request) {
       rows,
       orphans,
       bill,
+      cardDrift,
       account,
       limits,
     });

@@ -6,14 +6,8 @@ import { db } from "@/app/_lib/prisma";
 import { getEffectiveUserId } from "@/app/_lib/get-effective-user-id";
 import { getImportLimits } from "@/app/_lib/import/limits";
 import { normalizeMerchant } from "@/app/_lib/import/normalize";
-import {
-  billIndexDueIn,
-  billMonth1,
-  billYear,
-  closingDateOf,
-  dueDateOf,
-  installmentDates,
-} from "@/app/_utils/credit-card-bill";
+import { billMonth1, billYear } from "@/app/_utils/credit-card-bill";
+import { loadBillCalendars } from "@/app/_lib/bill-calendar";
 import { importStatementSchema, type ImportStatementInput } from "./schema";
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -37,7 +31,8 @@ export const importStatement = async (input: ImportStatementInput): Promise<Impo
   if (limits.importsLeft === 0) {
     throw new Error("Você já usou a importação gratuita deste mês.");
   }
-  if (params.rows.length === 0 && params.deleteTransactionIds.length === 0) {
+  // Re-importing a bill that is already in the app still records its real dates
+  if (params.rows.length === 0 && params.deleteTransactionIds.length === 0 && !params.billDates) {
     throw new Error("Nada selecionado para importar.");
   }
   if (params.rows.length > limits.maxLines) {
@@ -60,6 +55,16 @@ export const importStatement = async (input: ImportStatementInput): Promise<Impo
   for (const row of params.rows) {
     if (row.customCategoryId && !customIds.has(row.customCategoryId)) throw new Error("Categoria inválida");
     if (row.billCardId && !cardById.has(row.billCardId)) throw new Error("Cartão inválido");
+  }
+
+  // Bill calendars (locked dates when known); the imported bill gets the dates it printed
+  const calendars = await loadBillCalendars(cards);
+  let importedBill: { index: number; closingDate: Date; dueDate: Date } | null = null;
+  if (statementCard && params.billDates) {
+    const dueDate = new Date(params.billDates.dueDate);
+    const index = calendars.get(statementCard.id)!.billIndexDueIn(dueDate.getFullYear(), dueDate.getMonth() + 1);
+    importedBill = { index, closingDate: new Date(params.billDates.closingDate), dueDate };
+    calendars.set(statementCard.id, calendars.get(statementCard.id)!.with(importedBill));
   }
 
   const transactionRows = params.rows.filter((r) => r.action === "TRANSACTION");
@@ -123,7 +128,7 @@ export const importStatement = async (input: ImportStatementInput): Promise<Impo
           row.installment.number < row.installment.total
         ) {
           const { number, total } = row.installment;
-          const dates = installmentDates(new Date(row.date), total - number + 1, statementCard.closingDay);
+          const dates = calendars.get(statementCard.id)!.installmentDates(new Date(row.date), total - number + 1);
           for (let k = 1; k < dates.length; k++) {
             const installmentNumber = number + k;
             const alreadyThere = existingInstallments.some(
@@ -168,11 +173,12 @@ export const importStatement = async (input: ImportStatementInput): Promise<Impo
       let billsPaid = 0;
       for (const row of billPaymentRows) {
         const card = cardById.get(row.billCardId!)!;
+        const calendar = calendars.get(card.id)!;
         const paidAt = new Date(row.date);
         // The bill due closest to the payment date (paying a few days early/late is common)
-        const around = billIndexDueIn(paidAt.getFullYear(), paidAt.getMonth() + 1, card.closingDay, card.dueDay);
+        const around = calendar.billIndexDueIn(paidAt.getFullYear(), paidAt.getMonth() + 1);
         const candidates = [around - 1, around, around + 1]
-          .map((index) => ({ index, due: dueDateOf(index, card.closingDay, card.dueDay) }))
+          .map((index) => ({ index, due: calendar.dueDate(index) }))
           .filter((c) => Math.abs(c.due.getTime() - paidAt.getTime()) <= 20 * DAY)
           .sort((a, b) => Math.abs(a.due.getTime() - paidAt.getTime()) - Math.abs(b.due.getTime() - paidAt.getTime()));
         const target = candidates[0];
@@ -180,8 +186,8 @@ export const importStatement = async (input: ImportStatementInput): Promise<Impo
 
         const month = billMonth1(target.index);
         const year = billYear(target.index);
-        const closingDate = closingDateOf(target.index, card.closingDay);
-        const start = new Date(closingDateOf(target.index - 1, card.closingDay).getTime() + 1);
+        const closingDate = calendar.closingDate(target.index);
+        const start = calendar.windowStart(target.index);
         const total = await tx.transaction.aggregate({
           where: { creditCardId: card.id, date: { gte: start, lte: closingDate } },
           _sum: { amount: true },
@@ -206,6 +212,31 @@ export const importStatement = async (input: ImportStatementInput): Promise<Impo
           update: { status: "PAID", paidAt },
         });
         billsPaid++;
+      }
+
+      // The imported bill keeps the dates the bank printed, whatever the card's closing day says
+      if (statementCard && importedBill) {
+        const calendar = calendars.get(statementCard.id)!;
+        const month = billMonth1(importedBill.index);
+        const year = billYear(importedBill.index);
+        const total = await tx.transaction.aggregate({
+          where: {
+            creditCardId: statementCard.id,
+            date: { gte: calendar.windowStart(importedBill.index), lte: calendar.closingDate(importedBill.index) },
+          },
+          _sum: { amount: true },
+        });
+        const dates = {
+          closingDate: calendar.closingDate(importedBill.index),
+          dueDate: importedBill.dueDate,
+          datesLocked: true,
+          totalAmount: Number(total._sum.amount ?? 0),
+        };
+        await tx.creditCardBill.upsert({
+          where: { creditCardId_month_year: { creditCardId: statementCard.id, month, year } },
+          create: { creditCardId: statementCard.id, userId, month, year, status: "CLOSED", ...dates },
+          update: dates,
+        });
       }
 
       // Learned categories: "lembrar" on the review screen

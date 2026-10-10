@@ -34,6 +34,8 @@ export const importStatementSchema = z.object({
   rows: z.array(importRowSchema).max(500),
   /** Old entries of this card bill the user chose to delete (they don't exist on the PDF) */
   deleteTransactionIds: z.array(z.string()).max(200).default([]),
+  /** Real dates printed on the imported card bill: stored on that bill and locked */
+  billDates: z.object({ closingDate: z.string().datetime(), dueDate: z.string().datetime() }).nullable().default(null),
 });
 
 export type ImportStatementInput = z.infer<typeof importStatementSchema>;

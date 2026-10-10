@@ -157,6 +157,9 @@ model CreditCardBill {
   totalAmount  Decimal    @default(0) @db.Decimal(10, 2)
   status       BillStatus @default(OPEN)
   paidAt       DateTime?
+  /// closingDate/dueDate are final: taken from the imported bill or frozen once the bill closed.
+  /// Changing the card's closing day afterwards only affects open and future bills.
+  datesLocked  Boolean    @default(false)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
   userId       String

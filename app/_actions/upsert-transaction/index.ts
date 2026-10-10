@@ -10,6 +10,7 @@ import {
 import { upsertTransactionSchema } from "./schema";
 import { revalidatePath } from "next/cache";
 import { installmentDates } from "@/app/_utils/credit-card-bill";
+import { loadBillCalendar } from "@/app/_lib/bill-calendar";
 
 interface UpsertTransactionParams {
   id?: string;
@@ -66,11 +67,13 @@ export const upsertTransaction = async (params: UpsertTransactionParams) => {
     const card = params.creditCardId
       ? await db.creditCard.findFirst({
           where: { id: params.creditCardId, userId },
-          select: { closingDay: true },
+          select: { id: true, closingDay: true, dueDay: true },
         })
       : null;
     // Real dates: one installment per consecutive bill, starting with the purchase's own bill
-    const dates = installmentDates(new Date(params.date), installments, card?.closingDay ?? 31);
+    const dates = card
+      ? (await loadBillCalendar(card)).installmentDates(new Date(params.date), installments)
+      : installmentDates(new Date(params.date), installments, 31);
 
     const transactions = dates.map((date, i) => {
       return {

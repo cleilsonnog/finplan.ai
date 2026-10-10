@@ -85,6 +85,8 @@ export interface PdfBill {
   /** Total printed on the bill */
   billTotal: number | null;
   dueDate: Date | null;
+  /** Last day of the purchase period printed on the bill (the real closing date) */
+  periodEnd: Date | null;
   /** Purchases minus credits as extracted — should match billTotal */
   extractedTotal: number;
 }
@@ -300,6 +302,7 @@ export const parseCardBillPdf = async (inspection: PdfInspection): Promise<PdfBi
     lines,
     billTotal: header.billTotal,
     dueDate: toDate(header.dueDate),
+    periodEnd: toDate(header.periodEnd),
     extractedTotal: round2(lines.reduce((s, l) => s - l.amount, 0)),
   };
 };

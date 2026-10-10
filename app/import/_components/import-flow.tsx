@@ -26,6 +26,7 @@ import { TRANSACTION_CATEGORY_LABELS } from "@/app/_constants/transactions";
 import type { ImportLimits } from "@/app/_lib/import/limits";
 import type { CategorySource, OrphanTransaction, PreviewRow, StatementKind } from "@/app/_lib/import/types";
 import { importStatement, type ImportResult } from "@/app/_actions/import-statement";
+import { updateCardBillingDays } from "@/app/_actions/update-card-billing-days";
 
 interface ImportFlowProps {
   creditCards: { id: string; name: string; lastFourDigits: string }[];
@@ -42,7 +43,13 @@ interface PreviewResponse {
   cardName: string | null;
   rows: PreviewRow[];
   orphans: OrphanTransaction[];
-  bill: { billTotal: number | null; extractedTotal: number; dueDate: string | null } | null;
+  bill: {
+    billTotal: number | null;
+    extractedTotal: number;
+    dueDate: string | null;
+    periodEnd: string | null;
+  } | null;
+  cardDrift: { closingDay: number; dueDay: number } | null;
   account: { openingBalance: number | null; closingBalance: number | null; computedClosing: number | null } | null;
   limits: ImportLimits;
 }
@@ -159,6 +166,10 @@ const ImportFlow = ({ creditCards, customCategories, categoryLabels, limits }: I
           creditCardId: preview.creditCardId,
           createFutureInstallments: createFuture,
           deleteTransactionIds: Array.from(toDelete),
+          billDates:
+            preview.bill?.periodEnd && preview.bill.dueDate
+              ? { closingDate: preview.bill.periodEnd, dueDate: preview.bill.dueDate }
+              : null,
           rows: selected.map((r) => ({
             externalId: r.externalId,
             date: r.date,
@@ -350,6 +361,35 @@ const ImportFlow = ({ creditCards, customCategories, categoryLabels, limits }: I
               {billCheck === false && " — os valores não batem, confira se faltou algum lançamento."}
               {preview.bill.dueDate && ` · vencimento ${new Date(preview.bill.dueDate).toLocaleDateString("pt-BR")}`}
             </span>
+          </div>
+        )}
+
+        {preview.cardDrift && preview.creditCardId && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-sky-500/30 bg-sky-500/5 p-3 text-xs">
+            <span>
+              O banco fechou esta fatura no <strong>dia {preview.cardDrift.closingDay}</strong> com vencimento no{" "}
+              <strong>dia {preview.cardDrift.dueDay}</strong>, diferente do cadastro do cartão. As datas reais desta fatura
+              serão usadas de qualquer forma; atualizar o cadastro ajusta as próximas.
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={async () => {
+                try {
+                  await updateCardBillingDays({
+                    cardId: preview.creditCardId!,
+                    closingDay: preview.cardDrift!.closingDay,
+                    dueDay: preview.cardDrift!.dueDay,
+                  });
+                  toast.success("Cartão atualizado");
+                  setPreview({ ...preview, cardDrift: null });
+                } catch {
+                  toast.error("Não foi possível atualizar o cartão");
+                }
+              }}
+            >
+              Atualizar cartão
+            </Button>
           </div>
         )}
 
@@ -592,12 +632,17 @@ const ImportFlow = ({ creditCards, customCategories, categoryLabels, limits }: I
             )}
           </div>
           <Button
-            disabled={saving || (selected.length === 0 && toDelete.size === 0) || overLimit}
+            disabled={
+              saving ||
+              (selected.length === 0 && toDelete.size === 0 && !preview.bill?.periodEnd) ||
+              overLimit
+            }
             onClick={handleConfirm}
           >
             {saving && <Loader2Icon className="mr-2 animate-spin" size={16} />}
-            Importar {selected.length} lançamentos
-            {toDelete.size > 0 && ` e excluir ${toDelete.size}`}
+            {selected.length === 0 && toDelete.size === 0
+              ? "Salvar datas da fatura"
+              : `Importar ${selected.length} lançamentos${toDelete.size > 0 ? ` e excluir ${toDelete.size}` : ""}`}
           </Button>
         </div>
       </CardContent>

@@ -1,6 +1,8 @@
 import { db } from "@/app/_lib/prisma";
 import { getEffectiveUserId } from "@/app/_lib/get-effective-user-id";
 import { toPeriod } from "@/app/_utils/period";
+import { toBillIndex } from "@/app/_utils/credit-card-bill";
+import { loadBillCalendars } from "@/app/_lib/bill-calendar";
 
 export interface CreditCardSummaryItem {
   card: {
@@ -63,18 +65,12 @@ export const getCreditCardSummaryForUser = async (
 
   const { year, month: monthNum } = toPeriod(month);
 
-  // Pre-compute cycle dates for all cards
+  // Bill window per card from its calendar (locked dates when known)
+  const calendars = await loadBillCalendars(creditCards);
+  const index = toBillIndex(year, monthNum);
   const cardCycles = creditCards.map((cc) => {
-    const prevMonth = monthNum === 1 ? 12 : monthNum - 1;
-    const prevYear = monthNum === 1 ? year - 1 : year;
-    const startDay = cc.closingDay + 1;
-    const daysInPrevMonth = new Date(prevYear, prevMonth, 0).getDate();
-    const clampedStartDay = Math.min(startDay, daysInPrevMonth);
-    const daysInCurrentMonth = new Date(year, monthNum, 0).getDate();
-    const clampedClosingDay = Math.min(cc.closingDay, daysInCurrentMonth);
-    const cycleStart = new Date(prevYear, prevMonth - 1, clampedStartDay);
-    const cycleEnd = new Date(year, monthNum - 1, clampedClosingDay, 23, 59, 59, 999);
-    return { cc, cycleStart, cycleEnd };
+    const calendar = calendars.get(cc.id)!;
+    return { cc, cycleStart: calendar.windowStart(index), cycleEnd: calendar.closingDate(index) };
   });
 
   // Find global min/max dates across all cards for a single query

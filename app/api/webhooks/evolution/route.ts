@@ -8,7 +8,8 @@ import { type Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { rateLimit } from "@/app/_lib/rate-limit";
 import OpenAI from "openai";
-import { billIndexOf, dueDateOf, installmentDates } from "@/app/_utils/credit-card-bill";
+import { installmentDates } from "@/app/_utils/credit-card-bill";
+import { loadBillCalendar } from "@/app/_lib/bill-calendar";
 
 const VALID_TYPES = new Set(Object.values(TransactionType));
 const VALID_CATEGORIES = new Set(Object.values(TransactionCategory));
@@ -1066,16 +1067,17 @@ async function createTransaction(
     const card = paymentMethod === "CREDIT_CARD" && creditCardId
       ? await db.creditCard.findUnique({
           where: { id: creditCardId },
-          select: { closingDay: true, dueDay: true },
+          select: { id: true, closingDay: true, dueDay: true },
         })
       : null;
-    const billLine = card
-      ? `Fatura: vence ${formatDueDate(dueDateOf(billIndexOf(now, card.closingDay), card.closingDay, card.dueDay))}`
+    const calendar = card ? await loadBillCalendar(card) : null;
+    const billLine = calendar
+      ? `Fatura: vence ${formatDueDate(calendar.dueDate(calendar.billIndexOf(now)))}`
       : null;
 
     if (paymentMethod === "CREDIT_CARD" && installments > 1 && creditCardId) {
       const installmentAmount = Math.round((amount / installments) * 100) / 100;
-      const dates = installmentDates(now, installments, card?.closingDay ?? 31);
+      const dates = calendar ? calendar.installmentDates(now, installments) : installmentDates(now, installments, 31);
 
       await db.transaction.createMany({
         data: dates.map((date, i) => ({

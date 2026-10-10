@@ -2,6 +2,8 @@ import { db } from "@/app/_lib/prisma";
 import { getEffectiveUserId } from "@/app/_lib/get-effective-user-id";
 import { BillStatus } from "@prisma/client";
 import { toPeriod } from "@/app/_utils/period";
+import { toBillIndex } from "@/app/_utils/credit-card-bill";
+import { loadBillCalendars } from "@/app/_lib/bill-calendar";
 
 export interface SerializedBill {
   id: string;
@@ -56,33 +58,17 @@ export const getCreditCardBillsForUser = async (
 
   if (creditCards.length === 0) return [];
 
-  // Pre-compute cycle dates for all cards
+  // Window of this month's bill per card: locked dates when known, else the closing day
+  const calendars = await loadBillCalendars(creditCards);
+  const index = toBillIndex(year, monthNum);
   const cardCycles = creditCards.map((cc) => {
-    const daysInMonth = new Date(year, monthNum, 0).getDate();
-    const clampedClosingDay = Math.min(cc.closingDay, daysInMonth);
-    const clampedDueDay = Math.min(cc.dueDay, daysInMonth);
-
-    const closingDate = new Date(year, monthNum - 1, clampedClosingDay, 23, 59, 59, 999);
-
-    let dueDate: Date;
-    if (cc.dueDay > cc.closingDay) {
-      dueDate = new Date(year, monthNum - 1, clampedDueDay, 23, 59, 59, 999);
-    } else {
-      const nextMonth = monthNum === 12 ? 1 : monthNum + 1;
-      const nextYear = monthNum === 12 ? year + 1 : year;
-      const daysInNextMonth = new Date(nextYear, nextMonth, 0).getDate();
-      const clampedNextDueDay = Math.min(cc.dueDay, daysInNextMonth);
-      dueDate = new Date(nextYear, nextMonth - 1, clampedNextDueDay, 23, 59, 59, 999);
-    }
-
-    const prevMonth = monthNum === 1 ? 12 : monthNum - 1;
-    const prevYear = monthNum === 1 ? year - 1 : year;
-    const startDay = cc.closingDay + 1;
-    const daysInPrevMonth = new Date(prevYear, prevMonth, 0).getDate();
-    const clampedStartDay = Math.min(startDay, daysInPrevMonth);
-    const cycleStart = new Date(prevYear, prevMonth - 1, clampedStartDay);
-
-    return { cc, closingDate, dueDate, cycleStart };
+    const calendar = calendars.get(cc.id)!;
+    return {
+      cc,
+      closingDate: calendar.closingDate(index),
+      dueDate: calendar.dueDate(index),
+      cycleStart: calendar.windowStart(index),
+    };
   });
 
   // Batch: all aggregates + all existing bills in parallel
@@ -140,7 +126,8 @@ export const getCreditCardBillsForUser = async (
             closingDate,
             dueDate,
             totalAmount,
-            status: "OPEN",
+            status: computeBillStatus("OPEN", closingDate, dueDate, now),
+            datesLocked: now > closingDate,
           },
         });
       }
@@ -148,7 +135,13 @@ export const getCreditCardBillsForUser = async (
       const newStatus = computeBillStatus(existing.status, closingDate, dueDate, now);
       return db.creditCardBill.update({
         where: { id: existing.id },
-        data: { totalAmount, closingDate, dueDate, status: newStatus },
+        data: {
+          totalAmount,
+          status: newStatus,
+          // Locked bills keep their dates; an open bill is locked the first time it's seen closed,
+          // so a later change of the card's closing day doesn't move past purchases around
+          ...(existing.datesLocked ? {} : { closingDate, dueDate, datesLocked: now > closingDate }),
+        },
       });
     }),
   );

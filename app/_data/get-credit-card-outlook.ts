@@ -1,14 +1,8 @@
 import { db } from "@/app/_lib/prisma";
 import { getEffectiveUserId } from "@/app/_lib/get-effective-user-id";
 import type { BillStatus } from "@prisma/client";
-import {
-  billIndexDueIn,
-  billIndexOf,
-  billMonth1,
-  billYear,
-  closingDateOf,
-  dueDateOf,
-} from "@/app/_utils/credit-card-bill";
+import { billMonth1, billYear } from "@/app/_utils/credit-card-bill";
+import { loadBillCalendars } from "@/app/_lib/bill-calendar";
 import { formatPeriod, toPeriod } from "@/app/_utils/period";
 
 const UPCOMING_BILLS = 6;
@@ -78,8 +72,9 @@ export const getCreditCardOutlook = async (month: string): Promise<CreditCardOut
   });
   if (creditCards.length === 0) return { cards: [], upcoming: [] };
 
+  const calendars = await loadBillCalendars(creditCards);
   const dueIndexById = new Map(
-    creditCards.map((cc) => [cc.id, billIndexDueIn(year, month1, cc.closingDay, cc.dueDay)]),
+    creditCards.map((cc) => [cc.id, calendars.get(cc.id)!.billIndexDueIn(year, month1)]),
   );
   // Earliest purchase that can belong to any card's due bill: start of the month before it closes
   const earliestIndex = Math.min(...dueIndexById.values()) - 1;
@@ -106,10 +101,9 @@ export const getCreditCardOutlook = async (month: string): Promise<CreditCardOut
 
   // cardId → billIndex → amount
   const perCard = new Map<string, Map<number, number>>();
-  const closingDayById = new Map(creditCards.map((c) => [c.id, c.closingDay]));
   for (const tx of transactions) {
     const cardId = tx.creditCardId!;
-    const index = billIndexOf(tx.date, closingDayById.get(cardId)!);
+    const index = calendars.get(cardId)!.billIndexOf(tx.date);
     if (index < dueIndexById.get(cardId)!) continue;
     if (!perCard.has(cardId)) perCard.set(cardId, new Map());
     const bills = perCard.get(cardId)!;
@@ -119,8 +113,9 @@ export const getCreditCardOutlook = async (month: string): Promise<CreditCardOut
   const cards: CardOutlook[] = creditCards.map((cc) => {
     const bills = perCard.get(cc.id) ?? new Map<number, number>();
     const dueIndex = dueIndexById.get(cc.id)!;
-    const closing = closingDateOf(dueIndex, cc.closingDay);
-    const due = dueDateOf(dueIndex, cc.closingDay, cc.dueDay);
+    const calendar = calendars.get(cc.id)!;
+    const closing = calendar.closingDate(dueIndex);
+    const due = calendar.dueDate(dueIndex);
     const stored = storedBills.find((b) => b.creditCardId === cc.id)?.status;
     const status = statusOf(stored, closing, due, now);
     const dueAmount = bills.get(dueIndex) ?? 0;
@@ -146,8 +141,8 @@ export const getCreditCardOutlook = async (month: string): Promise<CreditCardOut
       },
       nextBill: {
         amount: bills.get(dueIndex + 1) ?? 0,
-        closingDate: closingDateOf(dueIndex + 1, cc.closingDay).toISOString(),
-        dueDate: dueDateOf(dueIndex + 1, cc.closingDay, cc.dueDay).toISOString(),
+        closingDate: calendar.closingDate(dueIndex + 1).toISOString(),
+        dueDate: calendar.dueDate(dueIndex + 1).toISOString(),
       },
       usedLimit: laterTotal + (status === "PAID" ? 0 : dueAmount),
     };
