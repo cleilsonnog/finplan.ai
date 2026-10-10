@@ -2,6 +2,7 @@
 
 import { SignInButton } from "@clerk/nextjs";
 import Image from "next/image";
+import Link from "next/link";
 import {
   ArrowRightIcon,
   BellRingIcon,
@@ -27,7 +28,9 @@ import {
 } from "lucide-react";
 import { Button } from "@/app/_components/ui/button";
 import WhatsAppFloatButton from "@/app/_components/whatsapp-float-button";
+import PublicHeader from "@/app/_components/public-header";
 import { SITE_DESCRIPTION, SITE_URL } from "@/app/_lib/site";
+import { GUIDES } from "@/app/guias/_content/guides";
 
 const WHATSAPP_URL =
   "https://wa.me/5522988516223?text=Ol%C3%A1%2C%20vim%20pelo%20FinPlan.ai%20e%20gostaria%20de%20mais%20informa%C3%A7%C3%B5es!";
@@ -435,29 +438,7 @@ const LandingPage = () => {
         // Static content defined in this file — no user input
         dangerouslySetInnerHTML={{ __html: JSON.stringify(STRUCTURED_DATA) }}
       />
-      {/* NAVBAR */}
-      <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-8">
-          <a href="#" className="flex items-center gap-2">
-            <Image src="/icon-finplanai-pwa.svg" width={32} height={32} alt="FinPlan AI" />
-            <span className="text-lg font-bold">FinPlan.ai</span>
-          </a>
-          <nav className="hidden items-center gap-8 text-sm text-muted-foreground md:flex">
-            <a href="#funcionalidades" className="hover:text-foreground">Funcionalidades</a>
-            <a href="#como-funciona" className="hover:text-foreground">Como funciona</a>
-            <a href="#planos" className="hover:text-foreground">Planos</a>
-            <a href="#duvidas" className="hover:text-foreground">Dúvidas</a>
-          </nav>
-          <div className="flex items-center gap-2">
-            <SignInButton mode="modal">
-              <Button size="sm" variant="ghost">Entrar</Button>
-            </SignInButton>
-            <SignInButton mode="modal">
-              <Button size="sm" className="hidden rounded-full sm:inline-flex">Começar grátis</Button>
-            </SignInButton>
-          </div>
-        </div>
-      </header>
+      <PublicHeader />
 
       {/* HERO */}
       <section className="relative overflow-hidden">
@@ -724,6 +705,14 @@ const LandingPage = () => {
             <Image src="/icon-finplanai-pwa.svg" width={24} height={24} alt="FinPlan AI" />
             <span className="text-sm font-semibold">FinPlan.ai</span>
           </div>
+          <nav className="flex flex-wrap justify-center gap-x-5 gap-y-1 text-xs text-muted-foreground">
+            <Link href="/guias" className="hover:text-foreground">Guias</Link>
+            {GUIDES.slice(0, 3).map((g) => (
+              <Link key={g.slug} href={`/guias/${g.slug}`} className="hover:text-foreground">
+                {g.title.split(":")[0].split("(")[0].trim()}
+              </Link>
+            ))}
+          </nav>
           <p className="text-xs text-muted-foreground">
             &copy; {new Date().getFullYear()} FinPlan.ai. Todos os direitos reservados.
           </p>

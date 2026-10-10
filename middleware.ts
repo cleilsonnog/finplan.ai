@@ -6,6 +6,7 @@ const isPublicRoute = createRouteMatcher([
   "/manifest.json",
   "/robots.txt",
   "/sitemap.xml",
+  "/guias(.*)", // public SEO content
   "/sw.js",
   "/__clerk(.*)",
   "/api/webhooks(.*)",

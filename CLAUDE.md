@@ -32,6 +32,8 @@ docker compose up -d # Start local PostgreSQL
 - `app/budget/` — Unified categories & budget management (rename defaults, custom categories, budget limits)
 - `app/recurring/` — Recurring expenses and incomes management (CRUD, pay, toggle, receive)
 - `app/categories/` — Redirects to `/budget`
+- `app/guias/` — Public SEO guides (static, no login). Content is data in `app/guias/_content/guides.ts` (blocks: p/h2/list/tip/cta, inline **bold**); each guide gets metadata, canonical, Article + BreadcrumbList JSON-LD and enters the sitemap automatically. To add a guide, append to `GUIDES` — keep financial facts verifiable
+- `app/_components/public-header.tsx` — Header shared by landing and guides
 - `app/subscription/` — Plans page (free vs premium)
 - `app/shopping-list/` — Shopping list page (add/remove items, syncs with WhatsApp)
 - `app/settings/` — Settings page (WhatsApp link)
@@ -107,7 +109,7 @@ docker compose up -d # Start local PostgreSQL
 - Clerk handles all authentication
 - `userId` is obtained via `getEffectiveUserId()` which supports account sharing
 - Middleware uses `createRouteMatcher` + `auth.protect()` for route protection
-- Public routes: `/`, `/login`, `/manifest.json`, `/robots.txt`, `/sitemap.xml`, `/sw.js`, `/__clerk(.*)`, webhooks, cron. robots/sitemap MUST stay public or search engines get a 404
+- Public routes: `/`, `/login`, `/manifest.json`, `/robots.txt`, `/sitemap.xml`, `/guias(.*)`, `/sw.js`, `/__clerk(.*)`, webhooks, cron. robots/sitemap MUST stay public or search engines get a 404
 - SEO: public URL/title/description in `app/_lib/site.ts` (used by layout metadata, robots, sitemap). Landing page emits JSON-LD (SoftwareApplication + FAQPage built from its FAQ array)
 - **IMPORTANT**: `/__clerk(.*)` and `/manifest.json` MUST be public — Clerk needs internal routes for session management, manifest is required for PWA install
 - **IMPORTANT**: Do NOT add fetch handlers to the service worker — intercepting navigation/requests breaks Clerk session detection in PWA
