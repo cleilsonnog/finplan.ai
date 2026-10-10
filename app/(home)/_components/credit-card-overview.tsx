@@ -131,29 +131,39 @@ const CreditCardOverview = ({ outlook, monthLabel }: CreditCardOverviewProps) =>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <p className="text-xs text-muted-foreground">Fatura de {monthLabel}</p>
-                    <p className="text-base font-semibold">{fmt(card.currentBill.amount)}</p>
+                    <p className="text-xs text-muted-foreground">Vence em {monthLabel}</p>
+                    <p className="text-base font-semibold">{fmt(card.dueBill.amount)}</p>
                     <div className="mt-1 flex flex-wrap items-center gap-1.5">
                       <span
-                        className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${STATUS_STYLES[card.currentBill.status]}`}
+                        className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${STATUS_STYLES[card.dueBill.status]}`}
                       >
-                        {BILL_STATUS_LABELS[card.currentBill.status]}
+                        {BILL_STATUS_LABELS[card.dueBill.status]}
                       </span>
-                      {card.currentBill.status !== "PAID" && card.currentBill.amount > 0 && (
-                        <span className="text-[11px] text-muted-foreground">
-                          vence {fmtDate(card.currentBill.dueDate)}
-                        </span>
-                      )}
+                      <span className="text-[11px] text-muted-foreground">
+                        {card.dueBill.status === "OPEN"
+                          ? `fecha ${fmtDate(card.dueBill.closingDate)}`
+                          : `vence ${fmtDate(card.dueBill.dueDate)}`}
+                      </span>
                     </div>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Fatura aberta</p>
-                    <p className="text-base font-semibold">{fmt(card.openBill.amount)}</p>
+                    <p className="text-xs text-muted-foreground">Próxima fatura</p>
+                    <p className="text-base font-semibold">{fmt(card.nextBill.amount)}</p>
                     <p className="mt-1 text-[11px] text-muted-foreground">
-                      fecha {fmtDate(card.openBill.closingDate)} · vence {fmtDate(card.openBill.dueDate)}
+                      fecha {fmtDate(card.nextBill.closingDate)} · vence {fmtDate(card.nextBill.dueDate)}
                     </p>
                   </div>
                 </div>
+
+                {(card.dueBill.status === "CLOSED" || card.dueBill.status === "OVERDUE") &&
+                  card.dueBill.amount > 0 && (
+                    <Link
+                      href={`/credit-cards?month=${card.dueBill.closingMonth}`}
+                      className="mt-2 block text-[11px] font-medium text-primary hover:underline"
+                    >
+                      Já pagou? Marque como paga para descontar do saldo
+                    </Link>
+                  )}
 
                 {card.limit > 0 && (
                   <div className="mt-3">

@@ -19,7 +19,7 @@ export const getDashboardForUser = async (userId: string, month: string) => {
       lt: new Date(`${year}-${Number(month) + 1}-01`),
     },
   };
-  const [depositsAgg, investmentsAgg, expensesAgg, creditCardAgg, groupedExpenses, lastTransactionsRaw] =
+  const [depositsAgg, investmentsAgg, expensesAgg, creditCardAgg, groupedExpenses, lastTransactionsRaw, paidBillsAgg] =
     await Promise.all([
       db.transaction.aggregate({
         where: { ...where, type: "DEPOSIT" },
@@ -58,13 +58,20 @@ export const getDashboardForUser = async (userId: string, month: string) => {
           customCategoryId: true,
         },
       }),
+      // Card bills leave the account only when marked as paid — counted in the month they are due
+      db.creditCardBill.aggregate({
+        where: { userId, status: "PAID", dueDate: where.date },
+        _sum: { totalAmount: true },
+      }),
     ]);
   const depositsTotal = Number(depositsAgg._sum?.amount ?? 0);
   const investmentsTotal = Number(investmentsAgg._sum?.amount ?? 0);
   const expensesTotal = Number(expensesAgg._sum?.amount ?? 0);
   const creditCardTotal = Number(creditCardAgg._sum?.amount ?? 0);
   const expensesWithoutCC = expensesTotal - creditCardTotal;
-  const balance = depositsTotal - investmentsTotal - expensesTotal;
+  const paidBillsTotal = Number(paidBillsAgg._sum?.totalAmount ?? 0);
+  // Cash view: card purchases (expensesTotal includes them) only hit the balance through paid bills
+  const balance = depositsTotal - investmentsTotal - expensesWithoutCC - paidBillsTotal;
   const customCategoryIds = groupedExpenses
     .map((g) => g.customCategoryId)
     .filter((id): id is string => !!id);
@@ -102,6 +109,7 @@ export const getDashboardForUser = async (userId: string, month: string) => {
     expensesTotal,
     creditCardTotal,
     expensesWithoutCC,
+    paidBillsTotal,
     totalExpensePerCategory,
     lastTransactions,
   };

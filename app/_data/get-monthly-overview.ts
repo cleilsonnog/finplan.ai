@@ -10,6 +10,8 @@ export interface MonthlyOverviewItem {
   investments: number;
   recurring: number;
   recurringPaid: number;
+  /** Card bills marked as paid, by due month — what the card actually took from the account */
+  paidBills: number;
   expectedIncome: number;
 }
 
@@ -39,7 +41,7 @@ export const getMonthlyOverview = async (
   const endDate = new Date(year, current, 1);
 
   // Single query: fetch all transactions for the 6-month range
-  const [transactions, activeRecurringAgg, activeIncomeAgg] = await Promise.all([
+  const [transactions, activeRecurringAgg, activeIncomeAgg, paidBills] = await Promise.all([
     db.transaction.findMany({
       where: { userId, date: { gte: startDate, lt: endDate } },
       select: {
@@ -57,6 +59,10 @@ export const getMonthlyOverview = async (
     db.recurringIncome.aggregate({
       where: { userId, active: true },
       _sum: { amount: true },
+    }),
+    db.creditCardBill.findMany({
+      where: { userId, status: "PAID", dueDate: { gte: startDate, lt: endDate } },
+      select: { dueDate: true, totalAmount: true },
     }),
   ]);
 
@@ -102,6 +108,12 @@ export const getMonthlyOverview = async (
     }
   }
 
+  const paidBillsByMonth = new Map<number, number>();
+  for (const bill of paidBills) {
+    const m = bill.dueDate.getMonth() + 1;
+    paidBillsByMonth.set(m, (paidBillsByMonth.get(m) ?? 0) + Number(bill.totalAmount));
+  }
+
   return months.map((m) => {
     const data = monthData.get(m)!;
     const monthStr = String(m).padStart(2, "0");
@@ -115,6 +127,7 @@ export const getMonthlyOverview = async (
       investments: data.investments,
       recurring: Math.max(paidRecurring, activeRecurringTotal),
       recurringPaid: paidRecurring,
+      paidBills: paidBillsByMonth.get(m) ?? 0,
       expectedIncome: activeIncomeTotal,
     };
   });

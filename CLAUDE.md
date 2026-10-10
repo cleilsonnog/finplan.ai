@@ -90,7 +90,8 @@ docker compose up -d # Start local PostgreSQL
 - **Theme colors** — Use CSS variables (`text-foreground`, `bg-muted`, `border-border`) not hardcoded colors (`text-white`, `bg-white/10`). Exception: credit-card-item uses `text-white` over colored gradients
 - **Path alias** — `@/*` maps to project root
 - **Brazil timezone** — All date calculations for recurring expenses use `America/Sao_Paulo` (Vercel runs in UTC)
-- **Credit card architecture** — CC purchases are EXPENSE transactions at time of purchase (not at bill payment). Bill payment is a separate action that doesn't create duplicate expenses. Stacked bar chart shows expenses split: cash (red) + credit card (purple).
+- **Credit card architecture** — CC purchases are EXPENSE transactions stored on the **real purchase date** (never shift dates). Installment N is dated N-1 months after the purchase (`installmentDates`). Which bill a purchase belongs to is derived ONLY from the card's closing day via `app/_utils/credit-card-bill.ts` (bill = closing month; window closingDay+1 of previous month → closingDay). Bill payment is a separate action that doesn't create duplicate expenses.
+- **Two views of money** — "Gastos do mês" / categories / budget use purchase date (competência: cash + card purchases in the month). "Saldo do mês" is cash: receita − despesas à vista − investido − card bills **marked as PAID** whose due date is in the month (`paidBillsTotal`). Unpaid bills never reduce the balance.
 
 ### Database
 

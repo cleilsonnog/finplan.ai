@@ -20,7 +20,7 @@ interface MonthlyBarChartProps {
 const SERIES = [
   { key: "deposits", name: "Receita", color: "var(--viz-income)" },
   { key: "expensesCash", name: "Despesas à vista", color: "var(--viz-expense)" },
-  { key: "expensesCreditCard", name: "Cartão", color: "var(--viz-card)" },
+  { key: "expensesCreditCard", name: "Compras no cartão", color: "var(--viz-card)" },
   { key: "investments", name: "Investido", color: "var(--viz-invest)" },
 ] as const;
 
@@ -34,9 +34,13 @@ const formatCurrency = (value: number) =>
 const formatAxis = (value: number) =>
   new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 }).format(value);
 
-interface TooltipEntry {
-  dataKey: string;
-  value: number;
+interface ChartRow {
+  monthLabel: string;
+  deposits: number;
+  expensesCash: number;
+  expensesCreditCard: number;
+  investments: number;
+  paidBills: number;
 }
 
 const ChartTooltip = ({
@@ -45,13 +49,13 @@ const ChartTooltip = ({
   label,
 }: {
   active?: boolean;
-  payload?: TooltipEntry[];
+  payload?: { payload: ChartRow }[];
   label?: string;
 }) => {
   if (!active || !payload?.length) return null;
-  const values = Object.fromEntries(payload.map((p) => [p.dataKey, p.value]));
-  const totalExpenses = (values.expensesCash ?? 0) + (values.expensesCreditCard ?? 0);
-  const balance = (values.deposits ?? 0) - totalExpenses - (values.investments ?? 0);
+  const row = payload[0].payload;
+  // Same cash view as the "Saldo do mês" tile: card purchases count through paid bills
+  const balance = row.deposits - row.expensesCash - row.paidBills - row.investments;
   return (
     <div className="min-w-[200px] rounded-lg border bg-popover p-3 text-popover-foreground shadow-lg">
       <p className="mb-2 text-sm font-semibold">{label}</p>
@@ -62,20 +66,26 @@ const ChartTooltip = ({
               <span className="h-2 w-2 rounded-full" style={{ backgroundColor: s.color }} />
               {s.name}
             </span>
-            <span className="font-medium tabular-nums">{formatCurrency(values[s.key] ?? 0)}</span>
+            <span className="font-medium tabular-nums">{formatCurrency(row[s.key])}</span>
           </div>
         ))}
       </div>
-      <div className="mt-2 flex justify-between border-t pt-2 text-xs">
+      <div className="mt-2 space-y-1 border-t pt-2 text-xs">
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Faturas pagas</span>
+          <span className="font-medium tabular-nums">{formatCurrency(row.paidBills)}</span>
+        </div>
+        <div className="flex justify-between">
         <span className="text-muted-foreground">Saldo</span>
         <span className="font-semibold tabular-nums">{formatCurrency(balance)}</span>
+        </div>
       </div>
     </div>
   );
 };
 
 const MonthlyBarChart = ({ data }: MonthlyBarChartProps) => {
-  const chartData = data.map((item) => {
+  const chartData: ChartRow[] = data.map((item) => {
     // expenses excludes recurring; recurringPaid adds back the bills actually paid
     const allExpenses = item.expenses + item.recurringPaid;
     return {
@@ -84,6 +94,7 @@ const MonthlyBarChart = ({ data }: MonthlyBarChartProps) => {
       expensesCash: Math.max(allExpenses - item.creditCard, 0),
       expensesCreditCard: item.creditCard,
       investments: item.investments,
+      paidBills: item.paidBills,
     };
   });
   const expectedIncome = data[0]?.expectedIncome ?? 0;
@@ -149,7 +160,7 @@ const MonthlyBarChart = ({ data }: MonthlyBarChartProps) => {
             />
             <Bar
               dataKey="expensesCreditCard"
-              name="Cartão"
+              name="Compras no cartão"
               stackId="expenses"
               fill="var(--viz-card)"
               radius={[4, 4, 0, 0]}

@@ -19,6 +19,7 @@ interface SummaryCardsProps {
   investmentsTotal: number;
   expensesTotal: number;
   creditCardTotal: number;
+  paidBillsTotal: number;
   /** Previous month totals, for the month-over-month delta */
   previous?: { deposits: number; expenses: number; investments: number };
   creditCards?: SerializedCreditCard[];
@@ -91,6 +92,7 @@ const SummaryCards = ({
   expensesTotal,
   investmentsTotal,
   creditCardTotal,
+  paidBillsTotal,
   previous,
   creditCards = [],
   canUserAddTransaction,
@@ -115,8 +117,13 @@ const SummaryCards = ({
             {fmt(balance)}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Receita − despesas − investimentos
+            Receita − à vista − faturas pagas − investido
           </p>
+          {paidBillsTotal > 0 && (
+            <p className="text-xs text-muted-foreground">
+              {fmt(paidBillsTotal)} em faturas pagas
+            </p>
+          )}
         </div>
         <AddTransactionButton
           canUserAddTransaction={canUserAddTransaction}
@@ -136,7 +143,7 @@ const SummaryCards = ({
 
       <StatTile
         icon={<TrendingDownIcon size={16} />}
-        label="Despesas"
+        label="Gastos do mês"
         value={expensesTotal}
         swatch="var(--viz-expense)"
       >
@@ -144,7 +151,7 @@ const SummaryCards = ({
           <Delta current={expensesTotal} previous={previous?.expenses} upIsGood={false} />
           {creditCardTotal > 0 && (
             <p className="text-xs text-muted-foreground">
-              {fmt(creditCardTotal)} no cartão
+              {fmt(creditCardTotal)} em compras no cartão
             </p>
           )}
         </div>

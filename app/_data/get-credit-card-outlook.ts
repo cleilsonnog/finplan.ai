@@ -1,7 +1,14 @@
 import { db } from "@/app/_lib/prisma";
 import { getEffectiveUserId } from "@/app/_lib/get-effective-user-id";
-import { getCreditCardBillsForUser } from "@/app/_data/get-credit-card-bills";
 import type { BillStatus } from "@prisma/client";
+import {
+  billIndexDueIn,
+  billIndexOf,
+  billMonth1,
+  billYear,
+  closingDateOf,
+  dueDateOf,
+} from "@/app/_utils/credit-card-bill";
 
 const UPCOMING_BILLS = 6;
 
@@ -17,24 +24,28 @@ export interface CardOutlook {
   brand: string;
   bank: string;
   limit: number;
-  /** Bill of the selected month (usually closed, waiting payment) */
-  currentBill: {
+  /** Bill due in the selected month — the one that hits this month's balance once paid */
+  dueBill: {
     amount: number;
     status: BillStatus;
+    closingDate: string;
     dueDate: string;
+    /** Closing month (1-12) — /credit-cards lists bills by closing month */
+    closingMonth: number;
   };
-  /** Bill of the next month (open, still receiving purchases) */
-  openBill: {
+  /** The following bill (usually still open, receiving purchases) */
+  nextBill: {
     amount: number;
     closingDate: string;
     dueDate: string;
   };
-  /** Sum of everything not yet billed or not paid: open bill + future installments (+ current bill if unpaid) */
+  /** Everything charged and not paid yet: due bill (if unpaid) + all later bills */
   usedLimit: number;
 }
 
 export interface UpcomingBillMonth {
   key: string;
+  /** Due month, e.g. "Nov/26" */
   label: string;
   total: number;
   byCard: { cardId: string; name: string; amount: number }[];
@@ -45,38 +56,21 @@ export interface CreditCardOutlook {
   upcoming: UpcomingBillMonth[];
 }
 
-// A purchase dated after the closing day belongs to the next month's bill
-const billIndexOf = (date: Date, closingDay: number) => {
-  const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-  const offset = date.getDate() > Math.min(closingDay, daysInMonth) ? 1 : 0;
-  return date.getFullYear() * 12 + date.getMonth() + offset;
+const statusOf = (stored: BillStatus | undefined, closing: Date, due: Date, now: Date): BillStatus => {
+  if (stored === "PAID") return "PAID";
+  if (now <= closing) return "OPEN";
+  if (now > due) return "OVERDUE";
+  return "CLOSED";
 };
 
-const dueDateOf = (billIndex: number, closingDay: number, dueDay: number) => {
-  const year = Math.floor(billIndex / 12);
-  const month = billIndex % 12;
-  const dueMonth = dueDay > closingDay ? month : month + 1;
-  const daysInMonth = new Date(year, dueMonth + 1, 0).getDate();
-  return new Date(year, dueMonth, Math.min(dueDay, daysInMonth));
-};
-
-const closingDateOf = (billIndex: number, closingDay: number) => {
-  const year = Math.floor(billIndex / 12);
-  const month = billIndex % 12;
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  return new Date(year, month, Math.min(closingDay, daysInMonth));
-};
-
-export const getCreditCardOutlook = async (
-  month: string,
-): Promise<CreditCardOutlook> => {
+export const getCreditCardOutlook = async (month: string): Promise<CreditCardOutlook> => {
   const result = await getEffectiveUserId();
   if (!result) throw new Error("Unauthorized");
   const userId = result.effectiveUserId;
 
-  const year = new Date().getFullYear();
-  const currentIndex = year * 12 + Number(month) - 1;
-  const openIndex = currentIndex + 1;
+  const now = new Date();
+  const year = now.getFullYear();
+  const month1 = Number(month);
 
   const creditCards = await db.creditCard.findMany({
     where: { userId },
@@ -84,10 +78,14 @@ export const getCreditCardOutlook = async (
   });
   if (creditCards.length === 0) return { cards: [], upcoming: [] };
 
-  // Earliest date that can belong to the current bill: day after closing, previous month
-  const rangeStart = new Date(year, Number(month) - 2, 1);
+  const dueIndexById = new Map(
+    creditCards.map((cc) => [cc.id, billIndexDueIn(year, month1, cc.closingDay, cc.dueDay)]),
+  );
+  // Earliest purchase that can belong to any card's due bill: start of the month before it closes
+  const earliestIndex = Math.min(...dueIndexById.values()) - 1;
+  const rangeStart = new Date(billYear(earliestIndex), earliestIndex % 12, 1);
 
-  const [transactions, bills] = await Promise.all([
+  const [transactions, storedBills] = await Promise.all([
     db.transaction.findMany({
       where: {
         creditCardId: { in: creditCards.map((c) => c.id) },
@@ -95,7 +93,15 @@ export const getCreditCardOutlook = async (
       },
       select: { amount: true, date: true, creditCardId: true },
     }),
-    getCreditCardBillsForUser(userId, month, { persist: false }),
+    db.creditCardBill.findMany({
+      where: {
+        OR: creditCards.map((cc) => {
+          const index = dueIndexById.get(cc.id)!;
+          return { creditCardId: cc.id, month: billMonth1(index), year: billYear(index) };
+        }),
+      },
+      select: { creditCardId: true, status: true },
+    }),
   ]);
 
   // cardId → billIndex → amount
@@ -104,21 +110,24 @@ export const getCreditCardOutlook = async (
   for (const tx of transactions) {
     const cardId = tx.creditCardId!;
     const index = billIndexOf(tx.date, closingDayById.get(cardId)!);
-    if (index < currentIndex) continue;
+    if (index < dueIndexById.get(cardId)!) continue;
     if (!perCard.has(cardId)) perCard.set(cardId, new Map());
-    const months = perCard.get(cardId)!;
-    months.set(index, (months.get(index) ?? 0) + Number(tx.amount));
+    const bills = perCard.get(cardId)!;
+    bills.set(index, (bills.get(index) ?? 0) + Number(tx.amount));
   }
 
   const cards: CardOutlook[] = creditCards.map((cc) => {
-    const months = perCard.get(cc.id) ?? new Map<number, number>();
-    const bill = bills.find((b) => b.creditCardId === cc.id);
-    const currentAmount = bill?.totalAmount ?? months.get(currentIndex) ?? 0;
-    const status: BillStatus = bill?.status ?? "OPEN";
+    const bills = perCard.get(cc.id) ?? new Map<number, number>();
+    const dueIndex = dueIndexById.get(cc.id)!;
+    const closing = closingDateOf(dueIndex, cc.closingDay);
+    const due = dueDateOf(dueIndex, cc.closingDay, cc.dueDay);
+    const stored = storedBills.find((b) => b.creditCardId === cc.id)?.status;
+    const status = statusOf(stored, closing, due, now);
+    const dueAmount = bills.get(dueIndex) ?? 0;
 
-    let futureTotal = 0;
-    months.forEach((amount, index) => {
-      if (index >= openIndex) futureTotal += amount;
+    let laterTotal = 0;
+    bills.forEach((amount, index) => {
+      if (index > dueIndex) laterTotal += amount;
     });
 
     return {
@@ -128,34 +137,36 @@ export const getCreditCardOutlook = async (
       brand: cc.brand,
       bank: cc.bank,
       limit: Number(cc.limit),
-      currentBill: {
-        amount: currentAmount,
+      dueBill: {
+        amount: dueAmount,
         status,
-        dueDate: (bill ? new Date(bill.dueDate) : dueDateOf(currentIndex, cc.closingDay, cc.dueDay)).toISOString(),
+        closingDate: closing.toISOString(),
+        dueDate: due.toISOString(),
+        closingMonth: billMonth1(dueIndex),
       },
-      openBill: {
-        amount: months.get(openIndex) ?? 0,
-        closingDate: closingDateOf(openIndex, cc.closingDay).toISOString(),
-        dueDate: dueDateOf(openIndex, cc.closingDay, cc.dueDay).toISOString(),
+      nextBill: {
+        amount: bills.get(dueIndex + 1) ?? 0,
+        closingDate: closingDateOf(dueIndex + 1, cc.closingDay).toISOString(),
+        dueDate: dueDateOf(dueIndex + 1, cc.closingDay, cc.dueDay).toISOString(),
       },
-      usedLimit: futureTotal + (status === "PAID" ? 0 : currentAmount),
+      usedLimit: laterTotal + (status === "PAID" ? 0 : dueAmount),
     };
   });
 
+  // Upcoming bills grouped by DUE month, starting the month after the selected one
   const upcoming: UpcomingBillMonth[] = [];
-  for (let i = 0; i < UPCOMING_BILLS; i++) {
-    const index = openIndex + i;
+  for (let i = 1; i <= UPCOMING_BILLS; i++) {
+    const dueMonthIndex = year * 12 + month1 - 1 + i;
     const byCard = creditCards
       .map((cc) => ({
         cardId: cc.id,
         name: cc.name,
-        amount: perCard.get(cc.id)?.get(index) ?? 0,
+        amount: perCard.get(cc.id)?.get(dueIndexById.get(cc.id)! + i) ?? 0,
       }))
       .filter((c) => c.amount > 0);
-    const labelYear = String(Math.floor(index / 12)).slice(2);
     upcoming.push({
-      key: String(index),
-      label: `${MONTH_LABELS[index % 12]}/${labelYear}`,
+      key: String(dueMonthIndex),
+      label: `${MONTH_LABELS[dueMonthIndex % 12]}/${String(billYear(dueMonthIndex)).slice(2)}`,
       total: byCard.reduce((sum, c) => sum + c.amount, 0),
       byCard,
     });

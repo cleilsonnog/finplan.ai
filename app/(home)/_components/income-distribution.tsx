@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/app/_components/ui/c
 interface IncomeDistributionProps {
   depositsTotal: number;
   expensesWithoutCC: number;
-  creditCardTotal: number;
+  paidBillsTotal: number;
   investmentsTotal: number;
 }
 
@@ -14,17 +14,18 @@ const fmt = (v: number) =>
 const IncomeDistribution = ({
   depositsTotal,
   expensesWithoutCC,
-  creditCardTotal,
+  paidBillsTotal,
   investmentsTotal,
 }: IncomeDistributionProps) => {
-  const outflow = expensesWithoutCC + creditCardTotal + investmentsTotal;
+  // Cash view: the card only takes money out of the account through paid bills
+  const outflow = expensesWithoutCC + paidBillsTotal + investmentsTotal;
   const leftover = depositsTotal - outflow;
   // When spending exceeds income, the bar shows the split of outflows instead
   const base = Math.max(depositsTotal, outflow);
 
   const segments = [
     { key: "cash", label: "Despesas à vista", value: expensesWithoutCC, color: "var(--viz-expense)" },
-    { key: "card", label: "Cartão", value: creditCardTotal, color: "var(--viz-card)" },
+    { key: "card", label: "Faturas pagas", value: paidBillsTotal, color: "var(--viz-card)" },
     { key: "invest", label: "Investido", value: investmentsTotal, color: "var(--viz-invest)" },
     { key: "left", label: "Sobrou", value: Math.max(leftover, 0), color: "var(--viz-income)" },
   ];

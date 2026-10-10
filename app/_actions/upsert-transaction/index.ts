@@ -9,6 +9,7 @@ import {
 } from "@prisma/client";
 import { upsertTransactionSchema } from "./schema";
 import { revalidatePath } from "next/cache";
+import { installmentDates } from "@/app/_utils/credit-card-bill";
 
 interface UpsertTransactionParams {
   id?: string;
@@ -60,23 +61,16 @@ export const upsertTransaction = async (params: UpsertTransactionParams) => {
   } else if (isCreditCard && installments > 1) {
     // Create installment transactions
     const installmentAmount = Math.round((params.amount / installments) * 100) / 100;
-    const baseDate = new Date(params.date);
+    const card = params.creditCardId
+      ? await db.creditCard.findFirst({
+          where: { id: params.creditCardId, userId },
+          select: { closingDay: true },
+        })
+      : null;
+    // Real dates: one installment per consecutive bill, starting with the purchase's own bill
+    const dates = installmentDates(new Date(params.date), installments, card?.closingDay ?? 31);
 
-    // Determine first installment month based on credit card closing day
-    let monthOffset = 1; // default: next month
-    if (params.creditCardId) {
-      const card = await db.creditCard.findUnique({
-        where: { id: params.creditCardId },
-        select: { closingDay: true },
-      });
-      if (card && baseDate.getDate() > card.closingDay) {
-        monthOffset = 2; // purchase after closing → skips to month after next
-      }
-    }
-
-    const transactions = Array.from({ length: installments }, (_, i) => {
-      const date = new Date(baseDate);
-      date.setMonth(date.getMonth() + monthOffset + i);
+    const transactions = dates.map((date, i) => {
       return {
         name: params.name,
         amount: installmentAmount,
@@ -94,22 +88,8 @@ export const upsertTransaction = async (params: UpsertTransactionParams) => {
 
     await db.transaction.createMany({ data: transactions });
   } else {
-    // Single transaction
-    let transactionDate = new Date(params.date);
-
-    // Credit card purchases always go to next bill
-    if (isCreditCard && params.creditCardId) {
-      let monthOffset = 1;
-      const card = await db.creditCard.findUnique({
-        where: { id: params.creditCardId },
-        select: { closingDay: true },
-      });
-      if (card && transactionDate.getDate() > card.closingDay) {
-        monthOffset = 2;
-      }
-      transactionDate = new Date(transactionDate);
-      transactionDate.setMonth(transactionDate.getMonth() + monthOffset);
-    }
+    // Single transaction — stored on the real purchase date, also for credit card
+    const transactionDate = new Date(params.date);
 
     await db.transaction.create({
       data: {

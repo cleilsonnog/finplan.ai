@@ -8,6 +8,7 @@ import { type Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { rateLimit } from "@/app/_lib/rate-limit";
 import OpenAI from "openai";
+import { billIndexOf, dueDateOf, installmentDates } from "@/app/_utils/credit-card-bill";
 
 const VALID_TYPES = new Set(Object.values(TransactionType));
 const VALID_CATEGORIES = new Set(Object.values(TransactionCategory));
@@ -112,10 +113,9 @@ const TYPE_LABELS: Record<string, string> = {
   INVESTMENT: "Investimento",
 };
 
-// "novembro/2026" — month of the bill a credit card purchase was recorded in
-function formatBillMonth(date: Date) {
-  const month = date.toLocaleDateString("pt-BR", { month: "long" });
-  return `${month}/${date.getFullYear()}`;
+// "06/11/2026" — due date of the bill a credit card purchase falls into
+function formatDueDate(date: Date) {
+  return date.toLocaleDateString("pt-BR");
 }
 
 async function sendWhatsApp(phone: string, message: string) {
@@ -1061,39 +1061,37 @@ async function createTransaction(
   }
 
   try {
+    // Purchases are stored on the real date; the bill is derived from the card's closing day
+    const now = new Date();
+    const card = paymentMethod === "CREDIT_CARD" && creditCardId
+      ? await db.creditCard.findUnique({
+          where: { id: creditCardId },
+          select: { closingDay: true, dueDay: true },
+        })
+      : null;
+    const billLine = card
+      ? `Fatura: vence ${formatDueDate(dueDateOf(billIndexOf(now, card.closingDay), card.closingDay, card.dueDay))}`
+      : null;
+
     if (paymentMethod === "CREDIT_CARD" && installments > 1 && creditCardId) {
-      // Create installment transactions
       const installmentAmount = Math.round((amount / installments) * 100) / 100;
-      const now = new Date();
+      const dates = installmentDates(now, installments, card?.closingDay ?? 31);
 
-      // Determine first installment month based on credit card closing day
-      let monthOffset = 1; // default: next month
-      const card = await db.creditCard.findUnique({
-        where: { id: creditCardId },
-        select: { closingDay: true },
+      await db.transaction.createMany({
+        data: dates.map((date, i) => ({
+          name,
+          type,
+          amount: installmentAmount,
+          category,
+          paymentMethod,
+          date,
+          userId,
+          creditCardId,
+          customCategoryId: customCategoryId || null,
+          installments,
+          installmentNumber: i + 1,
+        })),
       });
-      if (card && now.getDate() > card.closingDay) {
-        monthOffset = 2; // purchase after closing → skips to month after next
-      }
-
-      for (let i = 0; i < installments; i++) {
-        const date = new Date(now.getFullYear(), now.getMonth() + monthOffset + i, now.getDate());
-        await db.transaction.create({
-          data: {
-            name,
-            type,
-            amount: installmentAmount,
-            category,
-            paymentMethod,
-            date,
-            userId,
-            creditCardId,
-            customCategoryId: customCategoryId || null,
-            installments,
-            installmentNumber: i + 1,
-          },
-        });
-      }
 
       const installmentAmount2 = (amount / installments).toFixed(2);
       await sendWhatsApp(
@@ -1103,26 +1101,10 @@ async function createTransaction(
           `Categoria: ${categoryLabel}\n` +
           `Cartao: ${creditCardName}\n` +
           `Parcelado: *${installments}x de R$ ${installmentAmount2}*\n` +
-          `Data: ${new Date().toLocaleDateString("pt-BR")}\n` +
-          `1a parcela na fatura de ${formatBillMonth(new Date(now.getFullYear(), now.getMonth() + monthOffset, 1))}`,
+          `Data: ${now.toLocaleDateString("pt-BR")}` +
+          (billLine ? `\n1a parcela - ${billLine}` : ""),
       );
     } else {
-      let transactionDate = new Date();
-
-      // Credit card purchases: adjust date to the correct bill month
-      if (paymentMethod === "CREDIT_CARD" && creditCardId) {
-        let monthOffset = 1;
-        const card = await db.creditCard.findUnique({
-          where: { id: creditCardId },
-          select: { closingDay: true },
-        });
-        if (card && transactionDate.getDate() > card.closingDay) {
-          monthOffset = 2;
-        }
-        transactionDate = new Date(transactionDate);
-        transactionDate.setMonth(transactionDate.getMonth() + monthOffset);
-      }
-
       await db.transaction.create({
         data: {
           name,
@@ -1130,7 +1112,7 @@ async function createTransaction(
           amount,
           category,
           paymentMethod,
-          date: transactionDate,
+          date: now,
           userId,
           creditCardId: creditCardId || null,
           customCategoryId: customCategoryId || null,
@@ -1146,10 +1128,8 @@ async function createTransaction(
           `Categoria: ${categoryLabel}\n` +
           `Pagamento: ${PAYMENT_LABELS[paymentMethod]}` +
           (creditCardName ? `\nCartao: ${creditCardName}` : "") +
-          `\nData: ${new Date().toLocaleDateString("pt-BR")}` +
-          (paymentMethod === "CREDIT_CARD" && creditCardId
-            ? ` (fatura de ${formatBillMonth(transactionDate)})`
-            : ""),
+          `\nData: ${now.toLocaleDateString("pt-BR")}` +
+          (billLine ? `\n${billLine}` : ""),
       );
     }
   } catch (err) {
