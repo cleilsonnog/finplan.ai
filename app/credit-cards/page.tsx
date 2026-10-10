@@ -13,6 +13,14 @@ import CreditCardBills from "./_components/credit-card-bills";
 import { getCreditCardBills } from "../_data/get-credit-card-bills";
 import { getEffectiveUserId } from "../_lib/get-effective-user-id";
 import TimeSelect from "../(home)/_components/time-select";
+import {
+  currentPeriod,
+  formatPeriod,
+  isCanonicalPeriod,
+  parsePeriod,
+  periodRange,
+  toPeriod,
+} from "../_utils/period";
 
 interface CreditCardsPageProps {
   searchParams: Promise<{ month?: string }>;
@@ -25,7 +33,10 @@ const CreditCardsPage = async ({ searchParams }: CreditCardsPageProps) => {
   }
   const userId = result.effectiveUserId;
   const { month: monthParam } = await searchParams;
-  const currentMonth = monthParam ?? String(new Date().getMonth() + 1);
+  if (!isCanonicalPeriod(monthParam)) {
+    redirect(`/credit-cards?month=${formatPeriod(parsePeriod(monthParam) ?? currentPeriod())}`);
+  }
+  const currentMonth = monthParam!;
   const [creditCards, creditCardSummary, creditCardBills, ccTransactions, installmentTransactions] =
     await Promise.all([
       db.creditCard.findMany({ where: { userId } }),
@@ -80,9 +91,7 @@ const CreditCardsPage = async ({ searchParams }: CreditCardsPageProps) => {
 
   // Group installment transactions by name + creditCardId + createdAt
   // Using createdAt ensures separate purchases with the same name are not merged
-  const monthNum = Number(currentMonth);
-  const selectedYear = new Date().getFullYear();
-  const endOfSelectedMonth = new Date(selectedYear, monthNum, 0, 23, 59, 59, 999);
+  const endOfSelectedMonth = new Date(periodRange(toPeriod(currentMonth)).end.getTime() - 1);
   const installmentGroupsMap = new Map<
     string,
     {

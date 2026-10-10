@@ -1,5 +1,6 @@
 import { db } from "@/app/_lib/prisma";
 import { getEffectiveUserId } from "@/app/_lib/get-effective-user-id";
+import { toPeriod } from "@/app/_utils/period";
 
 export interface MonthlyOverviewItem {
   month: string;
@@ -26,8 +27,7 @@ export const getMonthlyOverview = async (
   const result = await getEffectiveUserId();
   if (!result) throw new Error("Unauthorized");
   const userId = result.effectiveUserId;
-  const year = new Date().getFullYear();
-  const current = Number(currentMonth);
+  const { year, month: current } = toPeriod(currentMonth);
 
   const months: number[] = [];
   for (let i = 5; i >= 0; i--) {

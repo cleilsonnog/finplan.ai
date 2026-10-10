@@ -2,6 +2,7 @@ import { db } from "@/app/_lib/prisma";
 import { TransactionType } from "@prisma/client";
 import { TotalExpensePerCategory } from "./types";
 import { getEffectiveUserId } from "@/app/_lib/get-effective-user-id";
+import { periodRange, toPeriod } from "@/app/_utils/period";
 
 export const getDashboard = async (month: string) => {
   const result = await getEffectiveUserId();
@@ -11,13 +12,10 @@ export const getDashboard = async (month: string) => {
 
 // Same data for an explicit user (used by token-authenticated integrations, without a Clerk session)
 export const getDashboardForUser = async (userId: string, month: string) => {
-  const year = new Date().getFullYear();
+  const { start, end } = periodRange(toPeriod(month));
   const where = {
     userId,
-    date: {
-      gte: new Date(`${year}-${month}-01`),
-      lt: new Date(`${year}-${Number(month) + 1}-01`),
-    },
+    date: { gte: start, lt: end },
   };
   const [depositsAgg, investmentsAgg, expensesAgg, creditCardAgg, groupedExpenses, lastTransactionsRaw, paidBillsAgg] =
     await Promise.all([

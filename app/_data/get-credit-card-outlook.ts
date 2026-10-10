@@ -9,6 +9,7 @@ import {
   closingDateOf,
   dueDateOf,
 } from "@/app/_utils/credit-card-bill";
+import { formatPeriod, toPeriod } from "@/app/_utils/period";
 
 const UPCOMING_BILLS = 6;
 
@@ -30,8 +31,8 @@ export interface CardOutlook {
     status: BillStatus;
     closingDate: string;
     dueDate: string;
-    /** Closing month (1-12) — /credit-cards lists bills by closing month */
-    closingMonth: number;
+    /** Closing period "YYYY-MM" — /credit-cards lists bills by closing month */
+    closingPeriod: string;
   };
   /** The following bill (usually still open, receiving purchases) */
   nextBill: {
@@ -69,8 +70,7 @@ export const getCreditCardOutlook = async (month: string): Promise<CreditCardOut
   const userId = result.effectiveUserId;
 
   const now = new Date();
-  const year = now.getFullYear();
-  const month1 = Number(month);
+  const { year, month: month1 } = toPeriod(month);
 
   const creditCards = await db.creditCard.findMany({
     where: { userId },
@@ -142,7 +142,7 @@ export const getCreditCardOutlook = async (month: string): Promise<CreditCardOut
         status,
         closingDate: closing.toISOString(),
         dueDate: due.toISOString(),
-        closingMonth: billMonth1(dueIndex),
+        closingPeriod: formatPeriod({ year: billYear(dueIndex), month: billMonth1(dueIndex) }),
       },
       nextBill: {
         amount: bills.get(dueIndex + 1) ?? 0,

@@ -2,7 +2,14 @@ import { db } from "../_lib/prisma";
 import AddTransactionButton from "../_components/add-transaction-button";
 import Navbar from "../_components/navbar";
 import { redirect } from "next/navigation";
-import { isMatch } from "date-fns";
+import {
+  currentPeriod,
+  formatPeriod,
+  isCanonicalPeriod,
+  parsePeriod,
+  periodRange,
+  toPeriod,
+} from "../_utils/period";
 import { canUserAddTransaction } from "../_data/can-user-add-transaction";
 import { ScrollArea } from "../_components/ui/scroll-area";
 import TransactionsTable from "./_components/transactions-table";
@@ -19,17 +26,11 @@ const TransactionsPage = async ({ searchParams }: TransactionsPageProps) => {
     redirect("/");
   }
   const { month } = await searchParams;
-  const monthIsInvalid = !month || !isMatch(month.padStart(2, "0"), "MM");
-  if (monthIsInvalid) {
-    redirect(`/transactions?month=${String(new Date().getMonth() + 1).padStart(2, "0")}`);
+  if (!isCanonicalPeriod(month)) {
+    redirect(`/transactions?month=${formatPeriod(parsePeriod(month) ?? currentPeriod())}`);
   }
   const userId = result.effectiveUserId;
-  const year = new Date().getFullYear();
-  const monthNum = Number(month);
-  const start = new Date(`${year}-${month.padStart(2, "0")}-01`);
-  const nextMonth = monthNum === 12 ? 1 : monthNum + 1;
-  const nextYear = monthNum === 12 ? year + 1 : year;
-  const end = new Date(`${nextYear}-${String(nextMonth).padStart(2, "0")}-01`);
+  const { start, end } = periodRange(toPeriod(month));
 
   const [transactions, creditCards, canAddTransaction, customCategories] =
     await Promise.all([

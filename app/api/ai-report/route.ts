@@ -8,6 +8,7 @@ import {
   TRANSACTION_CATEGORY_LABELS,
   TRANSACTION_PAYMENT_METHOD_LABELS,
 } from "@/app/_constants/transactions";
+import { toPeriod } from "@/app/_utils/period";
 
 const TYPE_LABELS: Record<string, string> = {
   DEPOSIT: "Receita",
@@ -233,8 +234,7 @@ export async function POST(req: Request) {
 
   const body = await req.json();
   const { month } = generateAiReportSchema.parse(body);
-  const monthNum = Number(month);
-  const year = new Date().getFullYear();
+  const { year, month: monthNum } = toPeriod(month);
   const startDate = new Date(year, monthNum - 1, 1);
   const endDate = new Date(year, monthNum, 1);
   const historyStartDate = new Date(year, monthNum - 4, 1);

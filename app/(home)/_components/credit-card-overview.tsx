@@ -158,7 +158,7 @@ const CreditCardOverview = ({ outlook, monthLabel }: CreditCardOverviewProps) =>
                 {(card.dueBill.status === "CLOSED" || card.dueBill.status === "OVERDUE") &&
                   card.dueBill.amount > 0 && (
                     <Link
-                      href={`/credit-cards?month=${card.dueBill.closingMonth}`}
+                      href={`/credit-cards?month=${card.dueBill.closingPeriod}`}
                       className="mt-2 block text-[11px] font-medium text-primary hover:underline"
                     >
                       Já pagou? Marque como paga para descontar do saldo

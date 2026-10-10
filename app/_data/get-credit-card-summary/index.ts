@@ -1,5 +1,6 @@
 import { db } from "@/app/_lib/prisma";
 import { getEffectiveUserId } from "@/app/_lib/get-effective-user-id";
+import { toPeriod } from "@/app/_utils/period";
 
 export interface CreditCardSummaryItem {
   card: {
@@ -60,8 +61,7 @@ export const getCreditCardSummaryForUser = async (
     };
   }
 
-  const year = new Date().getFullYear();
-  const monthNum = Number(month);
+  const { year, month: monthNum } = toPeriod(month);
 
   // Pre-compute cycle dates for all cards
   const cardCycles = creditCards.map((cc) => {

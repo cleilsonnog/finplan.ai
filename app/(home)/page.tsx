@@ -2,7 +2,14 @@ import { redirect } from "next/navigation";
 import Navbar from "../_components/navbar";
 import SummaryCards from "./_components/summary-cards";
 import TimeSelect from "./_components/time-select";
-import { isMatch } from "date-fns";
+import {
+  currentPeriod,
+  formatPeriod,
+  isCanonicalPeriod,
+  parsePeriod,
+  periodLabel,
+  toPeriod,
+} from "../_utils/period";
 import IncomeDistribution from "./_components/income-distribution";
 import CreditCardOverview from "./_components/credit-card-overview";
 import RecurringStatus from "./_components/recurring-status";
@@ -40,12 +47,14 @@ const Home = async ({ searchParams }: HomeProps) => {
   if (!result) {
     return <LandingPage />;
   }
-  const { month } = await searchParams;
+  const { month: monthParam } = await searchParams;
   const { effectiveUserId } = result;
-  const monthIsInvalid = !month || !isMatch(month.padStart(2, "0"), "MM");
-  if (monthIsInvalid) {
-    redirect(`?month=${String(new Date().getMonth() + 1).padStart(2, "0")}`);
+  // Canonical ?month=YYYY-MM; legacy ?month=MM links are upgraded to the current year
+  if (!isCanonicalPeriod(monthParam)) {
+    redirect(`?month=${formatPeriod(parsePeriod(monthParam) ?? currentPeriod())}`);
   }
+  const month = monthParam;
+  const period = toPeriod(month);
   const hasPremiumPlan = await hasPremiumAccess();
   const [
     dashboard,
@@ -84,9 +93,7 @@ const Home = async ({ searchParams }: HomeProps) => {
     expenses: previousMonth.expenses + previousMonth.recurringPaid,
     investments: previousMonth.investments,
   };
-  const monthLabel = new Date(2000, Number(month) - 1, 1).toLocaleDateString("pt-BR", {
-    month: "long",
-  });
+  const monthLabel = periodLabel(period, false);
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <Navbar />

@@ -1,6 +1,7 @@
 import { db } from "@/app/_lib/prisma";
 import { getEffectiveUserId } from "@/app/_lib/get-effective-user-id";
 import { BillStatus } from "@prisma/client";
+import { toPeriod } from "@/app/_utils/period";
 
 export interface SerializedBill {
   id: string;
@@ -46,8 +47,7 @@ export const getCreditCardBillsForUser = async (
   { persist = true }: { persist?: boolean } = {},
 ): Promise<SerializedBill[]> => {
 
-  const monthNum = Number(month);
-  const year = new Date().getFullYear();
+  const { year, month: monthNum } = toPeriod(month);
   const now = new Date();
 
   const creditCards = await db.creditCard.findMany({

@@ -1,5 +1,6 @@
 import { db } from "@/app/_lib/prisma";
 import { getEffectiveUserId } from "@/app/_lib/get-effective-user-id";
+import { toPeriod } from "@/app/_utils/period";
 
 export interface PaymentStatus {
   totalPaid: number;
@@ -13,8 +14,7 @@ export const getPaymentStatus = async (
   if (!result) throw new Error("Unauthorized");
   const userId = result.effectiveUserId;
 
-  const monthNum = Number(month);
-  const year = new Date().getFullYear();
+  const { year, month: monthNum } = toPeriod(month);
   const monthStart = new Date(year, monthNum - 1, 1);
   const monthEnd = new Date(year, monthNum, 0, 23, 59, 59, 999);
 

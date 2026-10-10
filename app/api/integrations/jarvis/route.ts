@@ -4,6 +4,7 @@ import { getDashboardForUser } from "@/app/_data/get-dashboard";
 import { getCreditCardSummaryForUser } from "@/app/_data/get-credit-card-summary";
 import { getCreditCardBillsForUser } from "@/app/_data/get-credit-card-bills";
 import { rateLimit } from "@/app/_lib/rate-limit";
+import { currentPeriod, formatPeriod, parsePeriod, shiftPeriod } from "@/app/_utils/period";
 
 // Read-only financial summary for the owner's personal assistant (JARVIS).
 // Auth: "Authorization: Bearer <JARVIS_INTEGRATION_TOKEN>", bound to JARVIS_INTEGRATION_USER_ID.
@@ -36,16 +37,16 @@ export async function GET(req: NextRequest) {
   }
 
   const now = new Date();
-  const requested = Number(req.nextUrl.searchParams.get("month"));
-  const monthNum = requested >= 1 && requested <= 12 ? requested : now.getMonth() + 1;
-  const month = String(monthNum).padStart(2, "0");
-  const nextMonth = monthNum < 12 ? String(monthNum + 1).padStart(2, "0") : null;
+  // ?month=YYYY-MM (or legacy MM, current year); defaults to the current month
+  const period = parsePeriod(req.nextUrl.searchParams.get("month")) ?? currentPeriod(now);
+  const month = formatPeriod(period);
+  const nextMonth = formatPeriod(shiftPeriod(period, 1));
 
   const [dashboard, cardSummary, bills, nextBills] = await Promise.all([
     getDashboardForUser(userId, month),
     getCreditCardSummaryForUser(userId, month),
     getCreditCardBillsForUser(userId, month, { persist: false }),
-    nextMonth ? getCreditCardBillsForUser(userId, nextMonth, { persist: false }) : Promise.resolve([]),
+    getCreditCardBillsForUser(userId, nextMonth, { persist: false }),
   ]);
 
   const billView = (b: (typeof bills)[number]) => ({
@@ -75,16 +76,18 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json(
     {
-      month: monthNum,
-      year: now.getFullYear(),
+      month: period.month,
+      year: period.year,
       generatedAt: now.toISOString(),
-      // Month totals (FinPlan's "saldo" is the month balance: deposits - expenses - investments)
+      // Month totals. "balance" is cash: deposits - cash expenses - investments - card bills marked
+      // as paid (due this month). "expenses" counts card purchases on their purchase date.
       monthSummary: {
         balance: dashboard.balance,
         deposits: dashboard.depositsTotal,
         expenses: dashboard.expensesTotal,
         investments: dashboard.investmentsTotal,
         creditCardExpenses: dashboard.creditCardTotal,
+        paidCardBills: dashboard.paidBillsTotal,
       },
       cards,
       lastTransactions: dashboard.lastTransactions.slice(0, 8).map((t) => ({
