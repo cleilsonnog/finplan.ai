@@ -76,11 +76,21 @@ export const createTransactionColumns = (
   {
     accessorKey: "amount",
     header: "Valor",
-    cell: ({ row: { original: transaction } }) =>
-      new Intl.NumberFormat("pt-BR", {
+    cell: ({ row: { original: transaction } }) => {
+      const value = new Intl.NumberFormat("pt-BR", {
         style: "currency",
         currency: "BRL",
-      }).format(Number(transaction.amount)),
+      }).format(Math.abs(Number(transaction.amount)));
+      // Negative expense = card credit (refund, cashback, discount)
+      return Number(transaction.amount) < 0 ? (
+        <span className="text-emerald-600 dark:text-emerald-400">
+          +{value}
+          <span className="block text-[11px] text-muted-foreground">crédito</span>
+        </span>
+      ) : (
+        value
+      );
+    },
   },
   {
     accessorKey: "actions",

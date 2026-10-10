@@ -22,6 +22,13 @@ interface BuildPreviewParams {
 const DAY = 24 * 60 * 60 * 1000;
 
 /**
+ * Value as it will be stored: card purchases positive, card credits negative (they lower the
+ * bill); account lines are stored as positive amounts of their type.
+ */
+const storedValue = (line: StatementLine, kind: StatementKind) =>
+  kind === "CREDIT_CARD" ? -line.amount : Math.abs(line.amount);
+
+/**
  * Card bills list installments with the ORIGINAL purchase date and sometimes post a purchase
  * days late. Each line is re-dated so it lands in the bill being imported:
  * installments follow installmentDates(); stray dates are pinned to the bill's window.
@@ -148,12 +155,12 @@ export const buildPreview = async ({
   // one existing installment can't be claimed by a worse match that comes earlier in the file.
   const nearMatch = new Map<number, { id: string; name: string }>();
   if (kind === "CREDIT_CARD" && creditCard) {
-    const exactAmounts = new Set(prepared.map((p) => Math.abs(p.line.amount).toFixed(2)));
+    const exactAmounts = new Set(prepared.map((p) => storedValue(p.line, kind).toFixed(2)));
     const pairs: { index: number; tx: (typeof nearby)[number]; diff: number }[] = [];
     prepared.forEach(({ line, classification, date }, index) => {
       if (!line.installment || classification.action !== "TRANSACTION") return;
       if (byExternalId.some((t) => t.externalId === line.externalId)) return;
-      const amount = Math.abs(line.amount);
+      const amount = storedValue(line, kind);
       const bill = billIndexOf(date, creditCard.closingDay);
       for (const tx of nearby) {
         if (tx.installments < 2 || billIndexOf(tx.date, creditCard.closingDay) !== bill) continue;
@@ -161,7 +168,7 @@ export const buildPreview = async ({
         if (exactAmounts.has(Number(tx.amount).toFixed(2)) && Math.abs(Number(tx.amount) - amount) >= 0.01) continue;
         const diff = Math.abs(Number(tx.amount) - amount);
         // 2% (at least R$ 0,15 for small installments, at most R$ 2)
-        if (diff < 0.01 || diff > Math.min(2, Math.max(0.15, amount * 0.02))) continue;
+        if (diff < 0.01 || diff > Math.min(2, Math.max(0.15, Math.abs(amount) * 0.02))) continue;
         pairs.push({ index, tx, diff });
       }
     });
@@ -175,6 +182,7 @@ export const buildPreview = async ({
 
   const rows = prepared.map(({ line, classification, date }, i): PreviewRow => {
     const amount = Math.abs(line.amount);
+    const value = storedValue(line, kind);
     const guess = guessByIndex.get(i);
 
     let duplicateOf: PreviewRow["duplicateOf"] = nearMatch.get(i) ?? null;
@@ -189,7 +197,7 @@ export const buildPreview = async ({
           !usedMatches.has(t.id) &&
           t.installments === line.installment!.total &&
           t.installmentNumber === line.installment!.number &&
-          Math.abs(Number(t.amount) - amount) < 0.05,
+          Math.abs(Number(t.amount) - value) < 0.05,
       );
       if (match) duplicateOf = { id: match.id, name: match.name };
     }
@@ -204,7 +212,7 @@ export const buildPreview = async ({
         (t) =>
           !usedMatches.has(t.id) &&
           t.type === classification.type &&
-          Math.abs(Number(t.amount) - amount) < 0.01 &&
+          Math.abs(Number(t.amount) - value) < 0.01 &&
           sameMoment(t) &&
           // On a card, a one-off purchase never pairs with an installment (and vice versa)
           (kind !== "CREDIT_CARD" || !!line.installment === t.installments > 1),
@@ -226,6 +234,7 @@ export const buildPreview = async ({
       description: line.description,
       name: displayName(line.description),
       amount,
+      isCredit: kind === "CREDIT_CARD" && line.amount > 0,
       type: classification.type,
       category,
       customCategoryId: guess?.customCategoryId ?? null,
@@ -237,8 +246,8 @@ export const buildPreview = async ({
       note: line.ownTransfer
         ? "Transferência entre suas contas"
         : classification.action === "IGNORE"
-          ? line.amount > 0 && kind === "CREDIT_CARD"
-            ? "Crédito na fatura (estorno/cashback)"
+          ? kind === "CREDIT_CARD"
+            ? "Pagamento da fatura anterior"
             : "Ignorado"
           : null,
       cardSuffix: line.cardSuffix ?? null,

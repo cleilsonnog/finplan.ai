@@ -41,7 +41,9 @@ const EditTransactionButton = ({
         setIsOpen={setDialogIsOpen}
         defaultValues={{
           name: transaction.name,
-          amount: Number(transaction.amount),
+          // Card credits are stored negative; the form edits the positive value + the flag
+          amount: Math.abs(Number(transaction.amount)),
+          isCredit: Number(transaction.amount) < 0,
           type: transaction.type,
           categoryValue,
           paymentMethod: transaction.paymentMethod,

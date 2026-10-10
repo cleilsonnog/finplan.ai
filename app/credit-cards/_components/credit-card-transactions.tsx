@@ -167,8 +167,10 @@ const CreditCardTransactions = ({
                           year: "numeric",
                         })}
                       </TableCell>
-                      <TableCell className="text-right">
-                        {formatCurrency(t.amount)}
+                      <TableCell
+                        className={`text-right ${t.amount < 0 ? "text-emerald-600 dark:text-emerald-400" : ""}`}
+                      >
+                        {t.amount < 0 ? `+${formatCurrency(-t.amount)} crédito` : formatCurrency(t.amount)}
                       </TableCell>
                     </TableRow>
                   ))}

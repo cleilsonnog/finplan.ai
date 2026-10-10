@@ -11,7 +11,10 @@ const fmt = (v: number) =>
   Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
 const ExpensesPerCategory = ({ expensesPerCategory }: ExpensesPerCategoryProps) => {
-  const sorted = [...expensesPerCategory].sort((a, b) => b.totalAmount - a.totalAmount);
+  // A category can net to zero or below when card credits (refunds) outweigh its purchases
+  const sorted = [...expensesPerCategory]
+    .filter((c) => c.totalAmount > 0)
+    .sort((a, b) => b.totalAmount - a.totalAmount);
   // Bars scale to the largest category so differences stay readable
   const max = sorted[0]?.totalAmount ?? 0;
 

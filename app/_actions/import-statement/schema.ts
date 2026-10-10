@@ -11,6 +11,7 @@ export const importRowSchema = z.object({
   description: z.string().max(300),
   name: z.string().trim().min(1).max(100),
   amount: z.number().positive().max(10_000_000),
+  isCredit: z.boolean(),
   type: z.nativeEnum(TransactionType),
   category: z.nativeEnum(TransactionCategory),
   customCategoryId: z.string().nullable(),

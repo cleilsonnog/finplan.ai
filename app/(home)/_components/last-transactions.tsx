@@ -37,7 +37,13 @@ interface LastTransactionsProps {
 }
 
 const LastTransactions = ({ lastTransactions }: LastTransactionsProps) => {
+  // A negative expense is a card credit (refund, cashback): money back, shown as "+"
+  const isCredit = (transaction: SerializedTransaction) =>
+    transaction.type === TransactionType.EXPENSE && Number(transaction.amount) < 0;
   const getAmountColor = (transaction: SerializedTransaction) => {
+    if (isCredit(transaction)) {
+      return "text-primary";
+    }
     if (transaction.type === TransactionType.EXPENSE) {
       return "text-red-500";
     }
@@ -47,7 +53,7 @@ const LastTransactions = ({ lastTransactions }: LastTransactionsProps) => {
     return "text-foreground";
   };
   const getAmountPrefix = (transaction: SerializedTransaction) => {
-    if (transaction.type === TransactionType.DEPOSIT) {
+    if (transaction.type === TransactionType.DEPOSIT || isCredit(transaction)) {
       return "+";
     }
     return "-";
@@ -91,7 +97,7 @@ const LastTransactions = ({ lastTransactions }: LastTransactionsProps) => {
             </div>
             <p className={`shrink-0 text-sm font-semibold tabular-nums ${getAmountColor(transaction)}`}>
               {getAmountPrefix(transaction)}
-              {formatCurrency(Number(transaction.amount))}
+              {formatCurrency(Math.abs(Number(transaction.amount)))}
             </p>
           </div>
         ))}

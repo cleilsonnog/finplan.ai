@@ -81,6 +81,8 @@ const formSchema = z.object({
   creditCardId: z.string().optional(),
   installments: z.number().int().min(1).max(48),
   notes: z.string().max(500).optional(),
+  /** Card refund/cashback: saved as a negative expense */
+  isCredit: z.boolean().optional(),
 });
 
 type FormSchema = z.infer<typeof formSchema>;
@@ -121,8 +123,11 @@ const UpsertTransactionDialog = ({
       creditCardId: undefined,
       installments: 1,
       notes: "",
+      isCredit: false,
     },
   });
+  const isCredit = form.watch("isCredit");
+  const type = form.watch("type");
 
   const paymentMethod = form.watch("paymentMethod");
   const isCreditCard = paymentMethod === TransactionPaymentMethod.CREDIT_CARD;
@@ -141,14 +146,14 @@ const UpsertTransactionDialog = ({
       );
       await upsertTransaction({
         name: data.name,
-        amount: data.amount,
+        amount: data.isCredit && isCreditCard && data.type === TransactionType.EXPENSE ? -data.amount : data.amount,
         type: data.type,
         category,
         customCategoryId,
         paymentMethod: data.paymentMethod,
         date: data.date,
         creditCardId: data.creditCardId,
-        installments: data.installments,
+        installments: data.isCredit && isCreditCard ? 1 : data.installments,
         notes: data.notes?.trim() || null,
         id: transactionId,
       });
@@ -328,7 +333,29 @@ const UpsertTransactionDialog = ({
                     </FormItem>
                   )}
                 />
-                {!isUpdate && (
+                {type === TransactionType.EXPENSE && (
+                  <FormField
+                    control={form.control}
+                    name="isCredit"
+                    render={({ field }) => (
+                      <FormItem>
+                        <label className="flex items-center gap-2 text-sm">
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 accent-primary"
+                            checked={!!field.value}
+                            onChange={(e) => field.onChange(e.target.checked)}
+                          />
+                          É um estorno/crédito (devolução, cashback, desconto)
+                        </label>
+                        <p className="text-xs text-muted-foreground">
+                          O valor é abatido da fatura e dos gastos do mês.
+                        </p>
+                      </FormItem>
+                    )}
+                  />
+                )}
+                {!isUpdate && !isCredit && (
                   <FormField
                     control={form.control}
                     name="installments"

@@ -27,8 +27,9 @@ export const classifyLine = (line: StatementLine, kind: StatementKind): Classifi
   const text = stripAccents(`${line.memo ?? ""} ${line.description}`.toLowerCase());
 
   if (kind === "CREDIT_CARD") {
-    // Card statements: purchases are money out; credits are the bill payment or refunds
-    if (line.amount > 0 || CARD_PAYMENT_RECEIVED.test(text)) {
+    // The previous bill's payment is not spending. Other credits (refunds, cashback, discounts)
+    // are kept: they become negative expenses that lower the bill and the month's spending.
+    if (CARD_PAYMENT_RECEIVED.test(text)) {
       return { action: "IGNORE", type: "EXPENSE", paymentMethod: "CREDIT_CARD" };
     }
     return { action: "TRANSACTION", type: "EXPENSE", paymentMethod: "CREDIT_CARD" };

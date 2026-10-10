@@ -38,6 +38,8 @@ export interface PreviewRow {
   description: string; // original statement text
   name: string; // editable display name
   amount: number; // positive
+  /** Card credit (refund, cashback, monthly discount): saved as a negative expense on the card */
+  isCredit: boolean;
   type: TransactionType;
   category: TransactionCategory;
   customCategoryId: string | null;

@@ -130,7 +130,9 @@ const ImportFlow = ({ creditCards, customCategories, categoryLabels, limits }: I
     setRows((prev) => prev.map((r) => (r.externalId === externalId ? { ...r, ...patch } : r)));
 
   const selected = rows.filter((r) => r.include && r.action !== "IGNORE");
-  const totalOut = selected.filter((r) => r.type !== "DEPOSIT").reduce((s, r) => s + r.amount, 0);
+  const totalOut = selected
+    .filter((r) => r.type !== "DEPOSIT")
+    .reduce((s, r) => s + (r.isCredit ? -r.amount : r.amount), 0);
   const totalIn = selected.filter((r) => r.type === "DEPOSIT").reduce((s, r) => s + r.amount, 0);
   const toReview = rows.filter((r) => r.action === "TRANSACTION" && r.categorySource === "default").length;
   const hasInstallments = rows.some((r) => r.installment && r.installment.number < r.installment.total);
@@ -163,6 +165,7 @@ const ImportFlow = ({ creditCards, customCategories, categoryLabels, limits }: I
             description: r.description,
             name: r.name,
             amount: r.amount,
+            isCredit: r.isCredit,
             type: r.type,
             category: r.category,
             customCategoryId: r.customCategoryId,
@@ -515,13 +518,21 @@ const ImportFlow = ({ creditCards, customCategories, categoryLabels, limits }: I
 
               <p
                 className={`col-start-2 text-sm font-semibold tabular-nums sm:col-start-auto sm:text-right ${
-                  r.type === "DEPOSIT" ? "text-emerald-600 dark:text-emerald-400" : ""
+                  r.type === "DEPOSIT" || r.isCredit ? "text-emerald-600 dark:text-emerald-400" : ""
                 }`}
               >
-                {r.type === "DEPOSIT" ? "+" : "−"}
+                {r.type === "DEPOSIT" || r.isCredit ? "+" : "−"}
                 {fmt(r.amount)}
                 <span className="block text-[11px] font-normal text-muted-foreground">
-                  {r.type === "DEPOSIT" ? "Receita" : r.type === "INVESTMENT" ? "Investimento" : r.action === "BILL_PAYMENT" ? "Fatura" : "Despesa"}
+                  {r.isCredit
+                    ? "Crédito no cartão"
+                    : r.type === "DEPOSIT"
+                      ? "Receita"
+                      : r.type === "INVESTMENT"
+                        ? "Investimento"
+                        : r.action === "BILL_PAYMENT"
+                          ? "Fatura"
+                          : "Despesa"}
                 </span>
               </p>
             </div>

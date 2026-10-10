@@ -101,7 +101,7 @@ export const importStatement = async (input: ImportStatementInput): Promise<Impo
         data.push({
           name: row.name,
           type: row.type,
-          amount: row.amount,
+          amount: row.isCredit ? -row.amount : row.amount,
           category: row.customCategoryId ? "OTHER" : row.category,
           customCategoryId: row.customCategoryId,
           paymentMethod: isCard ? "CREDIT_CARD" : row.paymentMethod,
@@ -136,7 +136,7 @@ export const importStatement = async (input: ImportStatementInput): Promise<Impo
             data.push({
               name: row.name,
               type: row.type,
-              amount: row.amount,
+              amount: row.isCredit ? -row.amount : row.amount,
               category: row.customCategoryId ? "OTHER" : row.category,
               customCategoryId: row.customCategoryId,
               paymentMethod: "CREDIT_CARD",
