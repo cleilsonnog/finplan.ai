@@ -107,7 +107,8 @@ docker compose up -d # Start local PostgreSQL
 - Clerk handles all authentication
 - `userId` is obtained via `getEffectiveUserId()` which supports account sharing
 - Middleware uses `createRouteMatcher` + `auth.protect()` for route protection
-- Public routes: `/`, `/login`, `/manifest.json`, `/sw.js`, `/__clerk(.*)`, webhooks, cron
+- Public routes: `/`, `/login`, `/manifest.json`, `/robots.txt`, `/sitemap.xml`, `/sw.js`, `/__clerk(.*)`, webhooks, cron. robots/sitemap MUST stay public or search engines get a 404
+- SEO: public URL/title/description in `app/_lib/site.ts` (used by layout metadata, robots, sitemap). Landing page emits JSON-LD (SoftwareApplication + FAQPage built from its FAQ array)
 - **IMPORTANT**: `/__clerk(.*)` and `/manifest.json` MUST be public — Clerk needs internal routes for session management, manifest is required for PWA install
 - **IMPORTANT**: Do NOT add fetch handlers to the service worker — intercepting navigation/requests breaks Clerk session detection in PWA
 - All protected pages redirect to `/` (not `/login`) when unauthenticated

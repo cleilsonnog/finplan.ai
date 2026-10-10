@@ -1,13 +1,14 @@
 import { MetadataRoute } from "next";
+import { SITE_URL } from "./_lib/site";
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://finplan.ai";
   return {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/api/", "/login"],
+      // App pages require login — nothing there for crawlers
+      disallow: ["/api/", "/login", "/transactions", "/credit-cards", "/budget", "/recurring", "/import", "/settings", "/shopping-list", "/subscription"],
     },
-    sitemap: `${baseUrl}/sitemap.xml`,
+    sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }

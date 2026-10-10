@@ -4,73 +4,69 @@ import "./globals.css";
 import ThemeProvider from "./_components/theme-provider";
 import Providers from "./_components/providers";
 import Footer from "./_components/footer";
+import { SITE_DESCRIPTION, SITE_TITLE, SITE_URL } from "./_lib/site";
 
 const mulish = Mulish({
   subsets: ["latin-ext"],
 });
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://finplanai.nogueiradev.com";
-
 export const metadata: Metadata = {
   title: {
-    default: "FinPlan.ai — Planeje hoje. Garanta amanhã.",
+    default: SITE_TITLE,
     template: "%s | FinPlan.ai",
   },
-  description:
-    "Organize suas finanças pessoais com inteligência artificial. Controle transações, orçamentos, cartões de crédito e receba relatórios com insights personalizados.",
+  description: SITE_DESCRIPTION,
   keywords: [
-    "finanças pessoais",
+    "app de finanças pessoais",
     "controle financeiro",
-    "orçamento",
-    "gestão financeira",
-    "inteligência artificial",
-    "planejamento financeiro",
-    "transações",
-    "cartão de crédito",
+    "controle de gastos",
+    "importar extrato bancário",
+    "fatura do cartão de crédito",
+    "controle de cartão de crédito",
+    "controle de gastos pelo WhatsApp",
+    "planilha de gastos",
+    "orçamento mensal",
+    "previsão financeira",
     "finplan",
-    "finplan.ai",
   ],
   authors: [{ name: "FinPlan.ai" }],
   creator: "FinPlan.ai",
-  metadataBase: new URL(APP_URL),
+  metadataBase: new URL(SITE_URL),
+  alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     locale: "pt_BR",
-    url: APP_URL,
+    url: SITE_URL,
     siteName: "FinPlan.ai",
-    title: "FinPlan.ai — Planeje hoje. Garanta amanhã.",
-    description:
-      "Organize suas finanças pessoais com inteligência artificial. Controle transações, orçamentos e receba relatórios com insights personalizados.",
+    title: "Saiba hoje se vai sobrar dinheiro no fim do mês — FinPlan.ai",
+    description: SITE_DESCRIPTION,
     images: [
       {
-        url: `${APP_URL}/og-image.png`,
+        url: "/og-image.png",
         width: 1200,
         height: 630,
         type: "image/png",
-        alt: "FinPlan.ai — Gestão de finanças pessoais com IA",
+        alt: "FinPlan.ai — Controle financeiro com importação de extrato e WhatsApp",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "FinPlan.ai — Planeje hoje. Garanta amanhã.",
-    description:
-      "Organize suas finanças pessoais com inteligência artificial. Controle transações, orçamentos e receba relatórios com insights.",
-    images: [`${APP_URL}/og-image.png`],
+    title: "Saiba hoje se vai sobrar dinheiro no fim do mês — FinPlan.ai",
+    description: SITE_DESCRIPTION,
+    images: ["/og-image.png"],
   },
   robots: {
     index: true,
     follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-    },
+    googleBot: { index: true, follow: true },
   },
   icons: {
     icon: "/icon-finplanai-pwa.svg",
     apple: "/icon-finplanai-pwa.svg",
   },
   manifest: "/manifest.json",
+  applicationName: "FinPlan.ai",
 };
 
 export const viewport: Viewport = {

@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/app/_components/ui/button";
 import WhatsAppFloatButton from "@/app/_components/whatsapp-float-button";
+import { SITE_DESCRIPTION, SITE_URL } from "@/app/_lib/site";
 
 const WHATSAPP_URL =
   "https://wa.me/5522988516223?text=Ol%C3%A1%2C%20vim%20pelo%20FinPlan.ai%20e%20gostaria%20de%20mais%20informa%C3%A7%C3%B5es!";
@@ -382,6 +383,33 @@ const FAQ = [
   },
 ];
 
+// Structured data for search engines: what the product is, its plans, and the FAQ shown below
+const STRUCTURED_DATA = [
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "FinPlan.ai",
+    applicationCategory: "FinanceApplication",
+    operatingSystem: "Web, Android, iOS",
+    inLanguage: "pt-BR",
+    url: SITE_URL,
+    description: SITE_DESCRIPTION,
+    offers: [
+      { "@type": "Offer", name: "Grátis", price: "0", priceCurrency: "BRL" },
+      { "@type": "Offer", name: "Premium mensal", price: "14.99", priceCurrency: "BRL" },
+    ],
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: FAQ.map((f) => ({
+      "@type": "Question",
+      name: f.q,
+      acceptedAnswer: { "@type": "Answer", text: f.a },
+    })),
+  },
+];
+
 const CTAButton = ({ children = "Começar grátis", variant = "default" }: { children?: string; variant?: "default" | "outline" }) => (
   <SignInButton mode="modal">
     <Button size="lg" variant={variant} className="w-full rounded-full px-7 text-base font-semibold sm:w-auto">
@@ -402,6 +430,11 @@ const SectionTitle = ({ eyebrow, title, text }: { eyebrow?: string; title: React
 const LandingPage = () => {
   return (
     <div className="flex min-h-full flex-col">
+      <script
+        type="application/ld+json"
+        // Static content defined in this file — no user input
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(STRUCTURED_DATA) }}
+      />
       {/* NAVBAR */}
       <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-8">
