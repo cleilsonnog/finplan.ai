@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
 import { BellIcon, XIcon } from "lucide-react";
+import { useAuth } from "@clerk/nextjs";
 
 const PUSH_DISMISSED_KEY = "push-notification-dismissed";
 
@@ -19,8 +20,11 @@ function urlBase64ToUint8Array(base64String: string) {
 
 const PushNotificationPrompt = () => {
   const [showBanner, setShowBanner] = useState(false);
+  // Visitors on the landing page have no account to send reminders to
+  const { isSignedIn } = useAuth();
 
   useEffect(() => {
+    if (!isSignedIn) return;
     if (!("PushManager" in window) || !("serviceWorker" in navigator)) return;
 
     // Don't show if already subscribed or permission denied
@@ -61,7 +65,7 @@ const PushNotificationPrompt = () => {
     }
 
     setShowBanner(true);
-  }, []);
+  }, [isSignedIn]);
 
   const handleEnable = async () => {
     try {
@@ -110,7 +114,7 @@ const PushNotificationPrompt = () => {
           <BellIcon className="h-5 w-5 text-primary" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold">Ativar notificacoes</p>
+          <p className="text-sm font-semibold">Ativar notificações</p>
           <p className="text-xs text-muted-foreground">
             Receba lembretes de contas a vencer no seu celular
           </p>
