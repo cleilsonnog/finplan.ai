@@ -13,6 +13,8 @@ import {
 import IncomeDistribution from "./_components/income-distribution";
 import CreditCardOverview from "./_components/credit-card-overview";
 import RecurringStatus from "./_components/recurring-status";
+import ProjectionCard from "./_components/projection-card";
+import { getProjection } from "../_data/get-projection";
 import { getDashboard } from "../_data/get-dashboard";
 import ExpensesPerCategory from "./_components/expenses-per-category";
 import LastTransactions from "./_components/last-transactions";
@@ -67,6 +69,7 @@ const Home = async ({ searchParams }: HomeProps) => {
     monthlyOverview,
     creditCardOutlook,
     paymentStatus,
+    projection,
   ] = await Promise.all([
     getDashboard(month),
     db.creditCard.findMany({ where: { userId: effectiveUserId } }),
@@ -82,6 +85,7 @@ const Home = async ({ searchParams }: HomeProps) => {
     getMonthlyOverview(month),
     getCreditCardOutlook(month),
     getPaymentStatus(month),
+    getProjection(month),
   ]);
   const creditCards = creditCardsRaw.map((c) => ({
     ...c,
@@ -141,6 +145,9 @@ const Home = async ({ searchParams }: HomeProps) => {
 
         {/* Credit cards: bills, limit and upcoming commitments */}
         <CreditCardOverview outlook={creditCardOutlook} monthLabel={monthLabel} />
+
+        {/* Will the next months close in the red? */}
+        <ProjectionCard projection={projection} />
 
         {/* Fixed bills + categories + last transactions */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
