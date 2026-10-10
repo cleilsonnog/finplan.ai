@@ -79,6 +79,16 @@ async function main() {
       continue;
     }
 
+    // A pushed date always lands after the creation day. A single purchase dated before it
+    // was never pushed (e.g. created before the code was deployed, or fixed by hand)
+    const createdDay = new Date(tx.createdAt);
+    createdDay.setHours(0, 0, 0, 0);
+    if (!isInstallment && tx.date < createdDay) {
+      console.log(`  pula: ${tx.name} (${fmt(tx.date)}, criada ${fmt(tx.createdAt)}) — data anterior à criação, já é real`);
+      skipped++;
+      continue;
+    }
+
     // The push kept the day of month: +2 months when the day was after closing, else +1
     const offset = tx.date.getDate() > card.closingDay ? 2 : 1;
     const newDate = subtractMonths(tx.date, offset);
