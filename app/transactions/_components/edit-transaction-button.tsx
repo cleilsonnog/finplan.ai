@@ -48,6 +48,7 @@ const EditTransactionButton = ({
           date: new Date(transaction.date),
           creditCardId: transaction.creditCardId ?? undefined,
           installments: transaction.installments ?? 1,
+          notes: transaction.notes ?? "",
         }}
         transactionId={transaction.id}
         creditCards={creditCards}

@@ -1090,6 +1090,7 @@ async function createTransaction(
           customCategoryId: customCategoryId || null,
           installments,
           installmentNumber: i + 1,
+          source: "WHATSAPP",
         })),
       });
 
@@ -1118,6 +1119,7 @@ async function createTransaction(
           customCategoryId: customCategoryId || null,
           installments: 1,
           installmentNumber: 1,
+          source: "WHATSAPP",
         },
       });
 

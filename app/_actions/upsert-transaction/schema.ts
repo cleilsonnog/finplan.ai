@@ -15,4 +15,5 @@ export const upsertTransactionSchema = z.object({
   creditCardId: z.string().optional(),
   customCategoryId: z.string().optional(),
   installments: z.number().int().min(1).max(48).default(1),
+  notes: z.string().trim().max(500).nullable().optional(),
 });

@@ -22,6 +22,7 @@ interface UpsertTransactionParams {
   creditCardId?: string;
   customCategoryId?: string;
   installments?: number;
+  notes?: string | null;
 }
 
 export const upsertTransaction = async (params: UpsertTransactionParams) => {
@@ -48,6 +49,7 @@ export const upsertTransaction = async (params: UpsertTransactionParams) => {
       userId,
       creditCardId: isCreditCard ? params.creditCardId : null,
       customCategoryId: params.customCategoryId || null,
+      notes: params.notes || null,
       installments: undefined as unknown as number,
       installmentNumber: undefined as unknown as number,
     };
@@ -83,6 +85,7 @@ export const upsertTransaction = async (params: UpsertTransactionParams) => {
         customCategoryId: params.customCategoryId || null,
         installments,
         installmentNumber: i + 1,
+        notes: params.notes || null,
       };
     });
 
@@ -104,6 +107,7 @@ export const upsertTransaction = async (params: UpsertTransactionParams) => {
         customCategoryId: params.customCategoryId || null,
         installments: 1,
         installmentNumber: 1,
+        notes: params.notes || null,
       },
     });
   }

@@ -80,6 +80,7 @@ const formSchema = z.object({
   }),
   creditCardId: z.string().optional(),
   installments: z.number().int().min(1).max(48),
+  notes: z.string().max(500).optional(),
 });
 
 type FormSchema = z.infer<typeof formSchema>;
@@ -119,6 +120,7 @@ const UpsertTransactionDialog = ({
       type: TransactionType.EXPENSE,
       creditCardId: undefined,
       installments: 1,
+      notes: "",
     },
   });
 
@@ -147,6 +149,7 @@ const UpsertTransactionDialog = ({
         date: data.date,
         creditCardId: data.creditCardId,
         installments: data.installments,
+        notes: data.notes?.trim() || null,
         id: transactionId,
       });
       setIsOpen(false);
@@ -365,6 +368,24 @@ const UpsertTransactionDialog = ({
                 <FormItem>
                   <FormLabel>Data</FormLabel>
                   <DatePicker value={field.value} onChange={field.onChange} />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Observação (opcional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Ex.: emprestado para a tia, ela devolve dia 10"
+                      maxLength={500}
+                      {...field}
+                      value={field.value ?? ""}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

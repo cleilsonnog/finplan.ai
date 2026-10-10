@@ -25,6 +25,16 @@ export const createTransactionColumns = (
   {
     accessorKey: "name",
     header: "Nome",
+    cell: ({ row: { original: transaction } }) => (
+      <div className="max-w-[260px]">
+        <p>{transaction.name}</p>
+        {transaction.notes && (
+          <p className="truncate text-xs text-muted-foreground" title={transaction.notes}>
+            {transaction.notes}
+          </p>
+        )}
+      </div>
+    ),
   },
   {
     accessorKey: "type",

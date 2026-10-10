@@ -13,42 +13,93 @@ datasource db {
 }
 
 model CustomCategory {
-  id           String        @id @default(uuid())
-  userId       String
-  name         String
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id                String             @id @default(uuid())
+  userId            String
+  name              String
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
   transactions      Transaction[]
   budgets           Budget[]
   recurringExpenses RecurringExpense[]
+  categoryRules     CategoryRule[]
 
   @@unique([userId, name])
 }
 
 model Transaction {
-  id               String                   @id @default(uuid())
-  name             String
-  type             TransactionType
-  amount           Decimal                  @db.Decimal(10, 2)
-  category         TransactionCategory
-  paymentMethod    TransactionPaymentMethod
-  date             DateTime
-  createdAt        DateTime                 @default(now())
-  updatedAt        DateTime                 @updatedAt
-  userId           String
-  installments     Int                      @default(1)
-  installmentNumber Int                     @default(1)
-  creditCardId     String?
-  creditCard       CreditCard?              @relation(fields: [creditCardId], references: [id], onDelete: SetNull)
+  id                 String                   @id @default(uuid())
+  name               String
+  type               TransactionType
+  amount             Decimal                  @db.Decimal(10, 2)
+  category           TransactionCategory
+  paymentMethod      TransactionPaymentMethod
+  date               DateTime
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+  userId             String
+  installments       Int                      @default(1)
+  installmentNumber  Int                      @default(1)
+  creditCardId       String?
+  creditCard         CreditCard?              @relation(fields: [creditCardId], references: [id], onDelete: SetNull)
   customCategoryId   String?
   customCategory     CustomCategory?          @relation(fields: [customCategoryId], references: [id], onDelete: SetNull)
   recurringExpenseId String?
   recurringExpense   RecurringExpense?        @relation(fields: [recurringExpenseId], references: [id], onDelete: SetNull)
   recurringIncomeId  String?
   recurringIncome    RecurringIncome?         @relation(fields: [recurringIncomeId], references: [id], onDelete: SetNull)
+  /// Free-text note ("emprestado para a tia", "cartão da Amanda")
+  notes              String?                  @db.VarChar(500)
+  source             TransactionSource        @default(MANUAL)
+  /// Id of the line in the imported file (OFX FITID, or a hash of date+amount+description) — prevents re-importing
+  externalId         String?
+  importBatchId      String?
+  importBatch        ImportBatch?             @relation(fields: [importBatchId], references: [id], onDelete: SetNull)
 
+  @@unique([userId, externalId])
   @@index([userId, date])
   @@index([creditCardId])
+}
+
+enum TransactionSource {
+  MANUAL
+  WHATSAPP
+  IMPORT
+}
+
+enum ImportFileType {
+  OFX
+  CSV
+  PDF
+}
+
+/// One confirmed statement import (bank account or credit card bill)
+model ImportBatch {
+  id               String         @id @default(uuid())
+  userId           String
+  fileType         ImportFileType
+  fileName         String
+  creditCardId     String?
+  creditCard       CreditCard?    @relation(fields: [creditCardId], references: [id], onDelete: SetNull)
+  transactionCount Int
+  createdAt        DateTime       @default(now())
+  transactions     Transaction[]
+
+  @@index([userId, createdAt])
+}
+
+/// Learned categorization: statement descriptions containing `pattern` get this category
+model CategoryRule {
+  id               String              @id @default(uuid())
+  userId           String
+  /// Normalized merchant text (lowercase, no accents/digits), e.g. "mercado gomes"
+  pattern          String
+  category         TransactionCategory
+  customCategoryId String?
+  customCategory   CustomCategory?     @relation(fields: [customCategoryId], references: [id], onDelete: Cascade)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  @@unique([userId, pattern])
 }
 
 enum TransactionType {
@@ -103,7 +154,7 @@ model CreditCardBill {
   year         Int
   closingDate  DateTime
   dueDate      DateTime
-  totalAmount  Decimal    @db.Decimal(10, 2) @default(0)
+  totalAmount  Decimal    @default(0) @db.Decimal(10, 2)
   status       BillStatus @default(OPEN)
   paidAt       DateTime?
   createdAt    DateTime   @default(now())
@@ -131,20 +182,21 @@ model Budget {
 }
 
 model CreditCard {
-  id             String        @id @default(uuid())
+  id             String           @id @default(uuid())
   userId         String
   name           String
   lastFourDigits String
   brand          CardBrand
   bank           String
-  limit          Decimal       @db.Decimal(10, 2)
+  limit          Decimal          @db.Decimal(10, 2)
   closingDay     Int
   dueDay         Int
-  color          String        @default("blue")
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  color          String           @default("blue")
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
   transactions   Transaction[]
   bills          CreditCardBill[]
+  importBatches  ImportBatch[]
 
   @@index([userId])
 }
@@ -198,26 +250,26 @@ model RecurringExpense {
 }
 
 model RecurringIncome {
-  id           String              @id @default(uuid())
+  id           String        @id @default(uuid())
   userId       String
   name         String
-  amount       Decimal             @db.Decimal(10, 2)
+  amount       Decimal       @db.Decimal(10, 2)
   receiveDay   Int
-  active       Boolean             @default(true)
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
+  active       Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
   transactions Transaction[]
 
   @@index([userId])
 }
 
 model WhatsAppSession {
-  id              String   @id @default(uuid())
-  phone           String   @unique
-  pendingData     Json
-  step            String
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id          String   @id @default(uuid())
+  phone       String   @unique
+  pendingData Json
+  step        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model UserCategoryLabel {
