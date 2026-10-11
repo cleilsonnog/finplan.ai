@@ -1,5 +1,6 @@
 import { db } from "@/app/_lib/prisma";
 import { sendPushToUser } from "@/app/_lib/send-push-notification";
+import { getBillReminders, type BillReminder } from "@/app/_lib/bill-reminders";
 import { NextResponse } from "next/server";
 
 const EVOLUTION_API_URL =
@@ -78,10 +79,6 @@ export const GET = async (request: Request) => {
   // Filter only unpaid ones
   const unpaid = expenses.filter((e) => e.transactions.length === 0);
 
-  if (unpaid.length === 0) {
-    return NextResponse.json({ sent: 0 });
-  }
-
   // Group by userId to send one message per user
   const byUser = new Map<string, typeof unpaid>();
   for (const expense of unpaid) {
@@ -130,5 +127,63 @@ export const GET = async (request: Request) => {
     }
   }
 
-  return NextResponse.json({ whatsappSent, pushSent });
+  const bills = await sendBillReminders(today);
+
+  return NextResponse.json({ whatsappSent, pushSent, bills });
 };
+
+const formatBRL = (value: number) =>
+  `R$ ${value.toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
+
+const formatDay = (date: Date) =>
+  `${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}`;
+
+const whenLabel = (r: BillReminder) =>
+  r.daysUntil === 0 ? "vence hoje" : `vence em ${r.daysUntil} dias (${formatDay(r.dueDate)})`;
+
+// Credit card bills: 3 days before and on the due day, only unpaid bills with an amount
+async function sendBillReminders(today: Date) {
+  const reminders = await getBillReminders(today);
+
+  const byUser = new Map<string, BillReminder[]>();
+  for (const r of reminders) {
+    byUser.set(r.userId, [...(byUser.get(r.userId) ?? []), r]);
+  }
+
+  let whatsappSent = 0;
+  let pushSent = 0;
+
+  for (const [userId, userBills] of byUser) {
+    const lines = userBills.map(
+      (r) => `- *${r.cardName}* (final ${r.lastFourDigits}): ${formatBRL(r.amount)}, ${whenLabel(r)}`,
+    );
+    const message =
+      `*Finplan.ai - Fatura do cartao*\n\n` +
+      `${userBills.length === 1 ? "Sua fatura" : "Suas faturas"}:\n\n` +
+      lines.join("\n") +
+      `\n\nDepois de pagar, marque a fatura como paga no app para ela entrar no saldo do mes.`;
+
+    const link = await db.whatsAppLink.findUnique({ where: { userId } });
+    if (link) {
+      await sendWhatsApp(link.phone, message);
+      whatsappSent++;
+    }
+
+    try {
+      const first = userBills[0];
+      const count = await sendPushToUser(userId, {
+        title: "Fatura do cartão",
+        body:
+          userBills.length === 1
+            ? `${first.cardName}: ${formatBRL(first.amount)}, ${whenLabel(first)}`
+            : `${userBills.length} faturas vencendo: ${formatBRL(userBills.reduce((s, r) => s + r.amount, 0))}`,
+        url: `/credit-cards?month=${first.closingPeriod}`,
+      });
+      if (count > 0) pushSent++;
+    } catch {
+      // Push failed, continue
+    }
+  }
+
+  return { reminders: reminders.length, whatsappSent, pushSent };
+}
