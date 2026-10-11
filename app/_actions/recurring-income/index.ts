@@ -4,6 +4,7 @@ import { db } from "@/app/_lib/prisma";
 import { getEffectiveUserId } from "@/app/_lib/get-effective-user-id";
 import { revalidatePath } from "next/cache";
 import { recurringIncomeSchema } from "./schema";
+import { currentPeriod, periodDate, periodRange, toPeriod } from "@/app/_utils/period";
 
 function revalidate() {
   revalidatePath("/recurring");
@@ -73,7 +74,7 @@ export const toggleRecurringIncome = async (id: string) => {
   revalidate();
 };
 
-export const receiveRecurringIncome = async (id: string) => {
+export const receiveRecurringIncome = async (id: string, month?: string) => {
   const result = await getEffectiveUserId();
   if (!result) throw new Error("Unauthorized");
   const userId = result.effectiveUserId;
@@ -82,16 +83,13 @@ export const receiveRecurringIncome = async (id: string) => {
   });
   if (!income) throw new Error("Recurring income not found");
 
-  const now = new Date(
-    new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }),
-  );
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+  const period = month ? toPeriod(month) : currentPeriod();
+  const { start, end } = periodRange(period);
   const existing = await db.transaction.findFirst({
     where: {
       recurringIncomeId: id,
       userId,
-      date: { gte: monthStart, lte: monthEnd },
+      date: { gte: start, lt: end },
     },
   });
   if (existing) throw new Error("Já recebido neste mês");
@@ -103,12 +101,51 @@ export const receiveRecurringIncome = async (id: string) => {
       type: "DEPOSIT",
       category: "SALARY",
       paymentMethod: "BANK_TRANSFER",
-      date: now,
+      date: periodDate(period, income.receiveDay),
       userId,
       recurringIncomeId: id,
       installments: 1,
       installmentNumber: 1,
     },
+  });
+  revalidate();
+};
+
+/**
+ * Marks an income already in the app (PIX received, imported line) as this month's receipt of a
+ * recurring income — instead of "Receber", which would create a second transaction.
+ */
+export const linkIncomeToRecurring = async (
+  transactionId: string,
+  recurringIncomeId: string,
+) => {
+  const result = await getEffectiveUserId();
+  if (!result) throw new Error("Unauthorized");
+  const userId = result.effectiveUserId;
+
+  const [transaction, income] = await Promise.all([
+    db.transaction.findFirst({
+      where: { id: transactionId, userId, type: "DEPOSIT" },
+      select: { id: true, date: true, recurringIncomeId: true },
+    }),
+    db.recurringIncome.findFirst({
+      where: { id: recurringIncomeId, userId },
+      select: { id: true },
+    }),
+  ]);
+  if (!transaction || !income) throw new Error("Receita não encontrada");
+  if (transaction.recurringIncomeId) throw new Error("Entrada já vinculada");
+
+  const { start, end } = periodRange(currentPeriod(transaction.date));
+  const existing = await db.transaction.findFirst({
+    where: { recurringIncomeId, userId, date: { gte: start, lt: end } },
+    select: { id: true },
+  });
+  if (existing) throw new Error("Essa receita já foi recebida neste mês");
+
+  await db.transaction.update({
+    where: { id: transaction.id },
+    data: { recurringIncomeId },
   });
   revalidate();
 };

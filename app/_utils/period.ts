@@ -60,3 +60,14 @@ const MONTH_NAMES = [
 
 export const periodLabel = ({ year, month }: Period, withYear = true) =>
   withYear ? `${MONTH_NAMES[month - 1]} de ${year}` : MONTH_NAMES[month - 1];
+
+/**
+ * Date to record a monthly payment/receipt made from a period view: now for the current month,
+ * otherwise the given day of that month (clamped to its length), at noon.
+ */
+export const periodDate = (period: Period, day: number, now = new Date()) => {
+  const today = currentPeriod(now);
+  if (period.year === today.year && period.month === today.month) return now;
+  const lastDay = new Date(period.year, period.month, 0).getDate();
+  return new Date(period.year, period.month - 1, Math.min(day, lastDay), 12);
+};

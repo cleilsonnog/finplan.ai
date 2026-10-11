@@ -4,6 +4,7 @@ import { db } from "@/app/_lib/prisma";
 import { getEffectiveUserId } from "@/app/_lib/get-effective-user-id";
 import { revalidatePath } from "next/cache";
 import { recurringExpenseSchema } from "./schema";
+import { currentPeriod, periodDate, periodRange, toPeriod } from "@/app/_utils/period";
 import { TransactionCategory, TransactionPaymentMethod } from "@prisma/client";
 
 function parseCategory(categoryValue: string) {
@@ -102,6 +103,7 @@ export const toggleRecurringExpense = async (id: string) => {
 export const payRecurringExpense = async (
   id: string,
   paymentMethod: TransactionPaymentMethod = TransactionPaymentMethod.PIX,
+  month?: string,
 ) => {
   const result = await getEffectiveUserId();
   if (!result) throw new Error("Unauthorized");
@@ -111,17 +113,14 @@ export const payRecurringExpense = async (
   });
   if (!expense) throw new Error("Recurring expense not found");
 
-  // Check if already paid this month (use Brazil timezone)
-  const now = new Date(
-    new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }),
-  );
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+  // Check if already paid in the month being viewed
+  const period = month ? toPeriod(month) : currentPeriod();
+  const { start, end } = periodRange(period);
   const existing = await db.transaction.findFirst({
     where: {
       recurringExpenseId: id,
       userId,
-      date: { gte: monthStart, lte: monthEnd },
+      date: { gte: start, lt: end },
     },
   });
   if (existing) throw new Error("Já pago neste mês");
@@ -133,7 +132,7 @@ export const payRecurringExpense = async (
       type: "EXPENSE",
       category: expense.category,
       paymentMethod,
-      date: now,
+      date: periodDate(period, expense.dueDay),
       userId,
       customCategoryId: expense.customCategoryId,
       recurringExpenseId: id,

@@ -45,9 +45,11 @@ interface RecurringIncome {
 
 interface RecurringIncomeListProps {
   incomes: RecurringIncome[];
+  /** Selected period (YYYY-MM): "Receber" records the income in this month */
+  month: string;
 }
 
-const RecurringIncomeList = ({ incomes }: RecurringIncomeListProps) => {
+const RecurringIncomeList = ({ incomes, month }: RecurringIncomeListProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingIncome, setEditingIncome] = useState<
     RecurringIncome | undefined
@@ -92,7 +94,7 @@ const RecurringIncomeList = ({ incomes }: RecurringIncomeListProps) => {
   const handleReceive = async (id: string) => {
     try {
       setLoadingId(id);
-      await receiveRecurringIncome(id);
+      await receiveRecurringIncome(id, month);
     } catch (error) {
       console.error(error);
     } finally {

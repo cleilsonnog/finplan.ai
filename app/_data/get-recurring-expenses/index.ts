@@ -1,5 +1,6 @@
 import { db } from "@/app/_lib/prisma";
 import { getEffectiveUserId } from "@/app/_lib/get-effective-user-id";
+import { periodRange, toPeriod } from "@/app/_utils/period";
 
 function getBrazilNow() {
   return new Date(
@@ -7,14 +8,12 @@ function getBrazilNow() {
   );
 }
 
-export const getRecurringExpenses = async () => {
+export const getRecurringExpenses = async (month: string) => {
   const result = await getEffectiveUserId();
   if (!result) throw new Error("Unauthorized");
   const userId = result.effectiveUserId;
 
-  const now = getBrazilNow();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+  const { start, end } = periodRange(toPeriod(month));
 
   const expenses = await db.recurringExpense.findMany({
     where: { userId },
@@ -24,7 +23,7 @@ export const getRecurringExpenses = async () => {
         select: {
           transactions: {
             where: {
-              date: { gte: monthStart, lte: monthEnd },
+              date: { gte: start, lt: end },
             },
           },
         },

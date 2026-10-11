@@ -62,9 +62,15 @@ interface RecurringExpense {
 interface RecurringListProps {
   expenses: RecurringExpense[];
   customCategories: CustomCategoryOption[];
+  /** Selected period (YYYY-MM): "Pagar" records the payment in this month */
+  month: string;
 }
 
-const RecurringList = ({ expenses, customCategories }: RecurringListProps) => {
+const RecurringList = ({
+  expenses,
+  customCategories,
+  month,
+}: RecurringListProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<
     RecurringExpense | undefined
@@ -114,7 +120,7 @@ const RecurringList = ({ expenses, customCategories }: RecurringListProps) => {
     if (!payId) return;
     try {
       setLoadingId(payId);
-      await payRecurringExpense(payId, paymentMethod);
+      await payRecurringExpense(payId, paymentMethod, month);
     } catch (error) {
       console.error(error);
     } finally {

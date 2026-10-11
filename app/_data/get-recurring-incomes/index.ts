@@ -1,27 +1,20 @@
 import { db } from "@/app/_lib/prisma";
 import { getEffectiveUserId } from "@/app/_lib/get-effective-user-id";
+import { periodRange, toPeriod } from "@/app/_utils/period";
 
-function getBrazilNow() {
-  return new Date(
-    new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }),
-  );
-}
-
-export const getRecurringIncomes = async () => {
+export const getRecurringIncomes = async (month: string) => {
   const result = await getEffectiveUserId();
   if (!result) throw new Error("Unauthorized");
   const userId = result.effectiveUserId;
 
-  const now = getBrazilNow();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+  const { start, end } = periodRange(toPeriod(month));
 
   const incomes = await db.recurringIncome.findMany({
     where: { userId },
     include: {
       transactions: {
         where: {
-          date: { gte: monthStart, lte: monthEnd },
+          date: { gte: start, lt: end },
         },
         select: { id: true },
       },
@@ -36,5 +29,39 @@ export const getRecurringIncomes = async () => {
     receiveDay: i.receiveDay,
     active: i.active,
     receivedThisMonth: i.transactions.length > 0,
+  }));
+};
+
+/** Income of the month not tied to a recurring income: PIX received, imports, one-off entries */
+export const getOtherIncomes = async (month: string) => {
+  const result = await getEffectiveUserId();
+  if (!result) throw new Error("Unauthorized");
+  const userId = result.effectiveUserId;
+
+  const { start, end } = periodRange(toPeriod(month));
+
+  const transactions = await db.transaction.findMany({
+    where: {
+      userId,
+      type: "DEPOSIT",
+      recurringIncomeId: null,
+      date: { gte: start, lt: end },
+    },
+    select: {
+      id: true,
+      name: true,
+      amount: true,
+      date: true,
+      paymentMethod: true,
+      source: true,
+    },
+    orderBy: [{ date: "desc" }, { amount: "desc" }],
+    take: 200,
+  });
+
+  return transactions.map((t) => ({
+    ...t,
+    amount: Number(t.amount),
+    date: t.date.toISOString(),
   }));
 };
