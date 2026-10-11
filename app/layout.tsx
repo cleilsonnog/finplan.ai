@@ -40,21 +40,12 @@ export const metadata: Metadata = {
     siteName: "FinPlan.ai",
     title: "Saiba hoje se vai sobrar dinheiro no fim do mês — FinPlan.ai",
     description: SITE_DESCRIPTION,
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        type: "image/png",
-        alt: "FinPlan.ai — Controle financeiro com importação de extrato e WhatsApp",
-      },
-    ],
+    // Image: app/opengraph-image.tsx (guides have their own)
   },
   twitter: {
     card: "summary_large_image",
     title: "Saiba hoje se vai sobrar dinheiro no fim do mês — FinPlan.ai",
     description: SITE_DESCRIPTION,
-    images: ["/og-image.png"],
   },
   robots: {
     index: true,

@@ -78,7 +78,7 @@ docker compose up -d # Start local PostgreSQL
 - **WhatsApp Float Button** — Floating contact button on landing and subscription pages
 - **PDF Export** — Credit card installments and transactions exportable as PDF (jspdf + jspdf-autotable). Respects card filter.
 - **PWA** — Installable as mobile app. SW handles only push notifications (no fetch interception — breaks Clerk auth). `SignInButton mode="modal"` for login without leaving PWA.
-- **OG Image** — 1200x630 dashboard preview for link sharing
+- **OG Image** — Generated in code with `next/og`: `app/opengraph-image.tsx` (site) and `app/guias/[slug]/opengraph-image.tsx` (one per guide, with its title). Shared brand pieces + Noto Sans fonts in `app/_lib/og.tsx` / `app/_lib/fonts/`. Social media versions (same pieces) at `/social/feed` (1080×1350) and `/social/story` (1080×1920), `app/social/[format]/route.tsx`. `/opengraph-image(.*)` and `/social(.*)` must stay public in the middleware
 - **Theme Toggle** — Dark/light mode via `next-themes`. Toggle in navbar. Clerk and Toaster react dynamically. Default: dark. Preference saved in localStorage.
 - **Card Logos** — Brand logos (Visa, Mastercard, Elo, Amex, Hipercard) in `public/brands/`. Bank logos (Nubank, Santander, Itaú, etc.) in `public/banks/`. Mapped via `CARD_BRAND_ICONS` and `getBankIcon()` in `_constants/credit-cards.ts`.
 - **Payment Status** — "Contas fixas" dashboard card (paid vs pending progress). Only counts recurring expenses (not CC bills — those have their own cards). Data from `app/_data/get-payment-status`.
@@ -109,7 +109,7 @@ docker compose up -d # Start local PostgreSQL
 - Clerk handles all authentication
 - `userId` is obtained via `getEffectiveUserId()` which supports account sharing
 - Middleware uses `createRouteMatcher` + `auth.protect()` for route protection
-- Public routes: `/`, `/login`, `/manifest.json`, `/robots.txt`, `/sitemap.xml`, `/guias(.*)`, `/sw.js`, `/__clerk(.*)`, webhooks, cron. robots/sitemap MUST stay public or search engines get a 404
+- Public routes: `/`, `/login`, `/manifest.json`, `/robots.txt`, `/sitemap.xml`, `/opengraph-image(.*)`, `/social(.*)`, `/guias(.*)`, `/sw.js`, `/__clerk(.*)`, webhooks, cron. robots/sitemap MUST stay public or search engines get a 404
 - SEO: public URL/title/description in `app/_lib/site.ts` (used by layout metadata, robots, sitemap). Landing page emits JSON-LD (SoftwareApplication + FAQPage built from its FAQ array)
 - **IMPORTANT**: `/__clerk(.*)` and `/manifest.json` MUST be public — Clerk needs internal routes for session management, manifest is required for PWA install
 - **IMPORTANT**: Do NOT add fetch handlers to the service worker — intercepting navigation/requests breaks Clerk session detection in PWA

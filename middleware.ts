@@ -6,6 +6,8 @@ const isPublicRoute = createRouteMatcher([
   "/manifest.json",
   "/robots.txt",
   "/sitemap.xml",
+  "/opengraph-image(.*)", // link previews (crawlers are never logged in)
+  "/social(.*)", // brand images for social media posts
   "/guias(.*)", // public SEO content
   "/sw.js",
   "/__clerk(.*)",
