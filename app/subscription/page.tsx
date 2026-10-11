@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import Navbar from "../_components/navbar";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader } from "../_components/ui/card";
@@ -20,6 +20,8 @@ const SubscriptionPage = async () => {
   const currentMonthTransactions = await getCurrentMonthTransactions();
   const hasPremiumPlan = await hasPremiumAccess();
   const isLifetime = await hasLifetimeAccess();
+  const user = await currentUser();
+  const hasStripeSubscription = !!user?.privateMetadata?.stripeSubscriptionId;
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <Navbar />
@@ -202,7 +204,11 @@ const SubscriptionPage = async () => {
                 <CheckIcon className="text-primary" />
                 <p>Compartilhar Conta</p>
               </div>
-              <AcquirePlanButton />
+              <AcquirePlanButton
+                hasPremiumPlan={hasPremiumPlan}
+                isLifetime={isLifetime}
+                hasStripeSubscription={hasStripeSubscription}
+              />
             </CardContent>
           </Card>
         </div>

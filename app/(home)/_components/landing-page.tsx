@@ -378,7 +378,7 @@ const FAQ = [
   },
   {
     q: "Como funciona o pagamento e o cancelamento?",
-    a: "O Premium mensal é cobrado no cartão de crédito. Para cancelar, é só falar com a gente pelo WhatsApp. O acesso vitalício é um pagamento único, por Pix ou cartão.",
+    a: "O Premium mensal é cobrado no cartão de crédito. Para cancelar, trocar o cartão ou ver as faturas, é só clicar em “Gerenciar assinatura” na página de Assinatura, sem precisar falar com ninguém. O acesso vitalício é um pagamento único, por Pix ou cartão.",
   },
   {
     q: "Dá para usar no celular?",

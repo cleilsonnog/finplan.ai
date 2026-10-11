@@ -118,7 +118,7 @@ docker compose up -d # Start local PostgreSQL
 
 ### Payments
 
-- **Stripe** — Monthly subscription (card) and lifetime checkout (card)
+- **Stripe** — Monthly subscription (card) and lifetime checkout (card). "Gerenciar assinatura" on `/subscription` opens a Customer Portal session (`create-stripe-portal-session`) with `privateMetadata.stripeCustomerId`; shown only to monthly subscribers (`stripeSubscriptionId`), not lifetime
 - **Mercado Pago** — PIX payment for lifetime plan. SDK `mercadopago`, webhook at `/api/webhooks/mercadopago`
 - **Telegram Bot** — Notifies owner on PIX payment received (via bot API, no SDK)
 - **Evolution API** — WhatsApp integration for transaction registration. Instance on VPS (212.56.33.113:8080), webhook sends messages to `/api/webhooks/evolution`
