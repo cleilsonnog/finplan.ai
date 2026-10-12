@@ -115,6 +115,7 @@ docker compose up -d # Start local PostgreSQL
 - **IMPORTANT**: Do NOT add fetch handlers to the service worker — intercepting navigation/requests breaks Clerk session detection in PWA
 - All protected pages redirect to `/` (not `/login`) when unauthenticated
 - Environment vars: `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`
+- **Two Clerk instances**: production (Vercel) uses the **production** instance (`pk_live`, Frontend API at `clerk.finplanai.nogueiradev.com`, Google OAuth with our own Google Cloud credentials). Local `.env` keeps the **development** instance keys (`pk_live` doesn't work on localhost) — user ids differ between instances, so local dev must use the Docker database, never Neon. Users were moved dev → prod on 2026-10-12 with `scripts/migrate-clerk-to-prod.ts` (rewrites every user-id column); if a new user-id column is added to the schema, add it to that script's `COLUMNS` too
 
 ### Payments
 
