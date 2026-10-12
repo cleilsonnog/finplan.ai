@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRightIcon, ClockIcon } from "lucide-react";
 import PublicHeader from "../_components/public-header";
+import PublicFooter from "@/app/_components/public-footer";
 import { SITE_URL } from "../_lib/site";
 import { GUIDES } from "./_content/guides";
 
@@ -40,6 +41,7 @@ const GuidesIndex = () => (
         ))}
       </div>
     </main>
+    <PublicFooter />
     <script
       type="application/ld+json"
       dangerouslySetInnerHTML={{

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronRightIcon, ClockIcon, LightbulbIcon, SparklesIcon } from "lucide-react";
 import PublicHeader from "../../_components/public-header";
+import PublicFooter from "@/app/_components/public-footer";
 import { SITE_URL } from "../../_lib/site";
 import { GUIDES, getGuide } from "../_content/guides";
 import RichText from "../_components/rich-text";
@@ -140,6 +141,7 @@ const GuidePage = async ({ params }: GuidePageProps) => {
           </div>
         </section>
       </main>
+      <PublicFooter />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
     </div>
   );

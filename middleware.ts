@@ -9,6 +9,8 @@ const isPublicRoute = createRouteMatcher([
   "/opengraph-image(.*)", // link previews (crawlers are never logged in)
   "/social(.*)", // brand images for social media posts
   "/guias(.*)", // public SEO content
+  "/privacidade",
+  "/termos",
   "/sw.js",
   "/__clerk(.*)",
   "/api/webhooks(.*)",

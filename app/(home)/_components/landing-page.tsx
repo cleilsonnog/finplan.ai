@@ -1,8 +1,6 @@
 "use client";
 
 import { SignInButton } from "@clerk/nextjs";
-import Image from "next/image";
-import Link from "next/link";
 import {
   ArrowRightIcon,
   BellRingIcon,
@@ -29,8 +27,8 @@ import {
 import { Button } from "@/app/_components/ui/button";
 import WhatsAppFloatButton from "@/app/_components/whatsapp-float-button";
 import PublicHeader from "@/app/_components/public-header";
+import PublicFooter from "@/app/_components/public-footer";
 import { SITE_DESCRIPTION, SITE_URL } from "@/app/_lib/site";
-import { GUIDES } from "@/app/guias/_content/guides";
 
 const WHATSAPP_URL =
   "https://wa.me/5522988516223?text=Ol%C3%A1%2C%20vim%20pelo%20FinPlan.ai%20e%20gostaria%20de%20mais%20informa%C3%A7%C3%B5es!";
@@ -698,26 +696,7 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="border-t border-border">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-4 py-6 sm:flex-row sm:px-8">
-          <div className="flex items-center gap-2">
-            <Image src="/icon-finplanai-pwa.svg" width={24} height={24} alt="FinPlan AI" />
-            <span className="text-sm font-semibold">FinPlan.ai</span>
-          </div>
-          <nav className="flex flex-wrap justify-center gap-x-5 gap-y-1 text-xs text-muted-foreground">
-            <Link href="/guias" className="hover:text-foreground">Guias</Link>
-            {GUIDES.slice(0, 3).map((g) => (
-              <Link key={g.slug} href={`/guias/${g.slug}`} className="hover:text-foreground">
-                {g.title.split(":")[0].split("(")[0].trim()}
-              </Link>
-            ))}
-          </nav>
-          <p className="text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} FinPlan.ai. Todos os direitos reservados.
-          </p>
-        </div>
-      </footer>
+      <PublicFooter />
       <WhatsAppFloatButton />
     </div>
   );
