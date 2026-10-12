@@ -55,7 +55,7 @@ export const creditCardColumns: ColumnDef<SerializedCreditCard>[] = [
       return (
         <div className="space-x-1">
           <EditCreditCardButton creditCard={card} />
-          <DeleteCreditCardButton creditCardId={card.id} />
+          <DeleteCreditCardButton creditCardId={card.id} cardName={card.name} />
         </div>
       );
     },

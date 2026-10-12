@@ -10,6 +10,7 @@ import { CARD_BRAND_ICONS, CARD_BRAND_LABELS, CARD_COLOR_GRADIENTS, getBankIcon 
 import { CreditCardSummaryItem } from "@/app/_data/get-credit-card-summary";
 import { CardBrand } from "@prisma/client";
 import { PencilIcon } from "lucide-react";
+import DeleteCreditCardButton from "@/app/credit-cards/_components/delete-credit-card-button";
 
 interface CreditCardItemProps {
   data: CreditCardSummaryItem;
@@ -71,6 +72,14 @@ const CreditCardItem = ({ data, editable = false }: CreditCardItemProps) => {
             >
               <PencilIcon size={14} />
             </Button>
+          )}
+          {editable && (
+            <DeleteCreditCardButton
+              creditCardId={card.id}
+              cardName={card.name}
+              iconSize={14}
+              className="h-7 w-7 text-white/60 hover:text-white hover:bg-white/10"
+            />
           )}
         </div>
       </div>

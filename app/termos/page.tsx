@@ -74,7 +74,7 @@ const SECTIONS: LegalSection[] = [
   {
     title: "Encerramento da conta",
     paragraphs: [
-      "Você pode pedir a exclusão da sua conta a qualquer momento (veja a Política de Privacidade). Podemos suspender contas que violem estes Termos, avisando o motivo sempre que possível.",
+      "Você pode excluir sua conta a qualquer momento em Configurações → Excluir conta (ou pedir por e-mail). Se tiver o Premium mensal, a assinatura é cancelada junto. Podemos suspender contas que violem estes Termos, avisando o motivo sempre que possível.",
     ],
   },
   {

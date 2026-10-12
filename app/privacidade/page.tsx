@@ -83,7 +83,7 @@ const SECTIONS: LegalSection[] = [
   {
     title: "Por quanto tempo guardamos",
     paragraphs: [
-      "Seus dados ficam guardados enquanto sua conta existir. Se você pedir a exclusão, apagamos a conta e os dados financeiros em até 15 dias, exceto o que precisarmos manter para cumprir obrigação legal — por exemplo, registros de pagamento, que também ficam com o Stripe ou o Mercado Pago conforme as regras deles.",
+      "Seus dados ficam guardados enquanto sua conta existir. Ao excluir a conta em Configurações, ela e todos os dados financeiros são apagados na hora (pedidos por e-mail são atendidos em até 15 dias). Só mantemos o que a lei obriga — por exemplo, registros de pagamento, que também ficam com o Stripe ou o Mercado Pago conforme as regras deles.",
     ],
   },
   {
@@ -93,7 +93,7 @@ const SECTIONS: LegalSection[] = [
       "confirmar se tratamos seus dados e ter acesso a eles;",
       "corrigir dados incompletos, inexatos ou desatualizados;",
       "pedir a portabilidade ou uma cópia dos seus dados;",
-      "pedir a exclusão da sua conta e dos seus dados;",
+      "excluir sua conta e seus dados (você mesmo faz isso em Configurações → Excluir conta);",
       "saber com quem seus dados são compartilhados;",
       "revogar consentimentos e reclamar à Autoridade Nacional de Proteção de Dados (ANPD).",
     ],
@@ -101,7 +101,7 @@ const SECTIONS: LegalSection[] = [
   {
     title: "Como fazer um pedido",
     paragraphs: [
-      `Envie um e-mail para ${LEGAL.email} (ou mensagem no WhatsApp ${LEGAL.whatsapp}) a partir do e-mail ou número cadastrado, dizendo o que deseja. Respondemos em até 15 dias. Boa parte dos dados você mesmo pode corrigir ou apagar dentro do app (transações, cartões, importações, vínculo do WhatsApp).`,
+      `Envie um e-mail para ${LEGAL.email} (ou mensagem no WhatsApp ${LEGAL.whatsapp}) a partir do e-mail ou número cadastrado, dizendo o que deseja. Respondemos em até 15 dias. Boa parte você mesmo resolve dentro do app: corrigir ou apagar transações, cartões e importações, desvincular o WhatsApp ou excluir a conta inteira em Configurações.`,
     ],
   },
   {

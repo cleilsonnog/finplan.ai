@@ -37,7 +37,7 @@ docker compose up -d # Start local PostgreSQL
 - `app/privacidade/`, `app/termos/` — Privacy Policy (LGPD) and Terms of Use, rendered by `app/_components/legal-document.tsx`. Controller name, contact and "last updated" date live in `app/_lib/legal.ts` (bump `updated` on any text change). Every processor/data type listed must match what the code really does — update them when adding a provider (e.g. analytics)
 - `app/subscription/` — Plans page (free vs premium)
 - `app/shopping-list/` — Shopping list page (add/remove items, syncs with WhatsApp)
-- `app/settings/` — Settings page (WhatsApp link)
+- `app/settings/` — Settings page (WhatsApp link, delete account). `deleteAccount` (`app/_actions/delete-account`) cancels a monthly Stripe subscription first, then deletes every row keyed by the user's **own** id (never the shared/effective one) and the Clerk user — keep its table list in sync with `scripts/migrate-clerk-to-prod.ts`
 - `app/api/cron/recurring-reminders/` — Daily WhatsApp reminders for due expenses
 - `middleware.ts` — Clerk auth middleware with route protection (`auth.protect()`)
 - `public/sw.js` — Service Worker (push notifications only, NO fetch handler)
@@ -61,6 +61,7 @@ docker compose up -d # Start local PostgreSQL
 ### Key Features
 
 - **Landing Page** — Route `/` shows landing page for unauthenticated visitors, dashboard for logged users
+- **Credit Card deletion** — `deleteCreditCard` removes the card with its purchases, import batches and bills (cascade). Purchases must never outlive their card: with `creditCardId = null` they would count as cash spending in "Saldo do mês"
 - **Credit Card Bills** — Auto-created per card/month, status transitions: OPEN → CLOSED → PAID/OVERDUE based on closing/due dates. No duplicate transactions on bill payment.
 - **Installments** — Up to 48x, creates N transactions with divided amounts spread monthly
 - **AI Reports** — OpenAI (gpt-4o) financial analysis with transactions, budgets, credit cards, bills data. Includes 3-month history for trend analysis. Motor de análise: saúde financeira, categorias com tendência, reclassificação inteligente, orçamento vs realidade, anomalias, plano de ação priorizado. Structured prompt with scoring.
