@@ -1,5 +1,5 @@
 // Single source for the public URL (metadata, robots, sitemap, structured data)
-export const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://finplanai.nogueiradev.com").replace(/\/$/, "");
+export const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://finplanai.com.br").replace(/\/$/, "");
 
 export const SITE_TITLE = "FinPlan.ai — Controle financeiro com importação de extrato, cartão e WhatsApp";
 export const SITE_DESCRIPTION =

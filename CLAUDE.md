@@ -112,12 +112,13 @@ docker compose up -d # Start local PostgreSQL
 - `userId` is obtained via `getEffectiveUserId()` which supports account sharing
 - Middleware uses `createRouteMatcher` + `auth.protect()` for route protection
 - Public routes: `/`, `/login`, `/manifest.json`, `/robots.txt`, `/sitemap.xml`, `/opengraph-image(.*)`, `/social(.*)`, `/guias(.*)`, `/privacidade`, `/termos`, `/sw.js`, `/__clerk(.*)`, webhooks, cron. robots/sitemap MUST stay public or search engines get a 404
+- **Domain**: `finplanai.com.br` (since 2026-10-16; registered at Hostinger, DNS there). `finplanai.nogueiradev.com` and `www` 308-redirect to it. Webhooks (Stripe, Mercado Pago, Evolution) and the VPS cron point straight at `finplanai.com.br` — providers don't follow redirects, so update them if the domain ever changes
 - SEO: public URL/title/description in `app/_lib/site.ts` (used by layout metadata, robots, sitemap). Landing page emits JSON-LD (SoftwareApplication + FAQPage built from its FAQ array)
 - **IMPORTANT**: `/__clerk(.*)` and `/manifest.json` MUST be public — Clerk needs internal routes for session management, manifest is required for PWA install
 - **IMPORTANT**: Do NOT add fetch handlers to the service worker — intercepting navigation/requests breaks Clerk session detection in PWA
 - All protected pages redirect to `/` (not `/login`) when unauthenticated
 - Environment vars: `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`
-- **Two Clerk instances**: production (Vercel) uses the **production** instance (`pk_live`, Frontend API at `clerk.finplanai.nogueiradev.com`, Google OAuth with our own Google Cloud credentials). Local `.env` keeps the **development** instance keys (`pk_live` doesn't work on localhost) — user ids differ between instances, so local dev must use the Docker database, never Neon. Users were moved dev → prod on 2026-10-12 with `scripts/migrate-clerk-to-prod.ts` (rewrites every user-id column); if a new user-id column is added to the schema, add it to that script's `COLUMNS` too
+- **Two Clerk instances**: production (Vercel) uses the **production** instance (`pk_live`, Frontend API at `clerk.finplanai.com.br`, Google OAuth with our own Google Cloud credentials). Local `.env` keeps the **development** instance keys (`pk_live` doesn't work on localhost) — user ids differ between instances, so local dev must use the Docker database, never Neon. Users were moved dev → prod on 2026-10-12 with `scripts/migrate-clerk-to-prod.ts` (rewrites every user-id column); if a new user-id column is added to the schema, add it to that script's `COLUMNS` too
 
 ### Payments
 
@@ -125,7 +126,7 @@ docker compose up -d # Start local PostgreSQL
 - **Mercado Pago** — PIX payment for lifetime plan. SDK `mercadopago`, webhook at `/api/webhooks/mercadopago`
 - **Telegram Bot** — Notifies owner on PIX payment received (via bot API, no SDK)
 - **Evolution API** — WhatsApp integration for transaction registration. Instance on VPS (212.56.33.113:8080), webhook sends messages to `/api/webhooks/evolution`
-- **VPS Cron** — Crontab on VPS (212.56.33.113, timezone America/Sao_Paulo) runs `0 9 * * *` (9h BRT). Requires `CRON_SECRET` env var.
+- **VPS Cron** — Crontab on VPS (212.56.33.113, timezone America/Sao_Paulo) runs `0 9 * * *` (9h BRT) against `https://finplanai.com.br/api/cron/recurring-reminders`. Requires `CRON_SECRET` env var.
 - Subscription state managed via Clerk metadata (`publicMetadata.subscriptionPlan`, `privateMetadata.lifetimePurchase`)
 
 ### Pricing
